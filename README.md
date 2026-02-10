@@ -7,10 +7,7 @@
 
 ## Overview
 
-SentinelForge is a unified AI red teaming platform that combines the best features from:
-- **BlackICE** (Databricks): 14 containerized AI security tools
-- **Red_Team_Iron_Prompt**: FastAPI + Python async worker architecture
-- **BH AI RedTeam Tool**: Incident Response playbooks
+SentinelForge is a unified AI red teaming platform that combines the best features from several tools
 
 Plus 6 innovative capability areas for comprehensive AI security testing.
 
@@ -18,7 +15,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 
 ### Core Capabilities
 - **Multi-Service Architecture**: FastAPI orchestration + Python async worker pool (asyncio + asyncpg)
-- **14 Integrated Tools**: BlackICE tools in isolated virtual environments
+- **14 Integrated Tools**: tools in isolated virtual environments
 - **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure, Databricks, AWS Bedrock, Google Vertex AI, and more
 - **Modular Probe System**: Extensible SDK for custom evaluations
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
