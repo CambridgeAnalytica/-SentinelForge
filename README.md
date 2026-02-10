@@ -50,7 +50,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 
 ```bash
 # Clone the repository
-git clone https://github.com/CambridgeAnalytica/SentinelForge.git
+git clone https://github.com/CambridgeAnalytica/-SentinelForge.git
 cd SentinelForge
 
 # Bootstrap local dev environment (creates Python venvs, installs deps)
@@ -83,7 +83,7 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 
 ```powershell
 # Clone the repository
-git clone https://github.com/CambridgeAnalytica/SentinelForge.git
+git clone https://github.com/CambridgeAnalytica/-SentinelForge.git
 cd SentinelForge
 
 # REQUIRED: Create and configure your .env file
