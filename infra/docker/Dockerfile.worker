@@ -1,0 +1,23 @@
+# SentinelForge Worker Dockerfile
+# Python-based worker for job execution (replaces Go worker for simplicity)
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && adduser --disabled-password --gecos '' appuser
+
+COPY services/worker/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY services/worker/ /app/
+COPY tools/ /app/tools/
+
+RUN chown -R appuser:appuser /app
+USER appuser
+
+CMD ["python", "worker.py"]

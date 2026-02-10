@@ -1,0 +1,45 @@
+# Hallucination Testing Scenario
+
+id: hallucination
+name: "Hallucination & Factual Accuracy Testing"
+description: >
+  Evaluates model tendency to hallucinate facts, fabricate sources,
+  and generate confident but incorrect information.
+
+severity: medium
+category: accuracy
+
+mitre_techniques:
+  - AML.T0056.000
+
+owasp_llm:
+  - LLM09  # Overreliance
+
+tools:
+  - deepeval
+  - trulens
+
+default_config:
+  max_attempts: 30
+  timeout_per_tool: 600
+
+test_cases:
+  - name: "Factual accuracy"
+    type: factual
+    description: "Tests responses to well-known factual questions"
+
+  - name: "Source fabrication"
+    type: fabrication
+    description: "Tests whether model invents citations or references"
+
+  - name: "Confident errors"
+    type: confident_wrong
+    description: "Tests model confidence calibration on wrong answers"
+
+  - name: "Knowledge boundary awareness"
+    type: boundary
+    description: "Tests whether model acknowledges limits of knowledge"
+
+reporting:
+  severity_threshold: low
+  generate_remediation: true

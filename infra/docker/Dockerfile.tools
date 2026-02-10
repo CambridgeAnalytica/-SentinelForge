@@ -1,0 +1,87 @@
+# SentinelForge Tools Dockerfile
+# BlackICE-style containerized AI security tools with isolated venvs
+
+FROM python:3.11-slim
+
+WORKDIR /opt/sentinelforge
+
+# Install system dependencies for all tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    git \
+    curl \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Create isolated virtual environments for each tool ──
+
+# garak - LLM vulnerability scanner
+RUN python3.11 -m venv /opt/venvs/garak && \
+    /opt/venvs/garak/bin/pip install --no-cache-dir garak 2>/dev/null || \
+    echo "garak: install manually or from source"
+
+# pyrit - Python Risk Identification Toolkit
+RUN python3.11 -m venv /opt/venvs/pyrit && \
+    /opt/venvs/pyrit/bin/pip install --no-cache-dir pyrit-ai 2>/dev/null || \
+    echo "pyrit: install manually or from source"
+
+# deepeval - LLM evaluation
+RUN python3.11 -m venv /opt/venvs/deepeval && \
+    /opt/venvs/deepeval/bin/pip install --no-cache-dir deepeval 2>/dev/null || \
+    echo "deepeval: install manually"
+
+# textattack - adversarial NLP
+RUN python3.11 -m venv /opt/venvs/textattack && \
+    /opt/venvs/textattack/bin/pip install --no-cache-dir textattack 2>/dev/null || \
+    echo "textattack: install manually"
+
+# art - IBM Adversarial Robustness Toolbox
+RUN python3.11 -m venv /opt/venvs/art && \
+    /opt/venvs/art/bin/pip install --no-cache-dir adversarial-robustness-toolbox 2>/dev/null || \
+    echo "art: install manually"
+
+# rebuff - Prompt injection detection
+RUN python3.11 -m venv /opt/venvs/rebuff && \
+    /opt/venvs/rebuff/bin/pip install --no-cache-dir rebuff 2>/dev/null || \
+    echo "rebuff: install manually"
+
+# guardrails - Output validation
+RUN python3.11 -m venv /opt/venvs/guardrails && \
+    /opt/venvs/guardrails/bin/pip install --no-cache-dir guardrails-ai 2>/dev/null || \
+    echo "guardrails: install manually"
+
+# trulens - LLM observability
+RUN python3.11 -m venv /opt/venvs/trulens && \
+    /opt/venvs/trulens/bin/pip install --no-cache-dir trulens-eval 2>/dev/null || \
+    echo "trulens: install manually"
+
+# langkit - LLM monitoring
+RUN python3.11 -m venv /opt/venvs/langkit && \
+    /opt/venvs/langkit/bin/pip install --no-cache-dir langkit 2>/dev/null || \
+    echo "langkit: install manually"
+
+# fickling - Pickle file scanner
+RUN python3.11 -m venv /opt/venvs/fickling && \
+    /opt/venvs/fickling/bin/pip install --no-cache-dir fickling 2>/dev/null || \
+    echo "fickling: install manually"
+
+# promptfoo - via npm
+RUN npm install -g promptfoo 2>/dev/null || echo "promptfoo: install manually"
+
+# Copy tool registry and executor
+COPY tools/ /opt/sentinelforge/tools/
+
+# Shared Python deps for executor
+RUN pip install --no-cache-dir pyyaml
+
+# Create non-root user and set ownership
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /opt/sentinelforge \
+    && chown -R appuser:appuser /opt/venvs
+
+USER appuser
+
+CMD ["python", "-m", "tools.executor"]

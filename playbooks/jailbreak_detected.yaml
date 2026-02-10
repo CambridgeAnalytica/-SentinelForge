@@ -1,0 +1,115 @@
+# Jailbreak Detected - Incident Response Playbook
+
+id: jailbreak_detected
+name: "Jailbreak Detection Response"
+description: >
+  Incident response playbook for when a jailbreak vulnerability is
+  detected during AI red team testing. Defines containment, analysis,
+  remediation, and reporting steps.
+
+trigger: jailbreak_finding_detected
+severity: critical
+
+classification:
+  type: ai_security_incident
+  category: model_safety_bypass
+  mitre_atlas: AML.T0051.000
+
+steps:
+  - name: "Immediate Assessment"
+    action: assess
+    description: "Evaluate the severity and scope of the jailbreak"
+    tasks:
+      - "Determine which safety constraints were bypassed"
+      - "Identify the specific technique used"
+      - "Assess potential impact if exploited in production"
+    timeout: 300
+
+  - name: "Evidence Capture"
+    action: capture_evidence
+    description: "Capture and preserve all evidence"
+    tasks:
+      - "Save full conversation transcript"
+      - "Record model configuration and version"
+      - "Capture system prompt in use"
+      - "Hash and timestamp all evidence"
+    timeout: 300
+
+  - name: "Containment"
+    action: contain
+    description: "Implement temporary containment measures"
+    tasks:
+      - "Add the attack vector to input filters"
+      - "Increase monitoring on affected model endpoints"
+      - "Consider rate limiting if public-facing"
+    timeout: 600
+
+  - name: "Root Cause Analysis"
+    action: analyze
+    description: "Determine why the jailbreak succeeded"
+    tasks:
+      - "Analyze system prompt weaknesses"
+      - "Review safety fine-tuning effectiveness"
+      - "Compare with known jailbreak databases"
+      - "Identify similar attack variants"
+    timeout: 1800
+
+  - name: "Remediation"
+    action: remediate
+    description: "Implement fixes"
+    tasks:
+      - "Strengthen system prompt instructions"
+      - "Add input validation rules for attack pattern"
+      - "Update content filtering rules"
+      - "Request model safety fine-tuning update if needed"
+    timeout: 3600
+
+  - name: "Verification"
+    action: verify
+    description: "Verify the fix is effective"
+    tasks:
+      - "Re-run the original attack scenario"
+      - "Test with attack variants"
+      - "Confirm no regression in normal functionality"
+    timeout: 1800
+
+  - name: "Reporting"
+    action: report
+    description: "Generate and distribute incident report"
+    tasks:
+      - "Generate HTML/PDF report with findings"
+      - "Include MITRE ATLAS mapping"
+      - "Document remediation steps taken"
+      - "Send report to stakeholders"
+    timeout: 600
+
+  - name: "Post-Incident Review"
+    action: review
+    description: "Conduct lessons learned"
+    tasks:
+      - "Update attack scenario library"
+      - "Update baseline safety metrics"
+      - "Schedule follow-up testing"
+      - "Update SOPs if needed"
+    timeout: 1800
+
+escalation:
+  - severity: critical
+    notify:
+      - security_team
+      - model_owners
+      - legal_compliance
+    sla: 4_hours
+
+  - severity: high
+    notify:
+      - security_team
+      - model_owners
+    sla: 24_hours
+
+compliance:
+  frameworks:
+    - "NIST AI RMF"
+    - "EU AI Act"
+    - "OWASP LLM Top 10"
+  retention_days: 90

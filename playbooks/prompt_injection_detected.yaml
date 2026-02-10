@@ -1,0 +1,48 @@
+# Prompt Injection Detected - IR Playbook
+
+id: prompt_injection_detected
+name: "Prompt Injection Incident Response"
+description: "Response playbook for prompt injection vulnerabilities."
+trigger: prompt_injection_finding
+severity: high
+
+steps:
+  - name: "Classify Injection Type"
+    action: classify
+    tasks:
+      - "Determine injection type (direct, indirect, encoding-based)"
+      - "Assess bypass severity"
+      - "Identify affected system components"
+
+  - name: "Containment"
+    action: contain
+    tasks:
+      - "Add injection pattern to WAF/input filter blocklist"
+      - "Enable strict input validation"
+      - "Increase logging on affected endpoints"
+
+  - name: "Analysis"
+    action: analyze
+    tasks:
+      - "Characterize the injection technique"
+      - "Search for related variants"
+      - "Review input validation pipeline"
+
+  - name: "Remediation"
+    action: remediate
+    tasks:
+      - "Implement input sanitization for the attack vector"
+      - "Strengthen system prompt with injection resistance"
+      - "Add prompt injection detection layer (rebuff/guardrails)"
+
+  - name: "Verification"
+    action: verify
+    tasks:
+      - "Re-run injection scenario"
+      - "Test attack variants"
+      - "Validate no regression"
+
+escalation:
+  - severity: high
+    notify: [security_team, model_owners]
+    sla: 8_hours

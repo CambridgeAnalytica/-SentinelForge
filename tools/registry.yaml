@@ -1,0 +1,260 @@
+# SentinelForge Tool Registry
+# BlackICE-integrated AI security tools with MITRE ATLAS mapping
+
+tools:
+  # ==============================
+  # Prompt Injection & Jailbreak
+  # ==============================
+  - name: garak
+    version: "0.9"
+    category: prompt_injection
+    description: "Comprehensive LLM vulnerability scanner - prompt injection, jailbreak, encoding attacks"
+    cli: garak
+    venv: /opt/venvs/garak
+    install_command: "pip install garak"
+    capabilities:
+      - prompt_injection_detection
+      - jailbreak_testing
+      - encoding_attacks
+      - continuation_attacks
+      - token_smuggling
+    mitre_atlas:
+      - AML.T0051.000  # LLM Prompt Injection
+    default_config:
+      timeout: 600
+      max_retries: 3
+      log_level: INFO
+    probes:
+      - encoding.InjectBase64
+      - encoding.InjectHex
+      - dan.DAN
+      - continuation.ContinueSlurs
+      - malwaregen.Evasion
+
+  - name: pyrit
+    version: "0.5"
+    category: red_team
+    description: "Python Risk Identification Toolkit - automated red teaming and multi-turn attacks"
+    cli: pyrit
+    venv: /opt/venvs/pyrit
+    install_command: "pip install pyrit-ai"
+    capabilities:
+      - automated_jailbreak
+      - multi_turn_attacks
+      - template_attacks
+      - crescendo_attacks
+    mitre_atlas:
+      - AML.T0051.000  # Prompt Injection
+      - AML.T0054.000  # LLM Meta Prompt Extraction
+    default_config:
+      timeout: 900
+      max_turns: 10
+    templates:
+      - dan
+      - stan
+      - dev_mode
+      - aim
+
+  # ==============================
+  # Evaluation & Testing
+  # ==============================
+  - name: promptfoo
+    version: "0.50"
+    category: evaluation
+    description: "LLM evaluation and red teaming framework with assertions and A/B testing"
+    cli: promptfoo
+    venv: /opt/venvs/promptfoo
+    install_command: "npm install -g promptfoo"
+    capabilities:
+      - prompt_evaluation
+      - red_teaming
+      - regression_testing
+      - ab_testing
+      - automated_grading
+    mitre_atlas:
+      - AML.T0056.000  # LLM Evaluation
+
+  - name: deepeval
+    version: "0.20"
+    category: evaluation
+    description: "LLM evaluation framework - hallucination, bias, toxicity, factual consistency"
+    cli: deepeval
+    venv: /opt/venvs/deepeval
+    install_command: "pip install deepeval"
+    capabilities:
+      - hallucination_detection
+      - bias_evaluation
+      - toxicity_detection
+      - factual_consistency
+      - answer_relevancy
+    mitre_atlas:
+      - AML.T0056.000
+
+  # ==============================
+  # Adversarial ML
+  # ==============================
+  - name: textattack
+    version: "0.3"
+    category: adversarial_ml
+    description: "Adversarial attacks on NLP models - word substitution, character-level, perturbations"
+    cli: textattack
+    venv: /opt/venvs/textattack
+    install_command: "pip install textattack"
+    capabilities:
+      - word_substitution
+      - character_attacks
+      - sentence_perturbation
+      - model_evasion
+    mitre_atlas:
+      - AML.T0043.000  # Adversarial Examples
+    attack_recipes:
+      - textfooler
+      - deepwordbug
+      - bae
+      - pwws
+
+  - name: art
+    version: "1.15"
+    category: adversarial_ml
+    description: "Adversarial Robustness Toolbox - evasion, poisoning, backdoor detection"
+    cli: art
+    venv: /opt/venvs/art
+    install_command: "pip install adversarial-robustness-toolbox"
+    capabilities:
+      - evasion_attacks
+      - poisoning_attacks
+      - backdoor_detection
+      - model_extraction
+      - adversarial_training
+    mitre_atlas:
+      - AML.T0043.000  # Adversarial Perturbation
+      - AML.T0040.000  # ML Model Backdoor
+
+  # ==============================
+  # Detection & Validation
+  # ==============================
+  - name: rebuff
+    version: "0.5"
+    category: detection
+    description: "Prompt injection detection with canary tokens and similarity checking"
+    cli: rebuff
+    venv: /opt/venvs/rebuff
+    install_command: "pip install rebuff"
+    capabilities:
+      - injection_detection
+      - canary_tokens
+      - similarity_checking
+      - vector_db_integration
+    mitre_atlas:
+      - AML.T0051.000
+
+  - name: guardrails
+    version: "0.4"
+    category: validation
+    description: "LLM output validation - PII detection, toxicity filtering, schema enforcement"
+    cli: guardrails
+    venv: /opt/venvs/guardrails
+    install_command: "pip install guardrails-ai"
+    capabilities:
+      - output_validation
+      - pii_detection
+      - toxicity_filtering
+      - json_schema_enforcement
+      - custom_validators
+    mitre_atlas:
+      - AML.T0015.000
+
+  # ==============================
+  # Observability & Monitoring
+  # ==============================
+  - name: trulens
+    version: "0.18"
+    category: observability
+    description: "LLM evaluation and tracking - feedback functions, groundedness, RAG evaluation"
+    cli: trulens-eval
+    venv: /opt/venvs/trulens
+    install_command: "pip install trulens-eval"
+    capabilities:
+      - feedback_functions
+      - conversation_tracking
+      - hallucination_detection
+      - rag_evaluation
+    mitre_atlas:
+      - AML.T0056.000
+
+  - name: langkit
+    version: "0.1"
+    category: monitoring
+    description: "LLM monitoring toolkit - prompt/response monitoring, toxicity, sentiment, PII"
+    cli: langkit
+    venv: /opt/venvs/langkit
+    install_command: "pip install langkit"
+    capabilities:
+      - prompt_monitoring
+      - response_monitoring
+      - toxicity_detection
+      - sentiment_analysis
+      - pii_detection
+    mitre_atlas:
+      - AML.T0056.000
+
+  # ==============================
+  # Additional Tools
+  # ==============================
+  - name: fickling
+    version: "0.1"
+    category: supply_chain
+    description: "Pickle file security scanner - detect malicious payloads in serialized models"
+    cli: fickling
+    venv: /opt/venvs/fickling
+    install_command: "pip install fickling"
+    capabilities:
+      - pickle_analysis
+      - malicious_payload_detection
+      - model_artifact_scanning
+    mitre_atlas:
+      - AML.T0010.000  # ML Supply Chain Compromise
+
+  - name: cyberseceval
+    version: "1.0"
+    category: evaluation
+    description: "Meta's CyberSecEval - comprehensive LLM security evaluation"
+    cli: cyberseceval
+    venv: /opt/venvs/cyberseceval
+    install_command: "pip install cyberseceval"
+    capabilities:
+      - insecure_code_detection
+      - cyberattack_helpfulness
+      - prompt_injection
+      - code_interpreter_abuse
+    mitre_atlas:
+      - AML.T0051.000
+      - AML.T0056.000
+
+  - name: easyedit
+    version: "0.1"
+    category: model_editing
+    description: "Knowledge editing for LLMs - test model update robustness"
+    cli: easyedit
+    venv: /opt/venvs/easyedit
+    install_command: "pip install easyeditor"
+    capabilities:
+      - knowledge_editing
+      - model_update_testing
+      - fact_manipulation
+    mitre_atlas:
+      - AML.T0040.000
+
+  - name: rigging
+    version: "0.1"
+    category: red_team
+    description: "LLM interaction framework for advanced red teaming workflows"
+    cli: rigging
+    venv: /opt/venvs/rigging
+    install_command: "pip install rigging"
+    capabilities:
+      - advanced_prompting
+      - conversation_chains
+      - custom_attack_workflows
+    mitre_atlas:
+      - AML.T0051.000

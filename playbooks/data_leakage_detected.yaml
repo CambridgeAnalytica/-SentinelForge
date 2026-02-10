@@ -1,0 +1,68 @@
+# Data Leakage Detected - IR Playbook
+
+id: data_leakage_detected
+name: "Data Leakage Incident Response"
+description: >
+  Response playbook for when AI model exposes sensitive data, PII,
+  credentials, or training data content.
+
+trigger: data_leakage_finding
+severity: critical
+
+steps:
+  - name: "Classify Data Exposure"
+    action: classify
+    tasks:
+      - "Identify type of exposed data (PII, credentials, IP, training data)"
+      - "Determine data sensitivity level"
+      - "Assess regulatory implications (GDPR, HIPAA, CCPA)"
+
+  - name: "Emergency Containment"
+    action: contain
+    tasks:
+      - "Block the triggering query pattern"
+      - "Enable enhanced output filtering"
+      - "Activate PII redaction on all outputs"
+      - "Consider temporary model endpoint shutdown for critical exposure"
+
+  - name: "Impact Assessment"
+    action: assess
+    tasks:
+      - "Determine if exposed data was real or generated"
+      - "Identify affected data subjects if PII"
+      - "Check access logs for prior exploitation"
+      - "Estimate scope of potential exposure"
+
+  - name: "Evidence & Documentation"
+    action: capture_evidence
+    tasks:
+      - "Preserve full interaction logs"
+      - "Document exposed data samples (redacted)"
+      - "Record model version, configuration, and prompts"
+
+  - name: "Remediation"
+    action: remediate
+    tasks:
+      - "Implement output guardrails (PII detection, credential scanning)"
+      - "Update system prompt with explicit data protection instructions"
+      - "Add canary tokens to detect future leakage"
+      - "Request model retraining if training data memorization detected"
+
+  - name: "Regulatory Notification"
+    action: notify
+    tasks:
+      - "Prepare breach notification if required by regulation"
+      - "Notify DPO/Privacy team"
+      - "Document timeline for compliance"
+
+  - name: "Verification & Monitoring"
+    action: verify
+    tasks:
+      - "Re-run data leakage scenario to confirm fix"
+      - "Deploy continuous monitoring for leakage patterns"
+      - "Schedule periodic re-testing"
+
+escalation:
+  - severity: critical
+    notify: [security_team, legal_compliance, dpo, ciso]
+    sla: 1_hour
