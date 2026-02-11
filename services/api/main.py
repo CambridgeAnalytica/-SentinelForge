@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import engine, Base
-from routers import health, auth, tools, attacks, reports, probes, playbooks
+from routers import health, auth, tools, attacks, reports, probes, playbooks, drift, backdoor, supply_chain
 from middleware.logging_middleware import RequestLoggingMiddleware
 
 # Configure logging
@@ -37,6 +37,10 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("✅ Database tables created/verified")
+
+    # Initialize Redis for token blocklist (graceful fallback to in-memory)
+    from services.user_service import _init_redis
+    _init_redis()
 
     # Initialize default admin user
     from services.user_service import ensure_admin_user
@@ -79,6 +83,9 @@ app.include_router(attacks.router, prefix="/attacks", tags=["Attacks"])
 app.include_router(reports.router, prefix="/reports", tags=["Reports"])
 app.include_router(probes.router, prefix="/probes", tags=["Probes"])
 app.include_router(playbooks.router, prefix="/playbooks", tags=["Playbooks"])
+app.include_router(drift.router, prefix="/drift", tags=["Drift Detection"])
+app.include_router(backdoor.router, prefix="/backdoor", tags=["Backdoor Detection"])
+app.include_router(supply_chain.router, prefix="/supply-chain", tags=["Supply Chain"])
 
 
 if __name__ == "__main__":

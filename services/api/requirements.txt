@@ -24,3 +24,4 @@ structlog==24.4.0
 weasyprint==63.1
 markdown==3.7
 psycopg2-binary==2.9.10
+redis[hiredis]>=5.0.0

@@ -2,6 +2,7 @@
 User service: authentication, user management, token revocation.
 """
 
+import hashlib
 import logging
 import re
 import threading
@@ -19,14 +20,44 @@ from models import User, UserRole
 logger = logging.getLogger("sentinelforge.auth")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=True)
 
-# ---------- Token blocklist (in-memory; use Redis in production) ----------
+
+# ---------- Token blocklist (Redis-backed with in-memory fallback) ----------
+
+_redis_client = None
+_redis_available = False
+
+
+def _init_redis():
+    """Initialize Redis client if REDIS_URL is configured."""
+    global _redis_client, _redis_available
+    if not settings.REDIS_URL:
+        logger.info("REDIS_URL not set — using in-memory token blocklist")
+        return
+    try:
+        import redis
+        _redis_client = redis.Redis.from_url(
+            settings.REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=3,
+        )
+        _redis_client.ping()
+        _redis_available = True
+        logger.info("Redis connected — using Redis-backed token blocklist")
+    except Exception as e:
+        logger.warning(f"Redis unavailable ({e}) — falling back to in-memory token blocklist")
+        _redis_client = None
+        _redis_available = False
+
+
+# In-memory fallback
 _revoked_tokens: dict = {}  # token_hash -> expiry_timestamp
 _revoked_lock = threading.Lock()
+
+_BLOCKLIST_PREFIX = "sf:revoked:"
 
 
 def _token_hash(token: str) -> str:
     """Hash token for storage (don't store raw tokens)."""
-    import hashlib
     return hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -38,19 +69,37 @@ def revoke_token(token: str) -> None:
     except JWTError:
         exp = (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
 
+    token_key = _token_hash(token)
+    ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 60)
+
+    if _redis_available and _redis_client:
+        try:
+            _redis_client.setex(f"{_BLOCKLIST_PREFIX}{token_key}", ttl, "1")
+            return
+        except Exception as e:
+            logger.warning(f"Redis write failed ({e}), falling back to in-memory")
+
     with _revoked_lock:
         _cleanup_expired()
-        _revoked_tokens[_token_hash(token)] = exp
+        _revoked_tokens[token_key] = exp
 
 
 def is_token_revoked(token: str) -> bool:
     """Check if a token has been revoked."""
+    token_key = _token_hash(token)
+
+    if _redis_available and _redis_client:
+        try:
+            return _redis_client.exists(f"{_BLOCKLIST_PREFIX}{token_key}") > 0
+        except Exception as e:
+            logger.warning(f"Redis read failed ({e}), falling back to in-memory")
+
     with _revoked_lock:
-        return _token_hash(token) in _revoked_tokens
+        return token_key in _revoked_tokens
 
 
 def _cleanup_expired():
-    """Remove expired tokens from the blocklist."""
+    """Remove expired tokens from the in-memory blocklist."""
     now = datetime.now(timezone.utc).timestamp()
     expired = [h for h, exp in _revoked_tokens.items() if exp < now]
     for h in expired:

@@ -27,11 +27,11 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 1. **AI Agent Testing Framework**: Test multi-agent systems, detect tool misuse, identify tool hallucinations
 2. **Multi-Turn Adversarial Conversations**: Automated jailbreak attempts across conversation chains
 3. **Synthetic Attack Dataset Generator**: Use LLMs to generate edge case adversarial inputs
-4. **Model Drift Detection** *(stub in v1.0)*: Track safety degradation over time with continuous monitoring
-5. **Adversarial Fine-Tuning Detection** *(stub in v1.0)*: Identify backdoored or poisoned models
-6. **Supply Chain Security Scanner** *(stub in v1.0)*: Scan model dependencies, training data sources, and model lineage
+4. **Model Drift Detection**: Track safety degradation over time with baseline comparisons across 8 safety categories
+5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
+6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **Note**: Capabilities 1-3 have foundation code in place. Capabilities 4-6 are stubbed in v1.0 and will be fully implemented in v1.1. The CLI commands exist but print a placeholder message.
+> **Note**: Capabilities 1-3 have foundation code in place. Capabilities 4-6 have full API endpoints, DB models, CLI integration, and service layers (model adapter calls are simulated in v1.1, real provider integration in v1.2).
 
 ## Quick Start
 
@@ -146,6 +146,8 @@ sentinelforge/
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
 │   ├── docker/           # Dockerfiles (API, Worker, Tools)
+│   ├── terraform/aws/    # AWS ECS/Fargate Terraform modules
+│   ├── helm/             # Kubernetes Helm charts
 │   ├── observability/    # Prometheus + Grafana config
 │   └── security/         # SBOM, signing, scanning scripts
 ├── tests/                # Unit, integration, e2e tests
@@ -253,11 +255,23 @@ make clean
 docker compose up -d
 ```
 
-### AWS (ECS/Fargate) -- Planned for v1.1
-> **Note**: Terraform modules are planned but not yet included. See the [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for current options.
+### AWS (ECS/Fargate)
+```bash
+cd infra/terraform/aws
+terraform init
+terraform plan -var-file=production.tfvars
+terraform apply
+```
+> See `infra/terraform/aws/` for VPC, RDS, ElastiCache, S3, ECR, ALB, and ECS Fargate configuration.
 
-### Kubernetes -- Planned for v1.1
-> **Note**: Helm charts are planned but not yet included. See the [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for current options.
+### Kubernetes (Helm)
+```bash
+helm install sentinelforge infra/helm/sentinelforge \
+  --set secrets.jwtSecretKey="your-256-bit-key" \
+  --set secrets.adminUsername="sf_admin" \
+  --set secrets.adminPassword="YourStr0ng!Pass"
+```
+> See `infra/helm/sentinelforge/values.yaml` for all configurable values.
 
 ## License
 

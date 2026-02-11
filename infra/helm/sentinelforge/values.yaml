@@ -1,0 +1,100 @@
+# SentinelForge Helm Values
+
+# ---------- API Service ----------
+api:
+  replicaCount: 2
+  image:
+    repository: sentinelforge/api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    LOG_LEVEL: info
+    CORS_ORIGINS: "[]"
+    DEBUG: "false"
+
+# ---------- Worker Service ----------
+worker:
+  replicaCount: 2
+  image:
+    repository: sentinelforge/worker
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    WORKER_CONCURRENCY: "5"
+    WORKER_LOG_LEVEL: info
+
+# ---------- PostgreSQL ----------
+postgresql:
+  enabled: true
+  auth:
+    username: sentinelforge_user
+    password: ""  # Set via --set or secrets
+    database: sentinelforge
+  primary:
+    persistence:
+      size: 10Gi
+
+# ---------- Redis ----------
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+
+# ---------- MinIO ----------
+minio:
+  enabled: true
+  rootUser: minioadmin
+  rootPassword: ""  # Set via --set or secrets
+  defaultBuckets: sentinelforge-artifacts
+  persistence:
+    size: 10Gi
+
+# ---------- Ingress ----------
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: sentinelforge.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# ---------- Secrets ----------
+# These MUST be provided at deploy time
+secrets:
+  jwtSecretKey: ""        # Required: 256-bit hex key
+  adminUsername: ""        # Required
+  adminPassword: ""        # Required: 12+ chars, complex
+
+# ---------- Observability ----------
+prometheus:
+  enabled: true
+grafana:
+  enabled: true
+jaeger:
+  enabled: true

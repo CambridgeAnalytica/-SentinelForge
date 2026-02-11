@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     DATABRICKS_TOKEN: str = ""
     HUGGINGFACE_API_TOKEN: str = ""
 
+    # Redis (token blocklist, caching)
+    REDIS_URL: str = ""  # e.g. redis://localhost:6379/0; empty = in-memory fallback
+
     # Observability
     OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://localhost:4318"
     LOG_LEVEL: str = "info"

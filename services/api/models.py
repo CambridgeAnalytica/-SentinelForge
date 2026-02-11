@@ -133,6 +133,61 @@ class ProbeModule(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
 
+class DriftBaseline(Base):
+    __tablename__ = "drift_baselines"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    model_name = Column(String(200), nullable=False, index=True)
+    test_suite = Column(String(100), default="default")
+    scores = Column(JSON, default=dict)  # {category: score} baseline snapshot
+    prompt_count = Column(Integer, default=0)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    results = relationship("DriftResult", back_populates="baseline", cascade="all, delete-orphan")
+
+
+class DriftResult(Base):
+    __tablename__ = "drift_results"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    baseline_id = Column(String, ForeignKey("drift_baselines.id"), nullable=False)
+    model_name = Column(String(200), nullable=False)
+    scores = Column(JSON, default=dict)  # {category: score} current snapshot
+    deltas = Column(JSON, default=dict)  # {category: delta} vs baseline
+    drift_detected = Column(Boolean, default=False)
+    summary = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    baseline = relationship("DriftBaseline", back_populates="results")
+
+
+class SupplyChainScan(Base):
+    __tablename__ = "supply_chain_scans"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    model_source = Column(String(500), nullable=False)  # e.g. "huggingface:gpt2"
+    checks_requested = Column(JSON, default=list)
+    results = Column(JSON, default=dict)
+    risk_level = Column(String(50), default="unknown")
+    issues_found = Column(Integer, default=0)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class BackdoorScan(Base):
+    __tablename__ = "backdoor_scans"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    model_source = Column(String(500), nullable=False)
+    scan_type = Column(String(100), default="behavioral")  # behavioral, pickle, weight_analysis
+    results = Column(JSON, default=dict)
+    indicators_found = Column(Integer, default=0)
+    risk_level = Column(String(50), default="unknown")
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 

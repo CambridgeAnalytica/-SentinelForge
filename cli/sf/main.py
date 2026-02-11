@@ -405,21 +405,79 @@ def agent_test(
 @drift_app.command("baseline")
 def drift_baseline(
     model: str = typer.Argument(..., help="Model name"),
+    test_suite: str = typer.Option("default", "--suite", help="Test suite name"),
     save: str = typer.Option("baseline.json", "--save", help="Output file"),
 ):
     """Create safety baseline for a model."""
     console.print(f"Creating baseline for [cyan]{model}[/cyan]...")
-    console.print("[dim]Drift detection module active. Deploy with full stack for execution.[/dim]")
+    data = _api_request("POST", "/drift/baseline", json={
+        "model": model,
+        "test_suite": test_suite,
+    })
+    console.print(Panel(
+        f"Baseline ID: {data['id']}\n"
+        f"Model: {data['model']}\n"
+        f"Test Suite: {data['test_suite']}\n"
+        f"Prompts: {data['prompt_count']}\n\n"
+        f"[bold]Scores:[/bold]\n" +
+        "\n".join(f"  {k}: {v:.4f}" for k, v in data.get('scores', {}).items()),
+        title="Drift Baseline Created",
+        border_style="green",
+    ))
+    # Save baseline ID for future comparisons
+    Path(save).write_text(json.dumps({"baseline_id": data['id'], "model": model}, indent=2))
+    console.print(f"[dim]Baseline ID saved to {save}[/dim]")
 
 
 @drift_app.command("compare")
 def drift_compare(
     model: str = typer.Argument(..., help="Model name"),
-    baseline: str = typer.Option(..., "--baseline", help="Baseline file"),
+    baseline: str = typer.Option(..., "--baseline", help="Baseline file or ID"),
 ):
     """Compare current model to baseline."""
-    console.print(f"Comparing [cyan]{model}[/cyan] to baseline...")
-    console.print("[dim]Drift detection module active. Deploy with full stack for execution.[/dim]")
+    # Support both file path and raw ID
+    baseline_id = baseline
+    if Path(baseline).exists():
+        baseline_data = json.loads(Path(baseline).read_text())
+        baseline_id = baseline_data.get("baseline_id", baseline)
+
+    console.print(f"Comparing [cyan]{model}[/cyan] to baseline {baseline_id[:12]}...")
+    data = _api_request("POST", "/drift/compare", json={
+        "model": model,
+        "baseline_id": baseline_id,
+    })
+
+    drift_icon = "[red]DRIFT DETECTED[/red]" if data['drift_detected'] else "[green]STABLE[/green]"
+    console.print(Panel(
+        f"Status: {drift_icon}\n"
+        f"Summary: {data['summary']}\n\n"
+        f"[bold]Score Deltas:[/bold]\n" +
+        "\n".join(
+            f"  {k}: {v:+.2%}" + (" [red]!!![/red]" if abs(v) > 0.1 else "")
+            for k, v in data.get('deltas', {}).items()
+        ),
+        title="Drift Comparison",
+        border_style="red" if data['drift_detected'] else "green",
+    ))
+
+
+@drift_app.command("baselines")
+def drift_list_baselines(
+    model: str = typer.Option(None, "--model", help="Filter by model"),
+):
+    """List all drift baselines."""
+    params = {}
+    if model:
+        params["model"] = model
+    data = _api_request("GET", "/drift/baselines")
+    table = Table(title="Drift Baselines", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Model")
+    table.add_column("Suite")
+    table.add_column("Created")
+    for b in data:
+        table.add_row(b['id'][:12] + "...", b['model'], b['test_suite'], b['created_at'][:10])
+    console.print(table)
 
 
 # ─── NEW: Synthetic Data ────────────────────────────────────
@@ -440,10 +498,49 @@ def synthetic_generate(
 @supply_chain_app.command("scan")
 def supply_chain_scan(
     model_source: str = typer.Argument(..., help="Model source (e.g. huggingface:gpt2)"),
+    checks: str = typer.Option(
+        "dependencies,model_card,license,data_provenance",
+        "--checks", help="Comma-separated checks to run",
+    ),
 ):
     """Scan model supply chain for vulnerabilities."""
+    check_list = [c.strip() for c in checks.split(",")]
     console.print(f"Scanning: [cyan]{model_source}[/cyan]...")
-    console.print("[dim]Supply chain scanner active. Deploy with full stack for execution.[/dim]")
+    console.print(f"Checks: {', '.join(check_list)}")
+    data = _api_request("POST", "/supply-chain/scan", json={
+        "model_source": model_source,
+        "checks": check_list,
+    })
+
+    risk_colors = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}
+    risk_style = risk_colors.get(data['risk_level'], "dim")
+    console.print(Panel(
+        f"Scan ID: {data['id']}\n"
+        f"Model: {data['model_source']}\n"
+        f"Risk Level: [{risk_style}]{data['risk_level'].upper()}[/{risk_style}]\n"
+        f"Issues Found: {data['issues_found']}\n\n"
+        f"[bold]Results:[/bold]\n" +
+        "\n".join(
+            f"  {k}: {v.get('status', 'unknown')}" for k, v in data.get('results', {}).items()
+        ),
+        title="Supply Chain Scan",
+        border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
+    ))
+
+
+@supply_chain_app.command("scans")
+def supply_chain_list():
+    """List previous supply chain scans."""
+    data = _api_request("GET", "/supply-chain/scans")
+    table = Table(title="Supply Chain Scans", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Model")
+    table.add_column("Issues")
+    table.add_column("Risk")
+    table.add_column("Created")
+    for s in data:
+        table.add_row(s['id'][:12] + "...", s['model_source'], str(s['issues_found']), s['risk_level'], s['created_at'][:10])
+    console.print(table)
 
 
 def main():

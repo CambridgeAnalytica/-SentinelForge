@@ -53,6 +53,21 @@ services:
     networks:
       - sf-network
 
+  # Redis (token blocklist, caching)
+  redis:
+    image: redis:7-alpine
+    container_name: sf-redis
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sf-network
+
   # Jaeger (OpenTelemetry tracing)
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -115,6 +130,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in .env}
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:?DEFAULT_ADMIN_USERNAME must be set in .env}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:?DEFAULT_ADMIN_PASSWORD must be set in .env}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CORS_ORIGINS: ${CORS_ORIGINS:-[]}
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
