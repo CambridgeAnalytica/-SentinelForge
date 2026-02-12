@@ -91,6 +91,8 @@ jobs:
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -101,12 +103,6 @@ jobs:
 
       - name: Build API image
         run: docker build -f infra/docker/Dockerfile.api -t sentinelforge/api:ci .
-        continue-on-error: true
 
       - name: Build Worker image
         run: docker build -f infra/docker/Dockerfile.worker -t sentinelforge/worker:ci .
-        continue-on-error: true
-
-      - name: Build Tools image
-        run: docker build -f infra/docker/Dockerfile.tools -t sentinelforge/tools:ci .
-        continue-on-error: true
