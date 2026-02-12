@@ -100,6 +100,7 @@ class FindingSchema(BaseModel):
     mitre_technique: Optional[str] = None
     evidence: Dict[str, Any] = {}
     remediation: Optional[str] = None
+    evidence_hash: Optional[str] = None
     created_at: datetime
 
 
@@ -115,6 +116,7 @@ class ReportResponse(BaseModel):
     run_id: str
     format: str
     file_path: Optional[str] = None
+    s3_key: Optional[str] = None
     generated_at: datetime
 
 
@@ -169,16 +171,29 @@ class AgentTestRequest(BaseModel):
     test_scenarios: List[str] = ["tool_misuse", "hallucination", "unauthorized_access"]
 
 
+class AgentTestResponse(BaseModel):
+    id: str
+    endpoint: str
+    status: str
+    risk_level: str = "unknown"
+    findings_count: int = 0
+    results: Dict[str, Any] = {}
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+
 # ---------- Drift ----------
 
 class DriftBaselineRequest(BaseModel):
     model: str
     test_suite: str = "default"
+    provider: Optional[str] = None  # e.g. "openai", "anthropic", "bedrock"
 
 
 class DriftCompareRequest(BaseModel):
     model: str
     baseline_id: str
+    provider: Optional[str] = None
 
 
 # ---------- Synthetic Data ----------
@@ -187,6 +202,25 @@ class SyntheticGenRequest(BaseModel):
     seed_prompts: List[str] = []
     mutations: List[str] = ["encoding", "translation", "synonym"]
     count: int = 100
+
+
+class SyntheticGenResponse(BaseModel):
+    id: str
+    status: str
+    total_generated: int = 0
+    mutations_applied: List[str] = []
+    samples: List[Dict[str, Any]] = []  # first 10 samples
+    created_at: datetime
+
+
+# ---------- Multi-Turn ----------
+
+class MultiTurnResult(BaseModel):
+    strategy: str
+    model: str
+    turn_count: int = 0
+    escalation_detected: bool = False
+    turns: List[Dict[str, Any]] = []  # [{role, content, safety_score}]
 
 
 # ---------- Supply Chain ----------

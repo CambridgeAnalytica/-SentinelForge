@@ -34,6 +34,7 @@ async def create_drift_baseline(
         model_name=request.model,
         test_suite=request.test_suite,
         user_id=user.id,
+        provider=request.provider,
     )
     return {
         "id": baseline.id,
@@ -58,6 +59,7 @@ async def compare_drift(
             model_name=request.model,
             baseline_id=request.baseline_id,
             user_id=user.id,
+            provider=request.provider,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

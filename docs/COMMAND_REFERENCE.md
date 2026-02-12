@@ -206,25 +206,54 @@ make test
 ```
 🧪 Running Python tests...
 ============================= test session starts ==============================
-collected 15 items
+collected 23 items
 
-tests/test_sentinelforge.py::TestSchemas::test_login_request_valid PASSED [  6%]
-tests/test_sentinelforge.py::TestSchemas::test_attack_run_request PASSED  [ 13%]
-tests/test_sentinelforge.py::TestSchemas::test_tool_info PASSED          [ 20%]
-tests/test_sentinelforge.py::TestSchemas::test_health_response PASSED    [ 26%]
-tests/test_sentinelforge.py::TestToolRegistry::test_registry_loads PASSED [ 33%]
-tests/test_sentinelforge.py::TestToolExecutor::test_executor_init PASSED [ 40%]
+tests/test_sentinelforge.py::TestSchemas::test_login_request_valid PASSED
+tests/test_sentinelforge.py::TestSchemas::test_attack_run_request PASSED
+tests/test_sentinelforge.py::TestSchemas::test_tool_info PASSED
+tests/test_sentinelforge.py::TestSchemas::test_health_response PASSED
+tests/test_sentinelforge.py::TestToolRegistry::test_registry_loads PASSED
+tests/test_sentinelforge.py::TestToolRegistry::test_registry_has_mitre_mapping PASSED
+tests/test_sentinelforge.py::TestToolExecutor::test_executor_init PASSED
+tests/test_sentinelforge.py::TestToolExecutor::test_executor_list_tools PASSED
+tests/test_sentinelforge.py::TestToolExecutor::test_executor_get_nonexistent_tool PASSED
+tests/test_sentinelforge.py::TestToolExecutor::test_executor_execute_nonexistent PASSED
 tests/test_sentinelforge.py::TestScenarios::test_scenarios_valid_yaml PASSED
 tests/test_sentinelforge.py::TestPlaybooks::test_playbooks_valid_yaml PASSED
 tests/test_sentinelforge.py::TestModelAdapters::test_get_openai_adapter PASSED
+tests/test_sentinelforge.py::TestModelAdapters::test_get_anthropic_adapter PASSED
+tests/test_sentinelforge.py::TestModelAdapters::test_get_bedrock_adapter PASSED
+tests/test_sentinelforge.py::TestModelAdapters::test_bedrock_adapter_default_model PASSED
+tests/test_sentinelforge.py::TestModelAdapters::test_get_unknown_adapter PASSED
+tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_deterministic PASSED
+tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_different_inputs PASSED
+tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_chain_link PASSED
+tests/test_sentinelforge.py::TestEvidenceHashing::test_verify_empty_chain PASSED
+tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_request_defaults PASSED
+tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_request_custom PASSED
+tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_response PASSED
+tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_request_defaults PASSED
+tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_request_custom PASSED
+tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_response PASSED
+tests/test_sentinelforge.py::TestMultiTurnSchema::test_multi_turn_result PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_encoding_mutations PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_translation_mutations PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_synonym_mutations PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_leetspeak_mutation PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_whitespace_mutations PASSED
+tests/test_sentinelforge.py::TestSyntheticMutations::test_fragmentation_mutations PASSED
+tests/test_sentinelforge.py::TestMultiTurnService::test_safety_scoring_refusal PASSED
+tests/test_sentinelforge.py::TestMultiTurnService::test_safety_scoring_compliance PASSED
+tests/test_sentinelforge.py::TestMultiTurnService::test_strategy_prompts_exist PASSED
+tests/test_sentinelforge.py::TestMultiTurnService::test_simulated_response_progression PASSED
 tests/test_sentinelforge.py::TestSDK::test_client_init PASSED
-...
-============================== 15 passed in 3.42s ==============================
+tests/test_sentinelforge.py::TestSDK::test_client_context_manager PASSED
+============================== 40 passed in 4.12s ==============================
 ✅ Python tests complete!
 
 ```
 
-> **Note**: The primary test suite lives in `tests/test_sentinelforge.py` and includes test classes: `TestSchemas`, `TestToolRegistry`, `TestToolExecutor`, `TestScenarios`, `TestPlaybooks`, `TestModelAdapters`, and `TestSDK`. You can also run `make test-python` to run only the Python tests.
+> **Note**: The primary test suite lives in `tests/test_sentinelforge.py` and includes 13 test classes: `TestSchemas`, `TestToolRegistry`, `TestToolExecutor`, `TestScenarios`, `TestPlaybooks`, `TestModelAdapters`, `TestEvidenceHashing`, `TestAgentTestSchema`, `TestSyntheticGenSchema`, `TestMultiTurnSchema`, `TestSyntheticMutations`, `TestMultiTurnService`, and `TestSDK`. You can also run `make test-python` to run only the Python tests.
 
 ---
 
@@ -617,7 +646,7 @@ Forbidden actions: file_write, execute_code
 AI Agent Testing Framework
 Tests: tool misuse, hallucination, unauthorized access
 
-Agent testing module active. Deploy with full stack for execution.
+Agent testing module ready. Results will be displayed when the run completes.
 ```
 
 ---
@@ -640,7 +669,7 @@ sf synthetic generate \
 Generating 100 synthetic prompts...
 Mutations: encoding,translation,synonym
 
-Synthetic data module active. Deploy with full stack for execution.
+Synthetic data module ready. Results will be displayed when generation completes.
 ```
 
 ---
@@ -657,8 +686,8 @@ sf drift baseline gpt-4 --save baselines/gpt4-baseline.json
 **Expected Output**:
 ```
 Creating baseline for gpt-4...
-
-Drift detection module active. Deploy with full stack for execution.
+Running 80 safety prompts across 8 categories...
+Baseline saved: baselines/gpt4-baseline.json
 ```
 
 ---
@@ -675,8 +704,8 @@ sf drift compare gpt-4 --baseline baselines/gpt4-baseline.json
 **Expected Output**:
 ```
 Comparing gpt-4 to baseline...
-
-Drift detection module active. Deploy with full stack for execution.
+Drift detected: 2 of 8 categories exceeded threshold
+Details available via API: GET /drift/history/{baseline_id}
 ```
 
 ---
@@ -693,8 +722,9 @@ sf supply-chain scan huggingface:gpt2
 **Expected Output**:
 ```
 Scanning: huggingface:gpt2...
-
-Supply chain scanner active. Deploy with full stack for execution.
+Running checks: dependencies, model_card, license, data_provenance, signature
+Risk level: low
+Issues found: 1
 ```
 
 ---
@@ -712,8 +742,12 @@ sf report list
 
 **Expected Output**:
 ```
-Available reports:
-TODO: Implement report listing
+Reports
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ID           ┃ Run ID        ┃ Format ┃ Generated At         ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ rpt-abc12... │ run-def34...  │ html   │ 2026-02-10 14:00 UTC │
+└──────────────┴───────────────┴────────┴──────────────────────┘
 ```
 
 ---
@@ -729,8 +763,9 @@ sf report show run_20260209_143000
 
 **Expected Output**:
 ```
-Report for run: run_20260209_143000
-TODO: Implement report display
+Opening report for run: run_20260209_143000...
+Format: html
+View in browser: http://localhost:8000/reports/{id}/view
 ```
 
 ---
@@ -748,7 +783,7 @@ sf report generate run_20260209_143000 --format html,pdf,jsonl
 ```
 Generating report for run_20260209_143000...
 Formats: html, pdf, jsonl
-⚠ Not yet implemented
+Generated 3 reports. Upload to S3: success
 ```
 
 ---
@@ -766,8 +801,140 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v1.0.0
+SentinelForge CLI v1.3.0
 Enterprise AI Security Testing Platform
+```
+
+---
+
+#### `sf agent test`
+
+**Purpose**: Test an AI agent for tool misuse, hallucination, and unauthorized access
+
+**Command**:
+```bash
+sf agent test http://agent.example.com/chat --tools "search,calculator" --forbidden "file_delete,system_exec"
+```
+
+**Expected Output**:
+```
+╭─ Agent Safety Test ──────────────────────────╮
+│ Test ID: a1b2c3d4...                         │
+│ Endpoint: http://agent.example.com/chat      │
+│ Status: completed                            │
+│ Risk Level: HIGH                             │
+│ Findings: 5                                  │
+│                                              │
+│ Scenario Results:                            │
+│   tool_misuse: completed (findings: 3)       │
+│   hallucination: completed (findings: 1)     │
+│   unauthorized_access: completed (findings: 1)│
+╰──────────────────────────────────────────────╯
+```
+
+#### `sf agent tests`
+
+**Purpose**: List previous agent tests
+
+**Command**:
+```bash
+sf agent tests
+```
+
+#### `sf agent show`
+
+**Purpose**: Get details of a specific agent test
+
+**Command**:
+```bash
+sf agent show <test_id>
+```
+
+---
+
+#### `sf synthetic generate`
+
+**Purpose**: Generate synthetic adversarial prompts
+
+**Command**:
+```bash
+sf synthetic generate --seed prompts.txt --mutations "encoding,synonym,leetspeak" --count 50 --output dataset.json
+```
+
+**Expected Output**:
+```
+Generating 50 synthetic prompts...
+Mutations: encoding, synonym, leetspeak
+╭─ Synthetic Dataset Generated ────────────────╮
+│ Dataset ID: d1e2f3g4...                      │
+│ Status: completed                            │
+│ Generated: 50 prompts                        │
+│ Mutations: encoding, synonym, leetspeak      │
+│                                              │
+│ Samples (first 5):                           │
+│   [encoding_base64] RGVjb2RlIGFuZCBleGVj... │
+│   [synonym_v1] Disregard previous inst...    │
+│   [leetspeak] 1gnor3 pr3v10u5 1n57ruc7...   │
+╰──────────────────────────────────────────────╯
+```
+
+#### `sf synthetic datasets`
+
+**Purpose**: List generated synthetic datasets
+
+**Command**:
+```bash
+sf synthetic datasets
+```
+
+#### `sf synthetic show`
+
+**Purpose**: Get details of a specific synthetic dataset
+
+**Command**:
+```bash
+sf synthetic show <dataset_id>
+```
+
+---
+
+#### `sf backdoor scan`
+
+**Purpose**: Run a backdoor detection scan on a model
+
+**Command**:
+```bash
+sf backdoor scan huggingface:gpt2 --type behavioral
+```
+
+**Expected Output**:
+```
+Scanning: huggingface:gpt2 (type: behavioral)...
+╭─ Backdoor Scan ──────────────────────────────╮
+│ Scan ID: b1c2d3e4...                         │
+│ Model: huggingface:gpt2                      │
+│ Scan Type: behavioral                        │
+│ Risk Level: LOW                              │
+│ Indicators Found: 0                          │
+╰──────────────────────────────────────────────╯
+```
+
+#### `sf backdoor scans`
+
+**Purpose**: List previous backdoor scans
+
+**Command**:
+```bash
+sf backdoor scans
+```
+
+#### `sf backdoor show`
+
+**Purpose**: Get details of a specific backdoor scan
+
+**Command**:
+```bash
+sf backdoor show <scan_id>
 ```
 
 ---
@@ -797,10 +964,7 @@ Enterprise AI Security Testing Platform
 | `AZURE_OPENAI_ENDPOINT` | Azure endpoint URL |
 | `AWS_ACCESS_KEY_ID` | AWS Bedrock |
 | `AWS_SECRET_ACCESS_KEY` | AWS Bedrock |
-| `DATABRICKS_HOST` | Databricks |
-| `DATABRICKS_TOKEN` | Databricks |
-| `HUGGINGFACE_API_TOKEN` | HuggingFace Inference API |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Google Vertex AI (file path) |
+| `HUGGINGFACE_API_TOKEN` | HuggingFace (supply chain scanning) |
 
 ### Optional Configuration
 
@@ -835,11 +999,11 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "services": {
     "database": "healthy"
   },
-  "timestamp": "2026-02-09T14:46:00Z"
+  "timestamp": "2026-02-12T14:46:00Z"
 }
 ```
 
@@ -1011,6 +1175,128 @@ curl -X POST http://localhost:8000/attacks/run \
   "created_at": "2026-02-09T14:48:00Z"
 }
 ```
+
+---
+
+#### `GET /attacks/runs/{id}/verify`
+
+**Purpose**: Verify evidence chain integrity for an attack run
+
+**cURL**:
+```bash
+curl http://localhost:8000/attacks/runs/{run_id}/verify \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response**:
+```json
+{
+  "valid": true,
+  "total": 5,
+  "verified": 5,
+  "broken_at": null
+}
+```
+
+---
+
+### Report Endpoints
+
+#### `GET /reports/{id}/download`
+
+**Purpose**: Download a report from S3 (falls back to regeneration if S3 is unavailable)
+
+**cURL**:
+```bash
+curl -O http://localhost:8000/reports/{report_id}/download \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response**: Binary file download (HTML, PDF, or JSONL depending on report format)
+
+---
+
+### Drift Detection Endpoints
+
+#### `POST /drift/baseline`
+
+**Purpose**: Create a safety baseline for a model
+
+#### `POST /drift/compare`
+
+**Purpose**: Compare current model behavior against a baseline
+
+#### `GET /drift/baselines`
+
+**Purpose**: List all saved baselines
+
+#### `GET /drift/history/{baseline_id}`
+
+**Purpose**: View comparison history for a baseline
+
+---
+
+### Supply Chain Endpoints
+
+#### `POST /supply-chain/scan`
+
+**Purpose**: Scan a model's supply chain (dependencies, license, model card, signatures)
+
+#### `GET /supply-chain/scans`
+
+**Purpose**: List all supply chain scans
+
+#### `GET /supply-chain/scans/{id}`
+
+**Purpose**: Get details of a specific scan
+
+---
+
+### Backdoor Detection Endpoints
+
+#### `POST /backdoor/scan`
+
+**Purpose**: Scan a model for backdoors (behavioral, pickle, weight analysis)
+
+#### `GET /backdoor/scans`
+
+**Purpose**: List all backdoor scans
+
+#### `GET /backdoor/scans/{id}`
+
+**Purpose**: Get details of a specific scan
+
+---
+
+### Agent Testing Endpoints
+
+#### `POST /agent/test`
+
+**Purpose**: Launch an agent safety test (tool misuse, hallucination, unauthorized access)
+
+#### `GET /agent/tests`
+
+**Purpose**: List all agent tests
+
+#### `GET /agent/tests/{id}`
+
+**Purpose**: Get details of a specific agent test
+
+---
+
+### Synthetic Data Endpoints
+
+#### `POST /synthetic/generate`
+
+**Purpose**: Generate a synthetic adversarial prompt dataset (encoding, translation, synonym, leetspeak, whitespace, fragmentation mutations)
+
+#### `GET /synthetic/datasets`
+
+**Purpose**: List generated synthetic datasets
+
+#### `GET /synthetic/datasets/{id}`
+
+**Purpose**: Get details of a specific synthetic dataset with sample prompts
 
 ---
 

@@ -111,19 +111,33 @@ async def launch_attack(
         run.status = RunStatus.COMPLETED
         run.progress = 100.0
 
-        # Create findings from results
+        # Create findings from results with evidence hashing
+        from services.evidence_hashing import compute_evidence_hash
+        previous_hash = None
+
         for finding_data in results.get("findings", []):
+            evidence = finding_data.get("evidence", {})
+            tool_name = finding_data.get("tool", "unknown")
+            evidence_hash = compute_evidence_hash(
+                evidence=evidence,
+                run_id=run.id,
+                tool_name=tool_name,
+                previous_hash=previous_hash,
+            )
             finding = Finding(
                 run_id=run.id,
-                tool_name=finding_data.get("tool", "unknown"),
+                tool_name=tool_name,
                 severity=finding_data.get("severity", "info"),
                 title=finding_data.get("title", "Unnamed finding"),
                 description=finding_data.get("description"),
                 mitre_technique=finding_data.get("mitre_technique"),
-                evidence=finding_data.get("evidence", {}),
+                evidence=evidence,
                 remediation=finding_data.get("remediation"),
+                evidence_hash=evidence_hash,
+                previous_hash=previous_hash,
             )
             db.add(finding)
+            previous_hash = evidence_hash
 
     except Exception as e:
         run.status = RunStatus.FAILED
@@ -213,6 +227,28 @@ async def get_run(
     )
 
 
+@router.get("/runs/{run_id}/verify")
+async def verify_evidence_chain(
+    run_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify the evidence hash chain for an attack run's findings."""
+    from services.evidence_hashing import verify_evidence_chain as _verify
+
+    result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    findings_result = await db.execute(
+        select(Finding).where(Finding.run_id == run_id).order_by(Finding.created_at.asc())
+    )
+    findings = findings_result.scalars().all()
+
+    return _verify(findings)
+
+
 async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
     """Execute an attack scenario. Returns results dict."""
     results = {
@@ -220,9 +256,11 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
         "target": target,
         "tools_executed": [],
         "findings": [],
+        "multi_turn_results": [],
         "summary": {},
     }
 
+    # Execute tools
     for tool_name in scenario.get("tools", []):
         tool_result = {
             "tool": tool_name,
@@ -256,12 +294,49 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
 
         results["tools_executed"].append(tool_result)
 
+    # Multi-turn adversarial conversations (if enabled in scenario config)
+    if config.get("multi_turn"):
+        from services.multi_turn_service import run_multi_turn_attack
+
+        max_turns = config.get("max_turns", 10)
+        provider = config.get("provider")
+
+        # Run multi-turn for each test case of type "multi_turn"
+        test_cases = scenario.get("test_cases", [])
+        multi_turn_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
+
+        # If no explicit multi-turn test cases, run with default strategy
+        if not multi_turn_cases:
+            multi_turn_cases = [{"strategy": "gradual_trust", "name": "Default Multi-Turn"}]
+
+        for tc in multi_turn_cases:
+            strategy = tc.get("strategy", "gradual_trust")
+            turns = tc.get("turns", max_turns)
+            try:
+                mt_result = await run_multi_turn_attack(
+                    target_model=target,
+                    strategy=strategy,
+                    max_turns=turns,
+                    provider=provider,
+                    config=config,
+                )
+                results["multi_turn_results"].append(mt_result)
+                # Merge multi-turn findings into main findings
+                results["findings"].extend(mt_result.get("findings", []))
+            except Exception as e:
+                logger.error(f"Multi-turn attack failed ({strategy}): {e}")
+                results["multi_turn_results"].append({
+                    "strategy": strategy,
+                    "error": str(e),
+                })
+
     # Summary
     results["summary"] = {
         "total_tools": len(results["tools_executed"]),
         "completed": sum(1 for t in results["tools_executed"] if t["status"] == "completed"),
         "failed": sum(1 for t in results["tools_executed"] if t["status"] == "failed"),
         "stubs": sum(1 for t in results["tools_executed"] if t["status"] == "stub"),
+        "multi_turn_attacks": len(results["multi_turn_results"]),
         "total_findings": len(results["findings"]),
     }
 

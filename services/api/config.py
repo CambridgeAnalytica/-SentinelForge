@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: str = ""
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
     DATABRICKS_HOST: str = ""
     DATABRICKS_TOKEN: str = ""
     HUGGINGFACE_API_TOKEN: str = ""

@@ -26,6 +26,7 @@ agent_app = typer.Typer(help="AI Agent testing (NEW)")
 drift_app = typer.Typer(help="Model drift detection (NEW)")
 synthetic_app = typer.Typer(help="Synthetic data generation (NEW)")
 supply_chain_app = typer.Typer(help="Supply chain scanning (NEW)")
+backdoor_app = typer.Typer(help="Backdoor detection scanning (NEW)")
 playbook_app = typer.Typer(help="IR playbook management")
 
 app.add_typer(auth_app, name="auth")
@@ -37,6 +38,7 @@ app.add_typer(agent_app, name="agent")
 app.add_typer(drift_app, name="drift")
 app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(supply_chain_app, name="supply-chain")
+app.add_typer(backdoor_app, name="backdoor")
 app.add_typer(playbook_app, name="playbook")
 
 
@@ -100,9 +102,9 @@ def _api_request(method: str, path: str, **kwargs) -> dict:
 def version():
     """Show SentinelForge version."""
     console.print(Panel(
-        "[bold cyan]SentinelForge CLI v1.0.0[/bold cyan]\n"
+        "[bold cyan]SentinelForge CLI v1.3.0[/bold cyan]\n"
         "Enterprise AI Security Testing Platform\n"
-        "[dim]https://github.com/sentinelforge[/dim]",
+        "[dim]https://github.com/CambridgeAnalytica/-SentinelForge[/dim]",
         title="🛡️ SentinelForge",
         border_style="cyan",
     ))
@@ -386,19 +388,89 @@ def agent_test(
     endpoint: str = typer.Argument(..., help="Agent API endpoint"),
     tools_list: str = typer.Option("", "--tools", help="Comma-separated allowed tools"),
     forbidden: str = typer.Option("", "--forbidden", help="Comma-separated forbidden actions"),
+    scenarios: str = typer.Option(
+        "tool_misuse,hallucination,unauthorized_access",
+        "--scenarios", help="Comma-separated test scenarios",
+    ),
 ):
     """Test an AI agent for tool misuse and safety."""
+    allowed = [t.strip() for t in tools_list.split(",") if t.strip()]
+    forbidden_list = [f.strip() for f in forbidden.split(",") if f.strip()]
+    scenario_list = [s.strip() for s in scenarios.split(",")]
+
+    console.print(f"Testing agent at [cyan]{endpoint}[/cyan]...")
+    data = _api_request("POST", "/agent/test", json={
+        "endpoint": endpoint,
+        "allowed_tools": allowed,
+        "forbidden_actions": forbidden_list,
+        "test_scenarios": scenario_list,
+    })
+
+    risk_colors = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}
+    risk_style = risk_colors.get(data.get('risk_level', 'unknown'), "dim")
     console.print(Panel(
-        f"Testing: [cyan]{endpoint}[/cyan]\n"
-        f"Allowed tools: {tools_list or 'all'}\n"
-        f"Forbidden: {forbidden or 'none'}\n\n"
-        "[yellow]🔬 AI Agent Testing Framework[/yellow]\n"
-        "Tests: tool misuse, hallucination, unauthorized access",
-        title="🤖 Agent Tester",
-        border_style="cyan",
+        f"Test ID: {data['id']}\n"
+        f"Endpoint: {data['endpoint']}\n"
+        f"Status: {data['status']}\n"
+        f"Risk Level: [{risk_style}]{data.get('risk_level', 'unknown').upper()}[/{risk_style}]\n"
+        f"Findings: {data.get('findings_count', 0)}\n\n"
+        f"[bold]Scenario Results:[/bold]\n" +
+        "\n".join(
+            f"  {k}: {v.get('status', 'unknown')} "
+            f"(findings: {len(v.get('findings', []))})"
+            for k, v in data.get('results', {}).items()
+            if isinstance(v, dict) and 'status' in v
+        ),
+        title="Agent Safety Test",
+        border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
     ))
-    # Stub - will call API when module is fully implemented
-    console.print("[dim]Agent testing module active. Deploy with full stack for execution.[/dim]")
+
+
+@agent_app.command("tests")
+def agent_list_tests(
+    endpoint: str = typer.Option(None, "--endpoint", help="Filter by endpoint"),
+):
+    """List previous agent tests."""
+    params = {}
+    if endpoint:
+        params["endpoint"] = endpoint
+    data = _api_request("GET", "/agent/tests", params=params)
+    table = Table(title="Agent Tests", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Endpoint")
+    table.add_column("Status")
+    table.add_column("Risk")
+    table.add_column("Findings")
+    table.add_column("Created")
+    for t in data:
+        table.add_row(
+            t['id'][:12] + "...",
+            t['endpoint'][:30],
+            t['status'],
+            t['risk_level'],
+            str(t['findings_count']),
+            t['created_at'][:10],
+        )
+    console.print(table)
+
+
+@agent_app.command("show")
+def agent_show(test_id: str = typer.Argument(..., help="Test ID")):
+    """Get details of a specific agent test."""
+    data = _api_request("GET", f"/agent/tests/{test_id}")
+    risk_colors = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}
+    risk_style = risk_colors.get(data.get('risk_level', 'unknown'), "dim")
+    console.print(Panel(
+        f"Test ID: {data['id']}\n"
+        f"Endpoint: {data['endpoint']}\n"
+        f"Status: {data['status']}\n"
+        f"Risk Level: [{risk_style}]{data.get('risk_level', 'unknown').upper()}[/{risk_style}]\n"
+        f"Findings: {data.get('findings_count', 0)}\n\n"
+        f"[bold]Results:[/bold]\n" +
+        json.dumps(data.get('results', {}), indent=2, default=str)[:500],
+        title=f"Agent Test: {data['id'][:12]}...",
+        border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
+    ))
 
 
 # ─── NEW: Drift Detection ───────────────────────────────────
@@ -483,15 +555,85 @@ def drift_list_baselines(
 # ─── NEW: Synthetic Data ────────────────────────────────────
 @synthetic_app.command("generate")
 def synthetic_generate(
-    seed: str = typer.Option(None, "--seed", help="Seed prompts file"),
+    seed: str = typer.Option(None, "--seed", help="Seed prompts file (one prompt per line)"),
     mutations: str = typer.Option("encoding,translation,synonym", help="Mutation types"),
     count: int = typer.Option(100, "--count", help="Number of prompts to generate"),
     output: str = typer.Option("synthetic_dataset.json", "--output", "-o"),
 ):
     """Generate synthetic adversarial prompts."""
+    seed_prompts = []
+    if seed and Path(seed).exists():
+        seed_prompts = [line.strip() for line in Path(seed).read_text().splitlines() if line.strip()]
+
+    mutation_list = [m.strip() for m in mutations.split(",")]
     console.print(f"Generating {count} synthetic prompts...")
-    console.print(f"Mutations: {mutations}")
-    console.print("[dim]Synthetic data module active. Deploy with full stack for execution.[/dim]")
+    console.print(f"Mutations: {', '.join(mutation_list)}")
+
+    data = _api_request("POST", "/synthetic/generate", json={
+        "seed_prompts": seed_prompts,
+        "mutations": mutation_list,
+        "count": count,
+    })
+
+    console.print(Panel(
+        f"Dataset ID: {data['id']}\n"
+        f"Status: {data['status']}\n"
+        f"Generated: {data['total_generated']} prompts\n"
+        f"Mutations: {', '.join(data.get('mutations_applied', []))}\n\n"
+        f"[bold]Samples (first {len(data.get('samples', []))}):[/bold]\n" +
+        "\n".join(
+            f"  [{s.get('mutation_type', '?')}] {s.get('mutated_prompt', '')[:80]}..."
+            for s in data.get('samples', [])[:5]
+        ),
+        title="Synthetic Dataset Generated",
+        border_style="magenta",
+    ))
+
+    # Save full response to output file
+    Path(output).write_text(json.dumps(data, indent=2, default=str))
+    console.print(f"[dim]Dataset saved to {output}[/dim]")
+
+
+@synthetic_app.command("datasets")
+def synthetic_list():
+    """List generated synthetic datasets."""
+    data = _api_request("GET", "/synthetic/datasets")
+    table = Table(title="Synthetic Datasets", border_style="magenta")
+    table.add_column("ID")
+    table.add_column("Seeds")
+    table.add_column("Generated")
+    table.add_column("Mutations")
+    table.add_column("Status")
+    table.add_column("Created")
+    for d in data:
+        table.add_row(
+            d['id'][:12] + "...",
+            str(d['seed_count']),
+            str(d['total_generated']),
+            ", ".join(d.get('mutations_applied', [])),
+            d['status'],
+            d['created_at'][:10],
+        )
+    console.print(table)
+
+
+@synthetic_app.command("show")
+def synthetic_show(dataset_id: str = typer.Argument(..., help="Dataset ID")):
+    """Get details of a specific synthetic dataset."""
+    data = _api_request("GET", f"/synthetic/datasets/{dataset_id}")
+    console.print(Panel(
+        f"Dataset ID: {data['id']}\n"
+        f"Status: {data['status']}\n"
+        f"Generated: {data['total_generated']} prompts\n"
+        f"Mutations: {', '.join(data.get('mutations_applied', []))}\n\n"
+        f"[bold]Samples:[/bold]\n" +
+        "\n".join(
+            f"  [{s.get('mutation_type', '?')}] {s.get('mutated_prompt', '')[:100]}"
+            for s in data.get('samples', [])
+        ),
+        title=f"Synthetic Dataset: {data['id'][:12]}...",
+        border_style="magenta",
+    ))
 
 
 # ─── NEW: Supply Chain ──────────────────────────────────────
@@ -541,6 +683,84 @@ def supply_chain_list():
     for s in data:
         table.add_row(s['id'][:12] + "...", s['model_source'], str(s['issues_found']), s['risk_level'], s['created_at'][:10])
     console.print(table)
+
+
+# ─── NEW: Backdoor Detection ──────────────────────────────
+@backdoor_app.command("scan")
+def backdoor_scan(
+    model_source: str = typer.Argument(..., help="Model source (e.g. huggingface:gpt2)"),
+    scan_type: str = typer.Option("behavioral", "--type", help="Scan type: behavioral, pickle, weight"),
+):
+    """Run a backdoor detection scan on a model."""
+    console.print(f"Scanning: [cyan]{model_source}[/cyan] (type: {scan_type})...")
+    data = _api_request("POST", "/backdoor/scan", params={
+        "model_source": model_source,
+        "scan_type": scan_type,
+    })
+
+    risk_colors = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}
+    risk_style = risk_colors.get(data['risk_level'], "dim")
+    console.print(Panel(
+        f"Scan ID: {data['id']}\n"
+        f"Model: {data['model_source']}\n"
+        f"Scan Type: {data['scan_type']}\n"
+        f"Risk Level: [{risk_style}]{data['risk_level'].upper()}[/{risk_style}]\n"
+        f"Indicators Found: {data['indicators_found']}\n\n"
+        f"[bold]Results:[/bold]\n" +
+        "\n".join(
+            f"  {k}: {v}" for k, v in data.get('results', {}).items()
+            if isinstance(v, str)
+        ),
+        title="Backdoor Scan",
+        border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
+    ))
+
+
+@backdoor_app.command("scans")
+def backdoor_list(
+    model: str = typer.Option(None, "--model", help="Filter by model source"),
+):
+    """List previous backdoor scans."""
+    params = {}
+    if model:
+        params["model"] = model
+    data = _api_request("GET", "/backdoor/scans", params=params)
+    table = Table(title="Backdoor Scans", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Model")
+    table.add_column("Type")
+    table.add_column("Indicators")
+    table.add_column("Risk")
+    table.add_column("Created")
+    for s in data:
+        table.add_row(
+            s['id'][:12] + "...",
+            s['model_source'],
+            s['scan_type'],
+            str(s['indicators_found']),
+            s['risk_level'],
+            s['created_at'][:10],
+        )
+    console.print(table)
+
+
+@backdoor_app.command("show")
+def backdoor_show(scan_id: str = typer.Argument(..., help="Scan ID")):
+    """Get details of a specific backdoor scan."""
+    data = _api_request("GET", f"/backdoor/scans/{scan_id}")
+    risk_colors = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}
+    risk_style = risk_colors.get(data['risk_level'], "dim")
+    console.print(Panel(
+        f"Scan ID: {data['id']}\n"
+        f"Model: {data['model_source']}\n"
+        f"Scan Type: {data['scan_type']}\n"
+        f"Risk Level: [{risk_style}]{data['risk_level'].upper()}[/{risk_style}]\n"
+        f"Indicators Found: {data['indicators_found']}\n\n"
+        f"[bold]Results:[/bold]\n" +
+        json.dumps(data.get('results', {}), indent=2),
+        title=f"Backdoor Scan: {data['id'][:12]}...",
+        border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
+    ))
 
 
 def main():

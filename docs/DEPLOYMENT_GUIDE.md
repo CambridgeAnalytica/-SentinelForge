@@ -39,7 +39,6 @@ You will need at least **one** of the following:
 - **Anthropic API Key** - For testing Claude models
 - **Azure OpenAI** - For Azure-hosted models
 - **AWS Bedrock** - For AWS-hosted models
-- **Databricks** - For Databricks models
 
 ### System Requirements
 
@@ -61,7 +60,7 @@ You will need at least **one** of the following:
 ### Step 1: Clone Repository
 
 ```bash
-git clone <repository-url> SentinelForge
+git clone https://github.com/CambridgeAnalytica/-SentinelForge.git SentinelForge
 cd SentinelForge
 ```
 
@@ -167,8 +166,6 @@ AZURE_OPENAI_API_KEY=...
 ```env
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
-DATABRICKS_HOST=...
-DATABRICKS_TOKEN=...
 ```
 
 > **SECURITY**: Never commit `.env` to version control!
@@ -223,7 +220,7 @@ cd ..
 
 **Expected Output**:
 ```
-Successfully installed sentinelforge-cli-1.0.0
+Successfully installed sentinelforge-cli-1.3.0
 ```
 
 **Verify CLI**:
@@ -233,7 +230,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v1.0.0
+SentinelForge CLI v1.3.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -265,12 +262,11 @@ Invoke-RestMethod http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "timestamp": "2026-02-09T14:46:00Z",
-  "version": "1.0.0",
-  "database": "connected",
-  "storage": "connected",
-  "cpu_percent": 5.2,
-  "memory_percent": 45.8
+  "version": "1.3.0",
+  "services": {
+    "database": "healthy"
+  },
+  "timestamp": "2026-02-10T12:00:00Z"
 }
 ```
 

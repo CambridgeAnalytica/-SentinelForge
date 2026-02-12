@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SentinelForge Report - {{ run_id[:12] }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { color: #7dd3fc; margin: 1.5rem 0 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 1rem; }
+
+        /* Metadata panel */
+        .meta { background: #1e293b; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .meta-label { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+        .meta-value { font-size: 1.1rem; font-weight: 600; margin-top: 0.25rem; }
+
+        /* Summary stats */
+        .summary-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin: 1rem 0; }
+        .stat { background: #1e293b; border-radius: 8px; padding: 1rem; text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+        .stat-label { font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem; }
+        .stat-critical .stat-value { color: #dc2626; }
+        .stat-high .stat-value { color: #ea580c; }
+        .stat-medium .stat-value { color: #d97706; }
+        .stat-low .stat-value { color: #2563eb; }
+
+        /* Evidence chain */
+        .chain-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; }
+        .chain-valid { background: #166534; color: #86efac; }
+        .chain-broken { background: #991b1b; color: #fca5a5; }
+        .chain-none { background: #334155; color: #94a3b8; }
+
+        /* Findings */
+        .finding { background: #1e293b; border-radius: 8px; padding: 1rem 1.5rem; margin: 0.75rem 0; border-left: 4px solid #334155; }
+        .finding-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .severity { padding: 0.15rem 0.5rem; border-radius: 4px; color: white; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .sev-critical { background: #dc2626; }
+        .sev-high { background: #ea580c; }
+        .sev-medium { background: #d97706; }
+        .sev-low { background: #2563eb; }
+        .sev-info { background: #6b7280; }
+        .tool-badge { background: #334155; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+        .finding p { margin: 0.25rem 0; line-height: 1.5; }
+        .finding-detail { color: #94a3b8; font-size: 0.9rem; }
+        .finding-detail strong { color: #cbd5e1; }
+        .hash-mono { font-family: 'Consolas', 'Monaco', monospace; font-size: 0.75rem; color: #64748b; }
+
+        /* Footer */
+        .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155; color: #64748b; font-size: 0.85rem; text-align: center; }
+
+        /* Print / PDF overrides */
+        @media print {
+            body { background: white; color: #1e293b; padding: 1rem; }
+            .meta, .finding, .stat { background: #f8fafc; border: 1px solid #e2e8f0; }
+            h1 { color: #0284c7; }
+            h2 { color: #0369a1; border-color: #e2e8f0; }
+            .meta-label, .subtitle, .finding-detail, .footer { color: #64748b; }
+            .meta-value { color: #1e293b; }
+            .stat-value { color: #0284c7; }
+            .stat-critical .stat-value { color: #dc2626; }
+            .stat-high .stat-value { color: #ea580c; }
+            .stat-medium .stat-value { color: #d97706; }
+            .stat-low .stat-value { color: #2563eb; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SentinelForge Security Report</h1>
+        <p class="subtitle">Enterprise AI Security Testing Results</p>
+
+        {# ── Run Metadata ── #}
+        <div class="meta">
+            <div class="meta-grid">
+                <div>
+                    <div class="meta-label">Run ID</div>
+                    <div class="meta-value">{{ run_id[:12] }}&hellip;</div>
+                </div>
+                <div>
+                    <div class="meta-label">Scenario</div>
+                    <div class="meta-value">{{ scenario }}</div>
+                </div>
+                <div>
+                    <div class="meta-label">Target Model</div>
+                    <div class="meta-value">{{ target }}</div>
+                </div>
+                <div>
+                    <div class="meta-label">Status</div>
+                    <div class="meta-value">{{ status | upper }}</div>
+                </div>
+                {% if started_at %}
+                <div>
+                    <div class="meta-label">Started</div>
+                    <div class="meta-value">{{ started_at }}</div>
+                </div>
+                {% endif %}
+                {% if completed_at %}
+                <div>
+                    <div class="meta-label">Completed</div>
+                    <div class="meta-value">{{ completed_at }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Summary Statistics ── #}
+        <h2>Summary</h2>
+        <div class="summary-box">
+            <div class="stat">
+                <div class="stat-value">{{ total_findings }}</div>
+                <div class="stat-label">Total Findings</div>
+            </div>
+            <div class="stat stat-critical">
+                <div class="stat-value">{{ severity_breakdown.get('critical', 0) }}</div>
+                <div class="stat-label">Critical</div>
+            </div>
+            <div class="stat stat-high">
+                <div class="stat-value">{{ severity_breakdown.get('high', 0) }}</div>
+                <div class="stat-label">High</div>
+            </div>
+            <div class="stat stat-medium">
+                <div class="stat-value">{{ severity_breakdown.get('medium', 0) }}</div>
+                <div class="stat-label">Medium</div>
+            </div>
+            <div class="stat stat-low">
+                <div class="stat-value">{{ severity_breakdown.get('low', 0) }}</div>
+                <div class="stat-label">Low</div>
+            </div>
+        </div>
+
+        {# ── Evidence Chain Status ── #}
+        {% if evidence_chain is defined and evidence_chain %}
+        <h2>Evidence Chain</h2>
+        {% if evidence_chain.valid %}
+        <span class="chain-badge chain-valid">Chain Verified ({{ evidence_chain.verified }}/{{ evidence_chain.total }} findings)</span>
+        {% elif evidence_chain.total == 0 %}
+        <span class="chain-badge chain-none">No hashed findings</span>
+        {% else %}
+        <span class="chain-badge chain-broken">Chain Broken at finding {{ evidence_chain.broken_at[:12] }}&hellip;</span>
+        {% endif %}
+        {% endif %}
+
+        {# ── Findings ── #}
+        <h2>Findings</h2>
+        {% if findings %}
+        {% for f in findings %}
+        <div class="finding" style="border-left-color: {{ severity_colors.get(f.severity, '#6b7280') }};">
+            <div class="finding-header">
+                <span class="severity sev-{{ f.severity }}">{{ f.severity | upper }}</span>
+                <strong>{{ f.title }}</strong>
+                <span class="tool-badge">{{ f.tool }}</span>
+            </div>
+            {% if f.description %}
+            <p>{{ f.description }}</p>
+            {% endif %}
+            {% if f.mitre_technique %}
+            <p class="finding-detail"><strong>MITRE:</strong> {{ f.mitre_technique }}</p>
+            {% endif %}
+            {% if f.remediation %}
+            <p class="finding-detail"><strong>Remediation:</strong> {{ f.remediation }}</p>
+            {% endif %}
+            {% if f.evidence_hash %}
+            <p class="hash-mono">SHA-256: {{ f.evidence_hash }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color: #64748b;">No findings recorded for this run.</p>
+        {% endif %}
+
+        {# ── Footer ── #}
+        <div class="footer">
+            Generated by SentinelForge v{{ version }} &bull; {{ generated_at }}
+        </div>
+    </div>
+</body>
+</html>

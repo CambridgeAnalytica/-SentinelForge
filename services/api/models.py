@@ -102,6 +102,8 @@ class Finding(Base):
     mitre_technique = Column(String(50), nullable=True)
     evidence = Column(JSON, default=dict)
     remediation = Column(Text, nullable=True)
+    evidence_hash = Column(String(64), nullable=True)  # SHA-256 hex
+    previous_hash = Column(String(64), nullable=True)  # Chain link to previous finding
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     run = relationship("AttackRun", back_populates="findings")
@@ -184,6 +186,34 @@ class BackdoorScan(Base):
     results = Column(JSON, default=dict)
     indicators_found = Column(Integer, default=0)
     risk_level = Column(String(50), default="unknown")
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class AgentTest(Base):
+    __tablename__ = "agent_tests"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    endpoint = Column(String(500), nullable=False)
+    status = Column(Enum(RunStatus), default=RunStatus.QUEUED, nullable=False)
+    config = Column(JSON, default=dict)  # {allowed_tools, forbidden_actions, test_scenarios}
+    results = Column(JSON, default=dict)  # per-scenario results
+    risk_level = Column(String(50), default="unknown")
+    findings_count = Column(Integer, default=0)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class SyntheticDataset(Base):
+    __tablename__ = "synthetic_datasets"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    seed_count = Column(Integer, default=0)
+    mutations_applied = Column(JSON, default=list)  # ["encoding", "synonym", ...]
+    total_generated = Column(Integer, default=0)
+    status = Column(Enum(RunStatus), default=RunStatus.QUEUED, nullable=False)
+    results = Column(JSON, default=dict)  # {samples: [...], stats: {...}}
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
 

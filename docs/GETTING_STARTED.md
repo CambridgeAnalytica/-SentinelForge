@@ -18,7 +18,7 @@ Before you begin, ensure you have the following installed:
 | **Git** | 2.30+ | To clone the repository |
 
 You will also need at least **one** LLM API key (OpenAI, Anthropic, Azure OpenAI,
-AWS Bedrock, or Databricks) to run attack scenarios against live models.
+or AWS Bedrock) to run attack scenarios against live models.
 
 > **Note**: There is no Go dependency. The worker service is Python-based
 > (async with asyncpg).
@@ -31,7 +31,7 @@ AWS Bedrock, or Databricks) to run attack scenarios against live models.
 
 ```bash
 # Clone the repository (if you haven't already)
-git clone <repository-url> SentinelForge
+git clone https://github.com/CambridgeAnalytica/-SentinelForge.git SentinelForge
 
 # Enter the project directory
 cd SentinelForge
@@ -205,7 +205,7 @@ sf version
 
 Expected output:
 ```
-SentinelForge CLI v1.0.0
+SentinelForge CLI v1.3.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -286,8 +286,11 @@ Expected output:
 ```json
 {
   "status": "healthy",
-  "database": "connected",
-  "storage": "connected"
+  "version": "1.3.0",
+  "services": {
+    "database": "healthy"
+  },
+  "timestamp": "2026-02-10T12:00:00Z"
 }
 ```
 

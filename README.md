@@ -16,7 +16,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 ### Core Capabilities
 - **Multi-Service Architecture**: FastAPI orchestration + Python async worker pool (asyncio + asyncpg)
 - **14 Integrated Tools**: tools in isolated virtual environments
-- **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure, Databricks, AWS Bedrock, Google Vertex AI, and more
+- **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure OpenAI, and AWS Bedrock (4 built-in adapters)
 - **Modular Probe System**: Extensible SDK for custom evaluations
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
 - **Enterprise Security**: JWT authentication with RBAC (OIDC/OAuth2 optional, not enabled by default), SBOM, signed images, vulnerability scanning
@@ -31,7 +31,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **Note**: Capabilities 1-3 have foundation code in place. Capabilities 4-6 have full API endpoints, DB models, CLI integration, and service layers (model adapter calls are simulated in v1.1, real provider integration in v1.2).
+> **Note**: Capabilities 1-3 have foundation code in place. Capabilities 4-6 have full API endpoints, DB models, CLI integration, and service layers with real model provider calls (OpenAI, Anthropic, Azure, Bedrock).
 
 ## Quick Start
 
@@ -138,7 +138,7 @@ sentinelforge/
 ├── sdk/python/           # Python SDK for probe authoring
 ├── cli/                  # Typer-based CLI ('sf' command)
 ├── adapters/
-│   └── models/           # LLM provider adapters (stub)
+│   └── models/           # LLM provider adapters (OpenAI, Anthropic, Azure, Bedrock)
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper
@@ -152,7 +152,7 @@ sentinelforge/
 │   └── security/         # SBOM, signing, scanning scripts
 ├── tests/                # Unit, integration, e2e tests
 ├── docs/                 # Full documentation suite
-└── templates/            # Report templates (planned)
+└── templates/            # Jinja2 report templates (HTML/PDF)
 ```
 
 ## CLI Usage
@@ -186,11 +186,11 @@ sf attack run multi-turn --model gpt-4 --strategy gradual_trust --turns 10
 # Synthetic Data Generation
 sf synthetic generate --seed prompts.txt --mutations encoding,translation --count 100
 
-# Model Drift (stub in v1.0)
+# Model Drift Detection
 sf drift baseline gpt-4 --save baseline.json
 sf drift compare gpt-4 --baseline baseline.json
 
-# Supply Chain Scanning (stub in v1.0)
+# Supply Chain Scanning
 sf supply-chain scan huggingface:org/model-name
 
 # Reports
@@ -213,6 +213,8 @@ sf playbook run jailbreak_detected --context findings.json
 - **JWT Authentication**: Token-based auth with configurable expiration
 - **Secrets Management**: Environment-based configuration (`.env`)
 - **Evidence Redaction**: Configurable patterns for sensitive data
+- **Evidence Chain**: SHA-256 hash chain for tamper-proof finding integrity
+- **Database Migrations**: Alembic-managed schema versioning
 
 ## Documentation
 

@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import engine, Base
-from routers import health, auth, tools, attacks, reports, probes, playbooks, drift, backdoor, supply_chain
+from routers import health, auth, tools, attacks, reports, probes, playbooks, drift, backdoor, supply_chain, agent, synthetic
 from middleware.logging_middleware import RequestLoggingMiddleware
 
 # Configure logging
@@ -33,10 +33,13 @@ async def lifespan(app: FastAPI):
     validate_settings_security()
     logger.info("✅ Security configuration validated")
 
-    # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("✅ Database tables created/verified")
+    # Database tables: use Alembic migrations in production, auto-create in dev
+    if settings.DEBUG:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Database tables auto-created (DEBUG mode)")
+    else:
+        logger.info("✅ Database ready (run 'alembic upgrade head' for migrations)")
 
     # Initialize Redis for token blocklist (graceful fallback to in-memory)
     from services.user_service import _init_redis
@@ -57,7 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="1.0.0",
+    version="1.3.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -86,6 +89,8 @@ app.include_router(playbooks.router, prefix="/playbooks", tags=["Playbooks"])
 app.include_router(drift.router, prefix="/drift", tags=["Drift Detection"])
 app.include_router(backdoor.router, prefix="/backdoor", tags=["Backdoor Detection"])
 app.include_router(supply_chain.router, prefix="/supply-chain", tags=["Supply Chain"])
+app.include_router(agent.router, prefix="/agent", tags=["Agent Testing"])
+app.include_router(synthetic.router, prefix="/synthetic", tags=["Synthetic Data"])
 
 
 if __name__ == "__main__":

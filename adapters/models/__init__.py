@@ -179,12 +179,73 @@ class AzureOpenAIAdapter(BaseModelAdapter):
             return response.json()["choices"][0]["message"]["content"]
 
 
+class BedrockAdapter(BaseModelAdapter):
+    """AWS Bedrock adapter using boto3."""
+
+    provider = "bedrock"
+
+    def __init__(
+        self,
+        access_key_id: str = "",
+        secret_access_key: str = "",
+        region: str = "us-east-1",
+        model: str = "anthropic.claude-3-sonnet-20240229-v1:0",
+    ):
+        self.access_key_id = access_key_id
+        self.secret_access_key = secret_access_key
+        self.region = region
+        self.model = model
+
+    async def send_prompt(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
+        safe_prompt = redact_text(prompt)
+        safe_system = redact_text(system_prompt) if system_prompt else None
+        messages = [{"role": "user", "content": safe_prompt}]
+        return await self.send_messages(messages, system_prompt=safe_system, **kwargs)
+
+    async def send_messages(self, messages: List[Dict[str, str]], system_prompt: str = None, **kwargs) -> str:
+        import asyncio
+        import json
+
+        safe_messages = redact_messages(messages)
+        logger.info(f"Bedrock request: {len(safe_messages)} messages → {self.model}")
+
+        def _invoke():
+            import boto3
+
+            client = boto3.client(
+                "bedrock-runtime",
+                aws_access_key_id=self.access_key_id or None,
+                aws_secret_access_key=self.secret_access_key or None,
+                region_name=self.region,
+            )
+
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": kwargs.get("max_tokens", 4096),
+                "messages": safe_messages,
+            }
+            if system_prompt:
+                body["system"] = redact_text(system_prompt)
+
+            response = client.invoke_model(
+                modelId=self.model,
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps(body),
+            )
+            response_body = json.loads(response["body"].read())
+            return response_body["content"][0]["text"]
+
+        return await asyncio.to_thread(_invoke)
+
+
 def get_adapter(provider: str, **kwargs) -> BaseModelAdapter:
     """Factory function to get the right adapter by provider name."""
     adapters = {
         "openai": OpenAIAdapter,
         "anthropic": AnthropicAdapter,
         "azure_openai": AzureOpenAIAdapter,
+        "bedrock": BedrockAdapter,
     }
     adapter_class = adapters.get(provider)
     if not adapter_class:
