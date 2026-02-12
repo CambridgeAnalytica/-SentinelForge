@@ -30,17 +30,21 @@ CHECK_TYPES = {
 
 # Known risky licenses for commercial use
 RISKY_LICENSES = [
-    "cc-by-nc-*",      # Non-commercial restriction
-    "gpl-3.0",         # Copyleft requirement
-    "agpl-3.0",        # Network copyleft
-    "unknown",         # No license specified
-    "other",           # Non-standard license
+    "cc-by-nc-*",  # Non-commercial restriction
+    "gpl-3.0",  # Copyleft requirement
+    "agpl-3.0",  # Network copyleft
+    "unknown",  # No license specified
+    "other",  # Non-standard license
 ]
 
 # Required model card fields
 _REQUIRED_CARD_FIELDS = [
-    "model_details", "intended_use", "limitations",
-    "training_data", "evaluation_results", "ethical_considerations",
+    "model_details",
+    "intended_use",
+    "limitations",
+    "training_data",
+    "evaluation_results",
+    "ethical_considerations",
 ]
 
 # HuggingFace cardData fields that map to our required fields
@@ -65,6 +69,7 @@ def _hf_headers() -> dict:
     """Build HuggingFace API headers."""
     try:
         from config import settings
+
         headers = {}
         if settings.HUGGINGFACE_API_TOKEN:
             headers["Authorization"] = f"Bearer {settings.HUGGINGFACE_API_TOKEN}"
@@ -99,7 +104,9 @@ async def scan_model(
     """Run supply chain security scan on a model."""
     invalid_checks = [c for c in checks if c not in CHECK_TYPES]
     if invalid_checks:
-        raise ValueError(f"Invalid check types: {invalid_checks}. Must be one of: {list(CHECK_TYPES.keys())}")
+        raise ValueError(
+            f"Invalid check types: {invalid_checks}. Must be one of: {list(CHECK_TYPES.keys())}"
+        )
 
     logger.info(f"Supply chain scan: source={model_source}, checks={checks}")
 
@@ -144,7 +151,9 @@ async def list_scans(
 
 async def get_scan(db: AsyncSession, scan_id: str) -> Optional[SupplyChainScan]:
     """Get a specific scan."""
-    result = await db.execute(select(SupplyChainScan).where(SupplyChainScan.id == scan_id))
+    result = await db.execute(
+        select(SupplyChainScan).where(SupplyChainScan.id == scan_id)
+    )
     return result.scalar_one_or_none()
 
 
@@ -178,7 +187,10 @@ async def _check_dependencies(model_source: str) -> tuple[dict, int]:
     """Scan dependencies for known CVEs using pip-audit."""
     try:
         proc = await asyncio.create_subprocess_exec(
-            "pip-audit", "--format", "json", "--strict",
+            "pip-audit",
+            "--format",
+            "json",
+            "--strict",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -195,7 +207,9 @@ async def _check_dependencies(model_source: str) -> tuple[dict, int]:
             except json.JSONDecodeError:
                 pass
 
-        vuln_count = sum(len(v.get("vulns", [])) for v in vulnerabilities if isinstance(v, dict))
+        vuln_count = sum(
+            len(v.get("vulns", [])) for v in vulnerabilities if isinstance(v, dict)
+        )
 
         return {
             "check": "dependencies",
@@ -210,7 +224,9 @@ async def _check_dependencies(model_source: str) -> tuple[dict, int]:
                 }
                 for v in vulnerabilities
                 if isinstance(v, dict) and v.get("vulns")
-            ][:20],  # Limit to first 20
+            ][
+                :20
+            ],  # Limit to first 20
             "summary": f"Scanned dependencies. {vuln_count} vulnerabilities found.",
         }, vuln_count
 
@@ -282,7 +298,9 @@ async def _check_model_card(model_source: str) -> tuple[dict, int]:
         else:
             missing.append(field)
 
-    completeness = len(present) / len(_REQUIRED_CARD_FIELDS) if _REQUIRED_CARD_FIELDS else 0
+    completeness = (
+        len(present) / len(_REQUIRED_CARD_FIELDS) if _REQUIRED_CARD_FIELDS else 0
+    )
     issues = len(missing)
 
     return {
@@ -312,13 +330,18 @@ async def _check_license(model_source: str) -> tuple[dict, int]:
         }, 1
 
     card_data = model_info.get("cardData", {}) or {}
-    license_id = card_data.get("license", model_info.get("license", "unknown")) or "unknown"
+    license_id = (
+        card_data.get("license", model_info.get("license", "unknown")) or "unknown"
+    )
 
     is_risky = any(fnmatch.fnmatch(license_id, pattern) for pattern in RISKY_LICENSES)
 
     # Determine commercial use allowance
     non_commercial_licenses = ["cc-by-nc-4.0", "cc-by-nc-sa-4.0", "cc-by-nc-nd-4.0"]
-    commercial_allowed = license_id not in non_commercial_licenses and not fnmatch.fnmatch(license_id, "cc-by-nc-*")
+    commercial_allowed = (
+        license_id not in non_commercial_licenses
+        and not fnmatch.fnmatch(license_id, "cc-by-nc-*")
+    )
 
     issues = 1 if is_risky else 0
 
@@ -328,8 +351,11 @@ async def _check_license(model_source: str) -> tuple[dict, int]:
         "model_id": model_id,
         "detected_license": license_id,
         "is_risky": is_risky,
-        "commercial_use_allowed": commercial_allowed if license_id != "unknown" else None,
-        "attribution_required": "cc-" in license_id.lower() or "mit" in license_id.lower(),
+        "commercial_use_allowed": (
+            commercial_allowed if license_id != "unknown" else None
+        ),
+        "attribution_required": "cc-" in license_id.lower()
+        or "mit" in license_id.lower(),
         "risky_licenses_ref": RISKY_LICENSES,
         "summary": f"License: {license_id}. {'Risky — review terms.' if is_risky else 'Appears acceptable.'}",
     }, issues
@@ -370,7 +396,9 @@ async def _check_data_provenance(model_source: str) -> tuple[dict, int]:
                 ds_data = resp.json()
                 ds_card = ds_data.get("cardData", {}) or {}
                 ds_info["has_card"] = bool(ds_card)
-                ds_info["license"] = ds_card.get("license", ds_data.get("license", "unknown"))
+                ds_info["license"] = ds_card.get(
+                    "license", ds_data.get("license", "unknown")
+                )
                 if not ds_info["has_card"]:
                     issues += 1
         except Exception:

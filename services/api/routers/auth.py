@@ -46,6 +46,7 @@ def _check_rate_limit(client_ip: str) -> None:
 
 # ---------- Endpoints ----------
 
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: LoginRequest,
@@ -92,4 +93,3 @@ async def logout(
         revoke_token(token)
         logger.info(f"Token revoked for user {user.username}")
     return {"message": "Successfully logged out, token revoked"}
-

@@ -49,16 +49,18 @@ async def list_tools(user: User = Depends(get_current_user)):
     registry = _load_tools_registry()
     tools = []
     for tool in registry.get("tools", []):
-        tools.append(ToolInfo(
-            name=tool["name"],
-            version=tool.get("version", "0.0.0"),
-            category=tool.get("category", "unknown"),
-            description=tool.get("description", ""),
-            capabilities=tool.get("capabilities", []),
-            mitre_atlas=tool.get("mitre_atlas", []),
-            venv_path=tool.get("venv", ""),
-            cli_command=tool.get("cli", ""),
-        ))
+        tools.append(
+            ToolInfo(
+                name=tool["name"],
+                version=tool.get("version", "0.0.0"),
+                category=tool.get("category", "unknown"),
+                description=tool.get("description", ""),
+                capabilities=tool.get("capabilities", []),
+                mitre_atlas=tool.get("mitre_atlas", []),
+                venv_path=tool.get("venv", ""),
+                cli_command=tool.get("cli", ""),
+            )
+        )
     return tools
 
 
@@ -101,6 +103,7 @@ async def run_tool(
     # Import and use the tool executor
     try:
         from tools.executor import ToolExecutor
+
         executor = ToolExecutor()
         result = executor.execute_tool(
             tool_name,
@@ -122,6 +125,6 @@ async def run_tool(
             target=request.target,
             status="stub",
             output=f"Tool '{tool_name}' executor not yet available in this environment. "
-                   f"Install the tool in its venv at {tool_config.get('venv', 'N/A')} to enable execution.",
+            f"Install the tool in its venv at {tool_config.get('venv', 'N/A')} to enable execution.",
             duration_seconds=0.0,
         )

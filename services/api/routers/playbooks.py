@@ -97,19 +97,23 @@ async def run_playbook(
             break
 
     if not playbook:
-        raise HTTPException(status_code=404, detail=f"Playbook '{playbook_id}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Playbook '{playbook_id}' not found"
+        )
 
     logger.info(f"Running playbook {playbook_id}")
 
     # Execute steps (in production, each step would be orchestrated)
     executed_steps = []
     for step in playbook.get("steps", []):
-        executed_steps.append({
-            "step": step.get("name", "unnamed"),
-            "action": step.get("action", "unknown"),
-            "status": "completed",
-            "output": f"Step '{step.get('name', 'unnamed')}' executed successfully.",
-        })
+        executed_steps.append(
+            {
+                "step": step.get("name", "unnamed"),
+                "action": step.get("action", "unknown"),
+                "status": "completed",
+                "output": f"Step '{step.get('name', 'unnamed')}' executed successfully.",
+            }
+        )
 
     return {
         "playbook_id": playbook_id,

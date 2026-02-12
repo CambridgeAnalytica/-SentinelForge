@@ -26,7 +26,9 @@ async def health_check():
     except Exception:
         services["database"] = "unhealthy"
 
-    overall = "healthy" if all(v == "healthy" for v in services.values()) else "degraded"
+    overall = (
+        "healthy" if all(v == "healthy" for v in services.values()) else "degraded"
+    )
 
     return HealthResponse(
         status=overall,

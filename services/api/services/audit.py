@@ -41,7 +41,9 @@ async def log_event(
         )
         db.add(entry)
         await db.flush()
-        logger.debug(f"Audit: {action} by user={user_id} on {resource_type}/{resource_id}")
+        logger.debug(
+            f"Audit: {action} by user={user_id} on {resource_type}/{resource_id}"
+        )
     except Exception as e:
         # Audit logging should never crash the application
         logger.error(f"Failed to write audit log: {e}")

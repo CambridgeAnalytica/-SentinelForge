@@ -4,6 +4,7 @@ Revision ID: 002
 Revises: 001
 Create Date: 2026-02-10
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -23,7 +24,15 @@ def upgrade() -> None:
         sa.Column("endpoint", sa.String(500), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("queued", "running", "completed", "failed", "cancelled", name="runstatus", create_type=False),
+            sa.Enum(
+                "queued",
+                "running",
+                "completed",
+                "failed",
+                "cancelled",
+                name="runstatus",
+                create_type=False,
+            ),
             nullable=False,
             server_default="queued",
         ),
@@ -32,7 +41,9 @@ def upgrade() -> None:
         sa.Column("risk_level", sa.String(50), server_default="unknown"),
         sa.Column("findings_count", sa.Integer(), server_default="0"),
         sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")
+        ),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
     )
 
@@ -45,13 +56,23 @@ def upgrade() -> None:
         sa.Column("total_generated", sa.Integer(), server_default="0"),
         sa.Column(
             "status",
-            sa.Enum("queued", "running", "completed", "failed", "cancelled", name="runstatus", create_type=False),
+            sa.Enum(
+                "queued",
+                "running",
+                "completed",
+                "failed",
+                "cancelled",
+                name="runstatus",
+                create_type=False,
+            ),
             nullable=False,
             server_default="queued",
         ),
         sa.Column("results", sa.JSON(), server_default="{}"),
         sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")
+        ),
     )
 
 

@@ -85,7 +85,9 @@ async def launch_attack(
             break
 
     if not scenario:
-        raise HTTPException(status_code=404, detail=f"Scenario '{request.scenario_id}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{request.scenario_id}' not found"
+        )
 
     # Create attack run
     run = AttackRun(
@@ -98,7 +100,9 @@ async def launch_attack(
     db.add(run)
     await db.flush()
 
-    logger.info(f"Created attack run {run.id}: {request.scenario_id} → {request.target_model}")
+    logger.info(
+        f"Created attack run {run.id}: {request.scenario_id} → {request.target_model}"
+    )
 
     # In a production system, this would be dispatched to the worker pool.
     # For now, we run synchronously in-process.
@@ -113,6 +117,7 @@ async def launch_attack(
 
         # Create findings from results with evidence hashing
         from services.evidence_hashing import compute_evidence_hash
+
         previous_hash = None
 
         for finding_data in results.get("findings", []):
@@ -242,7 +247,9 @@ async def verify_evidence_chain(
         raise HTTPException(status_code=404, detail="Run not found")
 
     findings_result = await db.execute(
-        select(Finding).where(Finding.run_id == run_id).order_by(Finding.created_at.asc())
+        select(Finding)
+        .where(Finding.run_id == run_id)
+        .order_by(Finding.created_at.asc())
     )
     findings = findings_result.scalars().all()
 
@@ -270,11 +277,14 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
 
         try:
             from tools.executor import ToolExecutor
+
             executor = ToolExecutor()
             exec_result = executor.execute_tool(tool_name, target=target, args=config)
             tool_result["output"] = exec_result.get("stdout", "")
-            tool_result["status"] = "completed" if exec_result.get("success") else "failed"
-        except (ImportError, Exception) as e:
+            tool_result["status"] = (
+                "completed" if exec_result.get("success") else "failed"
+            )
+        except (ImportError, Exception):
             tool_result["status"] = "stub"
             tool_result["output"] = (
                 f"Tool '{tool_name}' not available in this environment. "
@@ -282,15 +292,21 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
             )
 
             # Generate stub findings for demo/testing
-            results["findings"].append({
-                "tool": tool_name,
-                "severity": "info",
-                "title": f"{tool_name}: Stub execution against {target}",
-                "description": f"Tool '{tool_name}' was not available. Install in Docker "
-                               f"tools container for real results.",
-                "mitre_technique": scenario.get("mitre_techniques", [None])[0] if scenario.get("mitre_techniques") else None,
-                "remediation": f"Deploy SentinelForge with Docker to enable {tool_name}.",
-            })
+            results["findings"].append(
+                {
+                    "tool": tool_name,
+                    "severity": "info",
+                    "title": f"{tool_name}: Stub execution against {target}",
+                    "description": f"Tool '{tool_name}' was not available. Install in Docker "
+                    f"tools container for real results.",
+                    "mitre_technique": (
+                        scenario.get("mitre_techniques", [None])[0]
+                        if scenario.get("mitre_techniques")
+                        else None
+                    ),
+                    "remediation": f"Deploy SentinelForge with Docker to enable {tool_name}.",
+                }
+            )
 
         results["tools_executed"].append(tool_result)
 
@@ -307,7 +323,9 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
 
         # If no explicit multi-turn test cases, run with default strategy
         if not multi_turn_cases:
-            multi_turn_cases = [{"strategy": "gradual_trust", "name": "Default Multi-Turn"}]
+            multi_turn_cases = [
+                {"strategy": "gradual_trust", "name": "Default Multi-Turn"}
+            ]
 
         for tc in multi_turn_cases:
             strategy = tc.get("strategy", "gradual_trust")
@@ -325,15 +343,19 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
                 results["findings"].extend(mt_result.get("findings", []))
             except Exception as e:
                 logger.error(f"Multi-turn attack failed ({strategy}): {e}")
-                results["multi_turn_results"].append({
-                    "strategy": strategy,
-                    "error": str(e),
-                })
+                results["multi_turn_results"].append(
+                    {
+                        "strategy": strategy,
+                        "error": str(e),
+                    }
+                )
 
     # Summary
     results["summary"] = {
         "total_tools": len(results["tools_executed"]),
-        "completed": sum(1 for t in results["tools_executed"] if t["status"] == "completed"),
+        "completed": sum(
+            1 for t in results["tools_executed"] if t["status"] == "completed"
+        ),
         "failed": sum(1 for t in results["tools_executed"] if t["status"] == "failed"),
         "stubs": sum(1 for t in results["tools_executed"] if t["status"] == "stub"),
         "multi_turn_attacks": len(results["multi_turn_results"]),

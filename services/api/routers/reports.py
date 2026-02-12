@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import select
@@ -49,7 +49,9 @@ async def list_reports(
     db: AsyncSession = Depends(get_db),
 ):
     """List all generated reports."""
-    result = await db.execute(select(Report).order_by(Report.generated_at.desc()).limit(50))
+    result = await db.execute(
+        select(Report).order_by(Report.generated_at.desc()).limit(50)
+    )
     reports = result.scalars().all()
     return [
         ReportResponse(
@@ -76,14 +78,18 @@ async def generate_report(
     Reports are uploaded to S3 if storage is configured.
     """
     # Verify run exists
-    run_result = await db.execute(select(AttackRun).where(AttackRun.id == request.run_id))
+    run_result = await db.execute(
+        select(AttackRun).where(AttackRun.id == request.run_id)
+    )
     run = run_result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="Attack run not found")
 
     # Load findings
     findings_result = await db.execute(
-        select(Finding).where(Finding.run_id == request.run_id).order_by(Finding.created_at.asc())
+        select(Finding)
+        .where(Finding.run_id == request.run_id)
+        .order_by(Finding.created_at.asc())
     )
     findings = list(findings_result.scalars().all())
 
@@ -105,14 +111,16 @@ async def generate_report(
         db.add(report)
         await db.flush()
 
-        reports.append(ReportResponse(
-            id=report.id,
-            run_id=report.run_id,
-            format=report.format.value,
-            file_path=report.file_path,
-            s3_key=report.s3_key,
-            generated_at=report.generated_at,
-        ))
+        reports.append(
+            ReportResponse(
+                id=report.id,
+                run_id=report.run_id,
+                format=report.format.value,
+                file_path=report.file_path,
+                s3_key=report.s3_key,
+                generated_at=report.generated_at,
+            )
+        )
 
     await db.commit()
     return reports
@@ -130,11 +138,15 @@ async def view_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    run_result = await db.execute(select(AttackRun).where(AttackRun.id == report.run_id))
+    run_result = await db.execute(
+        select(AttackRun).where(AttackRun.id == report.run_id)
+    )
     run = run_result.scalar_one_or_none()
 
     findings_result = await db.execute(
-        select(Finding).where(Finding.run_id == report.run_id).order_by(Finding.created_at.asc())
+        select(Finding)
+        .where(Finding.run_id == report.run_id)
+        .order_by(Finding.created_at.asc())
     )
     findings = list(findings_result.scalars().all())
 
@@ -146,7 +158,9 @@ async def view_report(
         return Response(
             content=content,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'inline; filename="report-{report.run_id[:12]}.pdf"'},
+            headers={
+                "Content-Disposition": f'inline; filename="report-{report.run_id[:12]}.pdf"'
+            },
         )
     else:
         return {
@@ -173,6 +187,7 @@ async def download_report(
     if report.s3_key:
         try:
             from services.s3_service import download_report as s3_download
+
             content = s3_download(report.s3_key)
             if content:
                 ext = report.format.value
@@ -192,13 +207,17 @@ async def download_report(
             logger.warning(f"S3 download failed, regenerating: {e}")
 
     # Fallback: regenerate
-    run_result = await db.execute(select(AttackRun).where(AttackRun.id == report.run_id))
+    run_result = await db.execute(
+        select(AttackRun).where(AttackRun.id == report.run_id)
+    )
     run = run_result.scalar_one_or_none()
     if not run:
         raise HTTPException(status_code=404, detail="Associated attack run not found")
 
     findings_result = await db.execute(
-        select(Finding).where(Finding.run_id == report.run_id).order_by(Finding.created_at.asc())
+        select(Finding)
+        .where(Finding.run_id == report.run_id)
+        .order_by(Finding.created_at.asc())
     )
     findings = list(findings_result.scalars().all())
 
@@ -289,13 +308,10 @@ def _render_html(data: dict) -> str:
         logger.warning("Jinja2 template not found, falling back to inline HTML")
         return _render_html_inline(data)
 
-    from config import settings
-    version = getattr(settings, "_version", "1.2.0")
-
     return template.render(
         **data,
         severity_colors=_SEVERITY_COLORS,
-        version="1.2.0",
+        version="1.3.0",
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
@@ -342,6 +358,7 @@ def _html_to_pdf(html: str) -> bytes:
     """Convert HTML string to PDF bytes using WeasyPrint."""
     try:
         from weasyprint import HTML
+
         return HTML(string=html).write_pdf()
     except ImportError:
         logger.error("weasyprint not installed — PDF generation unavailable")
@@ -357,19 +374,27 @@ def _html_to_pdf(html: str) -> bytes:
 def _render_jsonl(data: dict) -> str:
     """Generate JSONL report."""
     lines = []
-    lines.append(json.dumps({
-        "type": "header",
-        "run_id": data["run_id"],
-        "scenario": data["scenario"],
-        "target": data["target"],
-    }))
+    lines.append(
+        json.dumps(
+            {
+                "type": "header",
+                "run_id": data["run_id"],
+                "scenario": data["scenario"],
+                "target": data["target"],
+            }
+        )
+    )
     for f in data["findings"]:
         lines.append(json.dumps({"type": "finding", **f}))
-    lines.append(json.dumps({
-        "type": "summary",
-        **data["severity_breakdown"],
-        "total": data["total_findings"],
-    }))
+    lines.append(
+        json.dumps(
+            {
+                "type": "summary",
+                **data["severity_breakdown"],
+                "total": data["total_findings"],
+            }
+        )
+    )
     return "\n".join(lines)
 
 
@@ -382,6 +407,7 @@ def _upload_to_s3(
     """Upload report to S3. Returns key on success, None on failure."""
     try:
         from services.s3_service import upload_report
+
         key = f"reports/{run_id}.{fmt}"
         upload_report(content=content, key=key, content_type=content_type)
         return key

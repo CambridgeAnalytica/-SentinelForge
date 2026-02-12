@@ -3,7 +3,7 @@ SentinelForge Python SDK
 For authoring custom probes and interacting with the API.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import List
 import httpx
 
 
@@ -21,7 +21,9 @@ class SentinelForgeClient:
 
     def login(self, username: str, password: str) -> str:
         """Authenticate and store token."""
-        response = self._client.post("/auth/login", json={"username": username, "password": password})
+        response = self._client.post(
+            "/auth/login", json={"username": username, "password": password}
+        )
         response.raise_for_status()
         data = response.json()
         self.token = data["access_token"]
@@ -35,19 +37,29 @@ class SentinelForgeClient:
     def get_tool(self, name: str) -> dict:
         return self._client.get(f"/tools/{name}").json()
 
-    def run_tool(self, name: str, target: str, args: dict = None, timeout: int = 600) -> dict:
-        return self._client.post(f"/tools/{name}/run", json={"target": target, "args": args or {}, "timeout": timeout}).json()
+    def run_tool(
+        self, name: str, target: str, args: dict = None, timeout: int = 600
+    ) -> dict:
+        return self._client.post(
+            f"/tools/{name}/run",
+            json={"target": target, "args": args or {}, "timeout": timeout},
+        ).json()
 
     # ── Attacks ──
     def list_scenarios(self) -> List[dict]:
         return self._client.get("/attacks/scenarios").json()
 
-    def run_attack(self, scenario_id: str, target_model: str, config: dict = None) -> dict:
-        return self._client.post("/attacks/run", json={
-            "scenario_id": scenario_id,
-            "target_model": target_model,
-            "config": config or {},
-        }).json()
+    def run_attack(
+        self, scenario_id: str, target_model: str, config: dict = None
+    ) -> dict:
+        return self._client.post(
+            "/attacks/run",
+            json={
+                "scenario_id": scenario_id,
+                "target_model": target_model,
+                "config": config or {},
+            },
+        ).json()
 
     def get_run(self, run_id: str) -> dict:
         return self._client.get(f"/attacks/runs/{run_id}").json()
@@ -57,10 +69,13 @@ class SentinelForgeClient:
 
     # ── Reports ──
     def generate_report(self, run_id: str, formats: List[str] = None) -> List[dict]:
-        return self._client.post("/reports/generate", json={
-            "run_id": run_id,
-            "formats": formats or ["html"],
-        }).json()
+        return self._client.post(
+            "/reports/generate",
+            json={
+                "run_id": run_id,
+                "formats": formats or ["html"],
+            },
+        ).json()
 
     def list_reports(self) -> List[dict]:
         return self._client.get("/reports/").json()
@@ -69,22 +84,30 @@ class SentinelForgeClient:
     def list_probes(self) -> List[dict]:
         return self._client.get("/probes/").json()
 
-    def run_probe(self, probe_name: str, target_model: str, config: dict = None) -> dict:
-        return self._client.post("/probes/run", json={
-            "probe_name": probe_name,
-            "target_model": target_model,
-            "config": config or {},
-        }).json()
+    def run_probe(
+        self, probe_name: str, target_model: str, config: dict = None
+    ) -> dict:
+        return self._client.post(
+            "/probes/run",
+            json={
+                "probe_name": probe_name,
+                "target_model": target_model,
+                "config": config or {},
+            },
+        ).json()
 
     # ── Playbooks ──
     def list_playbooks(self) -> List[dict]:
         return self._client.get("/playbooks/").json()
 
     def run_playbook(self, playbook_id: str, context: dict = None) -> dict:
-        return self._client.post(f"/playbooks/{playbook_id}/run", json={
-            "playbook_id": playbook_id,
-            "context": context or {},
-        }).json()
+        return self._client.post(
+            f"/playbooks/{playbook_id}/run",
+            json={
+                "playbook_id": playbook_id,
+                "context": context or {},
+            },
+        ).json()
 
     def close(self):
         self._client.close()

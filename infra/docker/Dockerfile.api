@@ -5,10 +5,15 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies
+# Install build dependencies (includes WeasyPrint system libs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -20,10 +25,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies (includes WeasyPrint system libs for PDF generation)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libcairo2 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && adduser --disabled-password --gecos '' appuser
 
@@ -35,6 +45,7 @@ COPY services/api/ /app/
 COPY tools/ /app/tools/
 COPY scenarios/ /app/scenarios/
 COPY playbooks/ /app/playbooks/
+COPY templates/ /app/templates/
 
 # Set ownership
 RUN chown -R appuser:appuser /app

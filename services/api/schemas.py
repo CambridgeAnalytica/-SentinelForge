@@ -4,10 +4,10 @@ Pydantic schemas for request/response validation.
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
 
 # ---------- Auth ----------
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -28,6 +28,7 @@ class UserInfo(BaseModel):
 
 
 # ---------- Tools ----------
+
 
 class ToolInfo(BaseModel):
     name: str
@@ -55,6 +56,7 @@ class ToolRunResponse(BaseModel):
 
 
 # ---------- Attacks ----------
+
 
 class AttackScenario(BaseModel):
     id: str
@@ -91,6 +93,7 @@ class AttackRunDetail(AttackRunResponse):
 
 # ---------- Findings ----------
 
+
 class FindingSchema(BaseModel):
     id: str
     tool_name: str
@@ -105,6 +108,7 @@ class FindingSchema(BaseModel):
 
 
 # ---------- Reports ----------
+
 
 class ReportRequest(BaseModel):
     run_id: str
@@ -121,6 +125,7 @@ class ReportResponse(BaseModel):
 
 
 # ---------- Probes ----------
+
 
 class ProbeInfo(BaseModel):
     id: str
@@ -139,6 +144,7 @@ class ProbeRunRequest(BaseModel):
 
 # ---------- Playbooks ----------
 
+
 class PlaybookInfo(BaseModel):
     id: str
     name: str
@@ -155,6 +161,7 @@ class PlaybookRunRequest(BaseModel):
 
 # ---------- Health ----------
 
+
 class HealthResponse(BaseModel):
     status: str = "healthy"
     version: str = "1.0.0"
@@ -163,6 +170,7 @@ class HealthResponse(BaseModel):
 
 
 # ---------- Agent Testing ----------
+
 
 class AgentTestRequest(BaseModel):
     endpoint: str
@@ -184,6 +192,7 @@ class AgentTestResponse(BaseModel):
 
 # ---------- Drift ----------
 
+
 class DriftBaselineRequest(BaseModel):
     model: str
     test_suite: str = "default"
@@ -197,6 +206,7 @@ class DriftCompareRequest(BaseModel):
 
 
 # ---------- Synthetic Data ----------
+
 
 class SyntheticGenRequest(BaseModel):
     seed_prompts: List[str] = []
@@ -215,6 +225,7 @@ class SyntheticGenResponse(BaseModel):
 
 # ---------- Multi-Turn ----------
 
+
 class MultiTurnResult(BaseModel):
     strategy: str
     model: str
@@ -224,6 +235,7 @@ class MultiTurnResult(BaseModel):
 
 
 # ---------- Supply Chain ----------
+
 
 class SupplyChainScanRequest(BaseModel):
     model_source: str  # e.g. "huggingface:gpt2"

@@ -7,9 +7,17 @@ from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
-    Column, String, Text, DateTime, Float, Integer, Boolean, JSON, ForeignKey, Enum
+    Column,
+    String,
+    Text,
+    DateTime,
+    Float,
+    Integer,
+    Boolean,
+    JSON,
+    ForeignKey,
+    Enum,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -24,6 +32,7 @@ def new_uuid():
 
 
 # ---------- Enums ----------
+
 
 class RunStatus(str, PyEnum):
     QUEUED = "queued"
@@ -54,6 +63,7 @@ class Severity(str, PyEnum):
 
 
 # ---------- Models ----------
+
 
 class User(Base):
     __tablename__ = "users"
@@ -86,7 +96,9 @@ class AttackRun(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
 
     user = relationship("User", back_populates="runs")
-    findings = relationship("Finding", back_populates="run", cascade="all, delete-orphan")
+    findings = relationship(
+        "Finding", back_populates="run", cascade="all, delete-orphan"
+    )
     reports = relationship("Report", back_populates="run", cascade="all, delete-orphan")
 
 
@@ -146,7 +158,9 @@ class DriftBaseline(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
-    results = relationship("DriftResult", back_populates="baseline", cascade="all, delete-orphan")
+    results = relationship(
+        "DriftResult", back_populates="baseline", cascade="all, delete-orphan"
+    )
 
 
 class DriftResult(Base):
@@ -182,7 +196,9 @@ class BackdoorScan(Base):
 
     id = Column(String, primary_key=True, default=new_uuid)
     model_source = Column(String(500), nullable=False)
-    scan_type = Column(String(100), default="behavioral")  # behavioral, pickle, weight_analysis
+    scan_type = Column(
+        String(100), default="behavioral"
+    )  # behavioral, pickle, weight_analysis
     results = Column(JSON, default=dict)
     indicators_found = Column(Integer, default=0)
     risk_level = Column(String(50), default="unknown")
@@ -196,7 +212,9 @@ class AgentTest(Base):
     id = Column(String, primary_key=True, default=new_uuid)
     endpoint = Column(String(500), nullable=False)
     status = Column(Enum(RunStatus), default=RunStatus.QUEUED, nullable=False)
-    config = Column(JSON, default=dict)  # {allowed_tools, forbidden_actions, test_scenarios}
+    config = Column(
+        JSON, default=dict
+    )  # {allowed_tools, forbidden_actions, test_scenarios}
     results = Column(JSON, default=dict)  # per-scenario results
     risk_level = Column(String(50), default="unknown")
     findings_count = Column(Integer, default=0)

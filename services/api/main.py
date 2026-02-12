@@ -8,11 +8,23 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import engine, Base
-from routers import health, auth, tools, attacks, reports, probes, playbooks, drift, backdoor, supply_chain, agent, synthetic
+from routers import (
+    health,
+    auth,
+    tools,
+    attacks,
+    reports,
+    probes,
+    playbooks,
+    drift,
+    backdoor,
+    supply_chain,
+    agent,
+    synthetic,
+)
 from middleware.logging_middleware import RequestLoggingMiddleware
 
 # Configure logging
@@ -30,6 +42,7 @@ async def lifespan(app: FastAPI):
 
     # Validate security configuration FIRST — abort before accepting traffic
     from config import validate_settings_security
+
     validate_settings_security()
     logger.info("✅ Security configuration validated")
 
@@ -43,10 +56,12 @@ async def lifespan(app: FastAPI):
 
     # Initialize Redis for token blocklist (graceful fallback to in-memory)
     from services.user_service import _init_redis
+
     _init_redis()
 
     # Initialize default admin user
     from services.user_service import ensure_admin_user
+
     await ensure_admin_user()
     logger.info("✅ Default admin user verified")
 
@@ -95,6 +110,7 @@ app.include_router(synthetic.router, prefix="/synthetic", tags=["Synthetic Data"
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

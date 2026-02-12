@@ -18,7 +18,9 @@ from database import AsyncSessionLocal
 from models import User, UserRole
 
 logger = logging.getLogger("sentinelforge.auth")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=True)
+pwd_context = CryptContext(
+    schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=True
+)
 
 
 # ---------- Token blocklist (Redis-backed with in-memory fallback) ----------
@@ -35,6 +37,7 @@ def _init_redis():
         return
     try:
         import redis
+
         _redis_client = redis.Redis.from_url(
             settings.REDIS_URL,
             decode_responses=True,
@@ -44,7 +47,9 @@ def _init_redis():
         _redis_available = True
         logger.info("Redis connected — using Redis-backed token blocklist")
     except Exception as e:
-        logger.warning(f"Redis unavailable ({e}) — falling back to in-memory token blocklist")
+        logger.warning(
+            f"Redis unavailable ({e}) — falling back to in-memory token blocklist"
+        )
         _redis_client = None
         _redis_available = False
 
@@ -64,7 +69,9 @@ def _token_hash(token: str) -> str:
 def revoke_token(token: str) -> None:
     """Add a token to the revocation blocklist."""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
         exp = payload.get("exp", 0)
     except JWTError:
         exp = (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
@@ -140,13 +147,17 @@ def create_access_token(data: dict, expires_minutes: int = None) -> str:
         minutes=expires_minutes or settings.JWT_EXPIRATION_MINUTES
     )
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
 
 def decode_token(token: str) -> dict:
     """Decode and validate a JWT, checking revocation."""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
         # Check revocation blocklist
         if is_token_revoked(token):
             logger.info("Rejected revoked token")
@@ -156,7 +167,9 @@ def decode_token(token: str) -> dict:
         return None
 
 
-async def authenticate_user(db: AsyncSession, username: str, password: str) -> User | None:
+async def authenticate_user(
+    db: AsyncSession, username: str, password: str
+) -> User | None:
     result = await db.execute(select(User).where(User.username == username))
     user = result.scalar_one_or_none()
     if user and verify_password(password, user.hashed_password):
@@ -167,11 +180,15 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> U
 async def ensure_admin_user():
     """Create default admin user if none exists."""
     if not settings.DEFAULT_ADMIN_USERNAME or not settings.DEFAULT_ADMIN_PASSWORD:
-        logger.warning("Admin credentials not configured — skipping admin user creation.")
+        logger.warning(
+            "Admin credentials not configured — skipping admin user creation."
+        )
         return
 
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(User).where(User.username == settings.DEFAULT_ADMIN_USERNAME))
+        result = await db.execute(
+            select(User).where(User.username == settings.DEFAULT_ADMIN_USERNAME)
+        )
         admin = result.scalar_one_or_none()
         if not admin:
             admin = User(
@@ -182,7 +199,8 @@ async def ensure_admin_user():
             )
             db.add(admin)
             await db.commit()
-            logger.info(f"Created default admin user: {settings.DEFAULT_ADMIN_USERNAME}")
+            logger.info(
+                f"Created default admin user: {settings.DEFAULT_ADMIN_USERNAME}"
+            )
         else:
             logger.info("Admin user already exists")
-

@@ -25,8 +25,12 @@ class Settings(BaseSettings):
     """Application settings loaded from environment."""
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://sentinelforge_user:sentinelforge_password@localhost:5432/sentinelforge"
-    DATABASE_URL_SYNC: str = "postgresql://sentinelforge_user:sentinelforge_password@localhost:5432/sentinelforge"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://sentinelforge_user:sentinelforge_password@localhost:5432/sentinelforge"
+    )
+    DATABASE_URL_SYNC: str = (
+        "postgresql://sentinelforge_user:sentinelforge_password@localhost:5432/sentinelforge"
+    )
 
     # Object Storage
     S3_ENDPOINT: str = "http://localhost:9000"
@@ -110,7 +114,10 @@ def validate_settings_security():
     # Admin credentials must be explicitly configured
     if not settings.DEFAULT_ADMIN_USERNAME:
         errors.append("DEFAULT_ADMIN_USERNAME must be set via env var.")
-    if not settings.DEFAULT_ADMIN_PASSWORD or settings.DEFAULT_ADMIN_PASSWORD in _WEAK_PASSWORDS:
+    if (
+        not settings.DEFAULT_ADMIN_PASSWORD
+        or settings.DEFAULT_ADMIN_PASSWORD in _WEAK_PASSWORDS
+    ):
         errors.append(
             "DEFAULT_ADMIN_PASSWORD is missing or weak. "
             "Set a strong password (12+ chars, mixed case, numbers, symbols)."
