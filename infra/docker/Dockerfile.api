@@ -5,15 +5,16 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies (includes WeasyPrint system libs)
+# Install build dependencies (gcc, pg headers, WeasyPrint build deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
     libffi-dev \
-    libcairo2 \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libgdk-pixbuf2.0-dev \
+    libxml2-dev \
+    libxslt1-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -25,7 +26,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies (includes WeasyPrint system libs for PDF generation)
+# Install runtime dependencies (WeasyPrint needs pango/cairo at runtime)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
@@ -34,6 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf2.0-0 \
     libcairo2 \
     libglib2.0-0 \
+    libxml2 \
+    libxslt1.1 \
     && rm -rf /var/lib/apt/lists/* \
     && adduser --disabled-password --gecos '' appuser
 

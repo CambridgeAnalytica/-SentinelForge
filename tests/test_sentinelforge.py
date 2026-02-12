@@ -55,7 +55,7 @@ class TestToolRegistry:
         from pathlib import Path
         registry_path = Path(__file__).parent.parent / "tools" / "registry.yaml"
         if registry_path.exists():
-            with open(registry_path) as f:
+            with open(registry_path, encoding="utf-8") as f:
                 registry = yaml.safe_load(f)
             assert "tools" in registry
             assert len(registry["tools"]) > 0
@@ -69,7 +69,7 @@ class TestToolRegistry:
         from pathlib import Path
         registry_path = Path(__file__).parent.parent / "tools" / "registry.yaml"
         if registry_path.exists():
-            with open(registry_path) as f:
+            with open(registry_path, encoding="utf-8") as f:
                 registry = yaml.safe_load(f)
             for tool in registry["tools"]:
                 assert "mitre_atlas" in tool, f"Tool {tool['name']} missing MITRE ATLAS mapping"
@@ -113,7 +113,7 @@ class TestScenarios:
         scenarios_dir = Path(__file__).parent.parent / "scenarios"
         if scenarios_dir.exists():
             for f in scenarios_dir.glob("*.yaml"):
-                with open(f) as fh:
+                with open(f, encoding="utf-8") as fh:
                     data = yaml.safe_load(fh)
                 assert "id" in data, f"Scenario {f.name} missing id"
                 assert "name" in data, f"Scenario {f.name} missing name"
@@ -129,7 +129,7 @@ class TestPlaybooks:
         playbooks_dir = Path(__file__).parent.parent / "playbooks"
         if playbooks_dir.exists():
             for f in playbooks_dir.glob("*.yaml"):
-                with open(f) as fh:
+                with open(f, encoding="utf-8") as fh:
                     data = yaml.safe_load(fh)
                 assert "id" in data, f"Playbook {f.name} missing id"
                 assert "name" in data, f"Playbook {f.name} missing name"

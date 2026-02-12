@@ -15,12 +15,7 @@ import codecs
 import logging
 import random
 import urllib.parse
-from typing import List, Dict, Any, Optional
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-from models import SyntheticDataset, RunStatus
+from typing import List, Dict, Any
 
 logger = logging.getLogger("sentinelforge.synthetic")
 
@@ -269,13 +264,15 @@ MUTATION_ENGINES = {
 
 
 async def generate_dataset(
-    db: AsyncSession,
+    db,
     seed_prompts: List[str],
     mutations: List[str],
     count: int,
     user_id: str,
-) -> SyntheticDataset:
+):
     """Generate a synthetic adversarial dataset."""
+    from models import SyntheticDataset, RunStatus
+
     dataset = SyntheticDataset(
         seed_count=len(seed_prompts) if seed_prompts else len(DEFAULT_SEEDS),
         mutations_applied=mutations,
@@ -344,16 +341,22 @@ async def generate_dataset(
     return dataset
 
 
-async def list_datasets(db: AsyncSession) -> list:
+async def list_datasets(db) -> list:
     """List all synthetic datasets."""
+    from sqlalchemy import select
+    from models import SyntheticDataset
+
     result = await db.execute(
         select(SyntheticDataset).order_by(SyntheticDataset.created_at.desc()).limit(50)
     )
     return result.scalars().all()
 
 
-async def get_dataset(db: AsyncSession, dataset_id: str) -> Optional[SyntheticDataset]:
+async def get_dataset(db, dataset_id: str):
     """Get a specific synthetic dataset by ID."""
+    from sqlalchemy import select
+    from models import SyntheticDataset
+
     result = await db.execute(
         select(SyntheticDataset).where(SyntheticDataset.id == dataset_id)
     )
