@@ -1,7 +1,7 @@
 # SentinelForge Worker Dockerfile
 # Python-based worker for job execution (replaces Go worker for simplicity)
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
