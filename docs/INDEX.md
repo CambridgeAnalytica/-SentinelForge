@@ -8,13 +8,6 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 - **[Getting Started Guide](GETTING_STARTED.md)** - Quick setup for local development
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions (local, AWS, on-premises)
 
-## Leadership & Security
-
-- **[EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md)** - C-Suite brief: platform overview, ROI analysis, strategic value
-- **[LEADERSHIP_ACTION_PLAN.md](LEADERSHIP_ACTION_PLAN.md)** - 7 action items with ownership, timelines, and approval gates
-- **[SECURITY_RISK_ASSESSMENT.md](SECURITY_RISK_ASSESSMENT.md)** - Comprehensive cyber risk assessment for the platform
-- **[TEST_RESULTS.md](TEST_RESULTS.md)** - Platform test report: 37 tests, 13 categories, all passed
-
 ## Reference Guides
 
 - **[COMMAND_REFERENCE.md](COMMAND_REFERENCE.md)** - All commands with expected outputs
@@ -178,9 +171,10 @@ See [DEPLOYMENT_GUIDE.md#troubleshooting](DEPLOYMENT_GUIDE.md#troubleshooting) f
                     v
 +------------------------------------------+
 |  FastAPI (Port 8000)                     |
-|  +- Health  +- Auth    +- Attacks          |
-|  +- Probes  +- Tools   +- Reports         |
-|  +- Drift   +- Backdoor +- Supply Chain   |
+|  +- Health  +- Auth    +- Attacks        |
+|  +- Probes  +- Tools   +- Reports       |
+|  +- Drift   +- Backdoor +- Supply Chain |
+|  +- Agent   +- Synthetic +- Webhooks   |
 +-------------------+----------------------+
                     |
                     v
@@ -211,6 +205,6 @@ To extend SentinelForge:
 
 ## Version
 
-Current version: **1.3.0**
+Current version: **1.4.0**
 
 See [CHANGELOG.md](../CHANGELOG.md) for release notes.

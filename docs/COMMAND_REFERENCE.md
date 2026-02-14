@@ -206,54 +206,30 @@ make test
 ```
 🧪 Running Python tests...
 ============================= test session starts ==============================
-collected 23 items
+collected 91 items
 
+tests/test_integration.py::TestHealthEndpoints::test_liveness PASSED
+tests/test_integration.py::TestHealthEndpoints::test_readiness PASSED
+tests/test_integration.py::TestHealthEndpoints::test_health PASSED
+tests/test_integration.py::TestToolsEndpoints::test_list_tools PASSED
+...
 tests/test_sentinelforge.py::TestSchemas::test_login_request_valid PASSED
-tests/test_sentinelforge.py::TestSchemas::test_attack_run_request PASSED
-tests/test_sentinelforge.py::TestSchemas::test_tool_info PASSED
-tests/test_sentinelforge.py::TestSchemas::test_health_response PASSED
 tests/test_sentinelforge.py::TestToolRegistry::test_registry_loads PASSED
-tests/test_sentinelforge.py::TestToolRegistry::test_registry_has_mitre_mapping PASSED
 tests/test_sentinelforge.py::TestToolExecutor::test_executor_init PASSED
-tests/test_sentinelforge.py::TestToolExecutor::test_executor_list_tools PASSED
-tests/test_sentinelforge.py::TestToolExecutor::test_executor_get_nonexistent_tool PASSED
-tests/test_sentinelforge.py::TestToolExecutor::test_executor_execute_nonexistent PASSED
-tests/test_sentinelforge.py::TestScenarios::test_scenarios_valid_yaml PASSED
-tests/test_sentinelforge.py::TestPlaybooks::test_playbooks_valid_yaml PASSED
 tests/test_sentinelforge.py::TestModelAdapters::test_get_openai_adapter PASSED
-tests/test_sentinelforge.py::TestModelAdapters::test_get_anthropic_adapter PASSED
-tests/test_sentinelforge.py::TestModelAdapters::test_get_bedrock_adapter PASSED
-tests/test_sentinelforge.py::TestModelAdapters::test_bedrock_adapter_default_model PASSED
-tests/test_sentinelforge.py::TestModelAdapters::test_get_unknown_adapter PASSED
 tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_deterministic PASSED
-tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_different_inputs PASSED
-tests/test_sentinelforge.py::TestEvidenceHashing::test_compute_hash_chain_link PASSED
-tests/test_sentinelforge.py::TestEvidenceHashing::test_verify_empty_chain PASSED
-tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_request_defaults PASSED
-tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_request_custom PASSED
-tests/test_sentinelforge.py::TestAgentTestSchema::test_agent_test_response PASSED
-tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_request_defaults PASSED
-tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_request_custom PASSED
-tests/test_sentinelforge.py::TestSyntheticGenSchema::test_synthetic_gen_response PASSED
-tests/test_sentinelforge.py::TestMultiTurnSchema::test_multi_turn_result PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_encoding_mutations PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_translation_mutations PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_synonym_mutations PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_leetspeak_mutation PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_whitespace_mutations PASSED
-tests/test_sentinelforge.py::TestSyntheticMutations::test_fragmentation_mutations PASSED
-tests/test_sentinelforge.py::TestMultiTurnService::test_safety_scoring_refusal PASSED
-tests/test_sentinelforge.py::TestMultiTurnService::test_safety_scoring_compliance PASSED
-tests/test_sentinelforge.py::TestMultiTurnService::test_strategy_prompts_exist PASSED
-tests/test_sentinelforge.py::TestMultiTurnService::test_simulated_response_progression PASSED
+tests/test_sentinelforge.py::TestGarakAdapter::test_parse_target_with_colon PASSED
+tests/test_sentinelforge.py::TestPromptfooAdapter::test_parse_target_openai PASSED
+tests/test_sentinelforge.py::TestToolExecutorDryRun::test_dry_run_returns_stub PASSED
+tests/test_sentinelforge.py::TestWebhookSchemas::test_webhook_create_request_defaults PASSED
 tests/test_sentinelforge.py::TestSDK::test_client_init PASSED
 tests/test_sentinelforge.py::TestSDK::test_client_context_manager PASSED
-============================== 40 passed in 4.12s ==============================
+============================== 91 passed in 3.55s ==============================
 ✅ Python tests complete!
 
 ```
 
-> **Note**: The primary test suite lives in `tests/test_sentinelforge.py` and includes 13 test classes: `TestSchemas`, `TestToolRegistry`, `TestToolExecutor`, `TestScenarios`, `TestPlaybooks`, `TestModelAdapters`, `TestEvidenceHashing`, `TestAgentTestSchema`, `TestSyntheticGenSchema`, `TestMultiTurnSchema`, `TestSyntheticMutations`, `TestMultiTurnService`, and `TestSDK`. You can also run `make test-python` to run only the Python tests.
+> **Note**: Tests are split across two files: `tests/test_integration.py` (28 async integration tests covering all API endpoints) and `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes). Run `make test-python` to run only Python tests.
 
 ---
 
@@ -801,7 +777,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v1.3.0
+SentinelForge CLI v1.4.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -999,7 +975,7 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "services": {
     "database": "healthy"
   },
@@ -1297,6 +1273,77 @@ curl -O http://localhost:8000/reports/{report_id}/download \
 #### `GET /synthetic/datasets/{id}`
 
 **Purpose**: Get details of a specific synthetic dataset with sample prompts
+
+---
+
+### Webhook Endpoints
+
+#### `POST /webhooks`
+
+**Purpose**: Create a webhook endpoint for event notifications
+
+**cURL**:
+```bash
+curl -X POST http://localhost:8000/webhooks \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://my-server.com/hook",
+    "events": ["attack.completed", "scan.completed"],
+    "description": "My notification webhook"
+  }'
+```
+
+**Response**: Returns webhook details including a `secret` for HMAC signature verification (shown only on creation).
+
+#### `GET /webhooks`
+
+**Purpose**: List all webhooks for the current user
+
+#### `GET /webhooks/{id}`
+
+**Purpose**: Get details of a specific webhook
+
+#### `PUT /webhooks/{id}`
+
+**Purpose**: Update a webhook (URL, events, active status)
+
+#### `DELETE /webhooks/{id}`
+
+**Purpose**: Delete a webhook
+
+#### `POST /webhooks/{id}/test`
+
+**Purpose**: Send a test ping event to verify webhook delivery
+
+**Event Types**: `attack.completed`, `attack.failed`, `scan.completed`, `report.generated`, `agent.test.completed`
+
+**Webhook Headers**: Each delivery includes `X-SentinelForge-Event`, `X-SentinelForge-Signature` (HMAC-SHA256), and `X-SentinelForge-Delivery` (unique ID).
+
+---
+
+### Webhook CLI Commands
+
+#### `sf webhook create <url>`
+
+**Purpose**: Register a new webhook endpoint
+
+**Command**:
+```bash
+sf webhook create https://my-server.com/hook --events attack.completed,scan.completed --description "My hook"
+```
+
+#### `sf webhook list`
+
+**Purpose**: List all registered webhooks
+
+#### `sf webhook delete <id>`
+
+**Purpose**: Delete a webhook by ID
+
+#### `sf webhook test <id>`
+
+**Purpose**: Send a test ping to a webhook
 
 ---
 

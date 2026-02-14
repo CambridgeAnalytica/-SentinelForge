@@ -31,7 +31,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **Note**: Capabilities 1-3 have foundation code in place. Capabilities 4-6 have full API endpoints, DB models, CLI integration, and service layers with real model provider calls (OpenAI, Anthropic, Azure, Bedrock).
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform also includes webhook notifications, real tool adapters (garak, promptfoo) with dry-run mode, and 91 tests (63 unit + 28 integration).
 
 ## Quick Start
 
@@ -193,6 +193,17 @@ sf drift compare gpt-4 --baseline baseline.json
 # Supply Chain Scanning
 sf supply-chain scan huggingface:org/model-name
 
+# Backdoor Detection
+sf backdoor scan huggingface:gpt2 --type behavioral
+sf backdoor scans
+sf backdoor show <scan_id>
+
+# Webhook Notifications
+sf webhook create https://my-server.com/hook --events attack.completed,scan.completed
+sf webhook list
+sf webhook delete <webhook_id>
+sf webhook test <webhook_id>
+
 # Reports
 sf report generate --run-id abc123 --format html,pdf,jsonl
 sf report list
@@ -223,10 +234,7 @@ sf playbook run jailbreak_detected --context findings.json
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) -- Local, AWS, and on-premises deployment
 - [Command Reference](docs/COMMAND_REFERENCE.md) -- All CLI, Make, Docker, and API commands
 - [Tools Reference](docs/TOOLS_REFERENCE.md) -- All 14 integrated AI security tools
-- [Executive Summary](docs/EXECUTIVE_SUMMARY.md) -- C-Suite overview and ROI analysis
-- [Security Risk Assessment](docs/SECURITY_RISK_ASSESSMENT.md) -- Comprehensive cyber risk assessment
-- [Test Results](docs/TEST_RESULTS.md) -- Platform test report
-- [Leadership Action Plan](docs/LEADERSHIP_ACTION_PLAN.md) -- Action items with ownership and timelines
+- [Changelog](CHANGELOG.md) -- Version history and release notes
 
 ## Development
 

@@ -34,7 +34,7 @@
 - `TestPromptfooAdapter` (6 tests) — target mapping, config generation, arg building
 - `TestToolExecutorDryRun` (2 tests) — dry-run returns stub, no subprocess
 - `TestWebhookSchemas` (6 tests) — create/update/response schemas, event validation
-- Total: ~80 tests across 20+ test classes
+- Total: 91 tests across 20+ test classes
 
 ---
 
@@ -270,4 +270,4 @@
 
 ---
 
-**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps.
+**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total).
