@@ -106,9 +106,7 @@ async def _send_webhook_with_retry(
                         f"Webhook {endpoint.id} returned {response.status_code}"
                     )
         except Exception as e:
-            logger.warning(
-                f"Webhook {endpoint.id} attempt {attempt + 1} failed: {e}"
-            )
+            logger.warning(f"Webhook {endpoint.id} attempt {attempt + 1} failed: {e}")
 
         # Exponential backoff: 1s, 2s, 4s
         if attempt < max_retries - 1:

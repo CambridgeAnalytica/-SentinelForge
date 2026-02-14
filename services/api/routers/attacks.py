@@ -154,11 +154,7 @@ async def launch_attack(
     await db.flush()
 
     # Dispatch webhook notification
-    event = (
-        "attack.completed"
-        if run.status == RunStatus.COMPLETED
-        else "attack.failed"
-    )
+    event = "attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed"
     background_tasks.add_task(
         _dispatch_webhook,
         event,

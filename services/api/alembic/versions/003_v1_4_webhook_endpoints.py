@@ -25,9 +25,7 @@ def upgrade():
         sa.Column("is_active", sa.Boolean(), server_default="true"),
         sa.Column("description", sa.String(500), nullable=True),
         sa.Column("failure_count", sa.Integer(), server_default="0"),
-        sa.Column(
-            "last_triggered_at", sa.DateTime(timezone=True), nullable=True
-        ),
+        sa.Column("last_triggered_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
