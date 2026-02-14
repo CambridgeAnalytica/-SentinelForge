@@ -32,7 +32,7 @@ async def health_check():
 
     return HealthResponse(
         status=overall,
-        version="1.3.0",
+        version="1.4.0",
         services=services,
         timestamp=datetime.now(timezone.utc),
     )

@@ -4,7 +4,7 @@ Supply Chain Security Scanner API endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -20,6 +20,7 @@ logger = logging.getLogger("sentinelforge.supply_chain")
 @router.post("/scan")
 async def run_supply_chain_scan(
     request: SupplyChainScanRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -34,6 +35,17 @@ async def run_supply_chain_scan(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    background_tasks.add_task(
+        _dispatch_webhook,
+        "scan.completed",
+        {
+            "scan_id": scan.id,
+            "scan_type": "supply_chain",
+            "model_source": scan.model_source,
+            "risk_level": scan.risk_level,
+        },
+    )
+
     return {
         "id": scan.id,
         "model_source": scan.model_source,
@@ -43,6 +55,16 @@ async def run_supply_chain_scan(
         "results": scan.results,
         "created_at": scan.created_at.isoformat(),
     }
+
+
+async def _dispatch_webhook(event_type: str, payload: dict) -> None:
+    """Background task: dispatch webhook event."""
+    try:
+        from services.webhook_service import dispatch_webhook_event
+
+        await dispatch_webhook_event(event_type, payload)
+    except Exception as e:
+        logger.error(f"Webhook dispatch error: {e}")
 
 
 @router.get("/scans")

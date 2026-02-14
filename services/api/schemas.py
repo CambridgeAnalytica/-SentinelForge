@@ -240,3 +240,49 @@ class MultiTurnResult(BaseModel):
 class SupplyChainScanRequest(BaseModel):
     model_source: str  # e.g. "huggingface:gpt2"
     checks: List[str] = ["dependencies", "model_card", "license", "data_provenance"]
+
+
+# ---------- Webhooks ----------
+
+VALID_WEBHOOK_EVENTS = {
+    "attack.completed",
+    "attack.failed",
+    "scan.completed",
+    "report.generated",
+    "agent.test.completed",
+}
+
+
+class WebhookCreateRequest(BaseModel):
+    url: str
+    events: List[str] = ["attack.completed"]
+    description: Optional[str] = None
+
+
+class WebhookUpdateRequest(BaseModel):
+    url: Optional[str] = None
+    events: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+    description: Optional[str] = None
+
+
+class WebhookResponse(BaseModel):
+    id: str
+    url: str
+    events: List[str]
+    is_active: bool
+    description: Optional[str] = None
+    failure_count: int = 0
+    last_triggered_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class WebhookCreatedResponse(WebhookResponse):
+    secret: str  # Only returned on creation
+
+
+class WebhookTestResponse(BaseModel):
+    webhook_id: str
+    status: str
+    response_code: Optional[int] = None
+    error: Optional[str] = None

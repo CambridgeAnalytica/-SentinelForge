@@ -4,7 +4,7 @@ Adversarial Fine-Tuning / Backdoor Detection API endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -20,6 +20,7 @@ logger = logging.getLogger("sentinelforge.backdoor")
 async def run_backdoor_scan(
     model_source: str,
     scan_type: str = "behavioral",
+    background_tasks: BackgroundTasks = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -34,6 +35,18 @@ async def run_backdoor_scan(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    if background_tasks:
+        background_tasks.add_task(
+            _dispatch_webhook,
+            "scan.completed",
+            {
+                "scan_id": scan.id,
+                "scan_type": "backdoor",
+                "model_source": scan.model_source,
+                "risk_level": scan.risk_level,
+            },
+        )
+
     return {
         "id": scan.id,
         "model_source": scan.model_source,
@@ -43,6 +56,16 @@ async def run_backdoor_scan(
         "results": scan.results,
         "created_at": scan.created_at.isoformat(),
     }
+
+
+async def _dispatch_webhook(event_type: str, payload: dict) -> None:
+    """Background task: dispatch webhook event."""
+    try:
+        from services.webhook_service import dispatch_webhook_event
+
+        await dispatch_webhook_event(event_type, payload)
+    except Exception as e:
+        logger.error(f"Webhook dispatch error: {e}")
 
 
 @router.get("/scans")

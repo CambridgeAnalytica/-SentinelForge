@@ -4,7 +4,7 @@ Agent Testing API endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -20,6 +20,7 @@ logger = logging.getLogger("sentinelforge.agent")
 @router.post("/test", response_model=AgentTestResponse)
 async def launch_agent_test(
     request: AgentTestRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -33,6 +34,18 @@ async def launch_agent_test(
         test_scenarios=request.test_scenarios,
         user_id=user.id,
     )
+    # Dispatch webhook notification
+    background_tasks.add_task(
+        _dispatch_webhook,
+        "agent.test.completed",
+        {
+            "test_id": test.id,
+            "endpoint": test.endpoint,
+            "status": test.status.value,
+            "risk_level": test.risk_level,
+        },
+    )
+
     return AgentTestResponse(
         id=test.id,
         endpoint=test.endpoint,
@@ -87,3 +100,13 @@ async def get_agent_test(
         created_at=test.created_at,
         completed_at=test.completed_at,
     )
+
+
+async def _dispatch_webhook(event_type: str, payload: dict) -> None:
+    """Background task: dispatch webhook event."""
+    try:
+        from services.webhook_service import dispatch_webhook_event
+
+        await dispatch_webhook_event(event_type, payload)
+    except Exception as e:
+        logger.error(f"Webhook dispatch error: {e}")

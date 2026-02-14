@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List
 
 import yaml
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,6 +72,7 @@ async def list_scenarios(user: User = Depends(get_current_user)):
 @router.post("/run", response_model=AttackRunResponse)
 async def launch_attack(
     request: AttackRunRequest,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ):
@@ -151,6 +152,23 @@ async def launch_attack(
 
     run.completed_at = datetime.now(timezone.utc)
     await db.flush()
+
+    # Dispatch webhook notification
+    event = (
+        "attack.completed"
+        if run.status == RunStatus.COMPLETED
+        else "attack.failed"
+    )
+    background_tasks.add_task(
+        _dispatch_webhook,
+        event,
+        {
+            "run_id": run.id,
+            "scenario_id": run.scenario_id,
+            "target_model": run.target_model,
+            "status": run.status.value,
+        },
+    )
 
     return AttackRunResponse(
         id=run.id,
@@ -363,3 +381,13 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
     }
 
     return results
+
+
+async def _dispatch_webhook(event_type: str, payload: dict) -> None:
+    """Background task: dispatch webhook event with its own DB session."""
+    try:
+        from services.webhook_service import dispatch_webhook_event
+
+        await dispatch_webhook_event(event_type, payload)
+    except Exception as e:
+        logger.error(f"Webhook dispatch error: {e}")

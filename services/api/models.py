@@ -236,6 +236,22 @@ class SyntheticDataset(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
 
+class WebhookEndpoint(Base):
+    __tablename__ = "webhook_endpoints"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    url = Column(String(2000), nullable=False)
+    events = Column(JSON, default=list)  # ["attack.completed", "scan.completed", ...]
+    secret = Column(String(255), nullable=False)  # HMAC-SHA256 signing secret
+    is_active = Column(Boolean, default=True)
+    description = Column(String(500), nullable=True)
+    failure_count = Column(Integer, default=0)
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 

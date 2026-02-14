@@ -12,6 +12,17 @@ tools:
     cli: garak
     venv: /opt/venvs/garak
     install_command: "pip install garak"
+    target_arg: "--model_name"  # garak uses --model_type + --model_name, handled by adapter
+    allowed_args:
+      - probes
+      - detectors
+      - generations
+      - seed
+      - report_prefix
+      - parallel_requests
+      - verbose
+    default_args:
+      generations: "5"
     capabilities:
       - prompt_injection_detection
       - jailbreak_testing
@@ -65,6 +76,16 @@ tools:
     cli: promptfoo
     venv: /opt/venvs/promptfoo
     install_command: "npm install -g promptfoo"
+    target_arg: "--config"  # promptfoo uses --config <yaml>, handled by adapter
+    allowed_args:
+      - prompts
+      - type
+      - plugins
+      - max_concurrency
+      - verbose
+      - description
+    default_args:
+      type: "red-team"
     capabilities:
       - prompt_evaluation
       - red_teaming

@@ -29,6 +29,7 @@ drift_app = typer.Typer(help="Model drift detection (NEW)")
 synthetic_app = typer.Typer(help="Synthetic data generation (NEW)")
 supply_chain_app = typer.Typer(help="Supply chain scanning (NEW)")
 backdoor_app = typer.Typer(help="Backdoor detection scanning (NEW)")
+webhook_app = typer.Typer(help="Webhook notification management (NEW)")
 playbook_app = typer.Typer(help="IR playbook management")
 
 app.add_typer(auth_app, name="auth")
@@ -41,6 +42,7 @@ app.add_typer(drift_app, name="drift")
 app.add_typer(synthetic_app, name="synthetic")
 app.add_typer(supply_chain_app, name="supply-chain")
 app.add_typer(backdoor_app, name="backdoor")
+app.add_typer(webhook_app, name="webhook")
 app.add_typer(playbook_app, name="playbook")
 
 
@@ -107,7 +109,7 @@ def version():
     """Show SentinelForge version."""
     console.print(
         Panel(
-            "[bold cyan]SentinelForge CLI v1.3.0[/bold cyan]\n"
+            "[bold cyan]SentinelForge CLI v1.4.0[/bold cyan]\n"
             "Enterprise AI Security Testing Platform\n"
             "[dim]https://github.com/CambridgeAnalytica/-SentinelForge[/dim]",
             title="🛡️ SentinelForge",
@@ -923,6 +925,94 @@ def backdoor_show(scan_id: str = typer.Argument(..., help="Scan ID")):
             border_style=risk_style.split()[-1] if " " in risk_style else risk_style,
         )
     )
+
+
+# ─── Webhook Commands ──────────────────────────────────────
+
+
+@webhook_app.command("create")
+def webhook_create(
+    url: str = typer.Argument(..., help="Webhook endpoint URL"),
+    events: str = typer.Option(
+        "attack.completed",
+        help="Comma-separated event types (attack.completed,scan.completed,report.generated,attack.failed,agent.test.completed)",
+    ),
+    description: str = typer.Option("", help="Webhook description"),
+):
+    """Register a new webhook endpoint."""
+    event_list = [e.strip() for e in events.split(",") if e.strip()]
+    payload = {"url": url, "events": event_list}
+    if description:
+        payload["description"] = description
+    data = _api_request("POST", "/webhooks", json=payload)
+    console.print(
+        Panel(
+            f"Webhook ID: {data['id']}\n"
+            f"URL: {data['url']}\n"
+            f"Events: {', '.join(data['events'])}\n"
+            f"Secret: [bold yellow]{data['secret']}[/bold yellow]\n\n"
+            f"[dim]Save the secret — it won't be shown again.[/dim]",
+            title="✅ Webhook Created",
+            border_style="green",
+        )
+    )
+
+
+@webhook_app.command("list")
+def webhook_list():
+    """List registered webhooks."""
+    data = _api_request("GET", "/webhooks")
+    table = Table(title="Webhooks", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("URL")
+    table.add_column("Events")
+    table.add_column("Active")
+    table.add_column("Failures")
+    table.add_column("Created")
+    for w in data:
+        active = "[green]✓[/green]" if w["is_active"] else "[red]✗[/red]"
+        table.add_row(
+            w["id"][:12] + "...",
+            w["url"][:50] + ("..." if len(w["url"]) > 50 else ""),
+            ", ".join(w["events"]),
+            active,
+            str(w["failure_count"]),
+            w["created_at"][:10],
+        )
+    console.print(table)
+
+
+@webhook_app.command("delete")
+def webhook_delete(webhook_id: str = typer.Argument(..., help="Webhook ID")):
+    """Delete a webhook endpoint."""
+    _api_request("DELETE", f"/webhooks/{webhook_id}")
+    console.print(f"[green]✅ Webhook {webhook_id[:12]}... deleted[/green]")
+
+
+@webhook_app.command("test")
+def webhook_test(webhook_id: str = typer.Argument(..., help="Webhook ID")):
+    """Send a test ping to a webhook endpoint."""
+    data = _api_request("POST", f"/webhooks/{webhook_id}/test")
+    if data["status"] == "success":
+        console.print(
+            Panel(
+                f"Webhook: {data['webhook_id'][:12]}...\n"
+                f"Status: [green]{data['status']}[/green]\n"
+                f"Response Code: {data.get('response_code', 'N/A')}",
+                title="✅ Webhook Test",
+                border_style="green",
+            )
+        )
+    else:
+        console.print(
+            Panel(
+                f"Webhook: {data['webhook_id'][:12]}...\n"
+                f"Status: [red]{data['status']}[/red]\n"
+                f"Error: {data.get('error', 'Unknown error')}",
+                title="❌ Webhook Test Failed",
+                border_style="red",
+            )
+        )
 
 
 def main():

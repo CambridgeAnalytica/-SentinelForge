@@ -87,6 +87,7 @@ temp/
 
 # Claude Code
 CLAUDE.md
+.claude/
 
 # OS
 Thumbs.db

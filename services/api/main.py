@@ -24,6 +24,7 @@ from routers import (
     supply_chain,
     agent,
     synthetic,
+    webhooks,
 )
 from middleware.logging_middleware import RequestLoggingMiddleware
 
@@ -75,7 +76,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="1.3.0",
+    version="1.4.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -106,6 +107,7 @@ app.include_router(backdoor.router, prefix="/backdoor", tags=["Backdoor Detectio
 app.include_router(supply_chain.router, prefix="/supply-chain", tags=["Supply Chain"])
 app.include_router(agent.router, prefix="/agent", tags=["Agent Testing"])
 app.include_router(synthetic.router, prefix="/synthetic", tags=["Synthetic Data"])
+app.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
 
 
 if __name__ == "__main__":

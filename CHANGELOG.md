@@ -1,5 +1,43 @@
 # SentinelForge - CHANGELOG
 
+## [1.4.0] - 2026-02-14
+
+### Webhook Notifications
+- New API endpoints: `POST /webhooks`, `GET /webhooks`, `GET /webhooks/{id}`, `PUT /webhooks/{id}`, `DELETE /webhooks/{id}`, `POST /webhooks/{id}/test`
+- HMAC-SHA256 payload signing (`X-SentinelForge-Signature` header)
+- Exponential backoff retry (3 attempts: 1s, 2s, 4s)
+- Auto-disable after 10 consecutive delivery failures
+- 5 event types: `attack.completed`, `attack.failed`, `scan.completed`, `report.generated`, `agent.test.completed`
+- Events wired into attacks, reports, agent tests, backdoor scans, and supply chain scans
+- CLI commands: `sf webhook create`, `sf webhook list`, `sf webhook delete`, `sf webhook test`
+- DB model: `WebhookEndpoint` with user_id, events, secret, failure_count
+- Alembic migration `003_v1_4_webhook_endpoints.py`
+
+### Real Tool Wiring
+- `tools/garak_adapter.py` — maps SentinelForge target format (`openai:gpt-4`) to garak CLI args (`--model_type openai --model_name gpt-4`)
+- `tools/promptfoo_adapter.py` — generates temp YAML config, maps to `promptfoo eval --config <file>`
+- garak: target parsing, output (JSONL) → findings, severity classification
+- promptfoo: provider mapping, red-team plugin config, JSON output → findings
+- Dry-run mode (`SENTINELFORGE_DRY_RUN=1`) — returns stub output without subprocess execution
+- `target_arg` override per tool in `registry.yaml`
+- `default_args` merge from registry (user args take precedence)
+- `allowed_args` whitelist enforced per tool
+
+### Integration Tests
+- New `tests/conftest.py` — shared fixtures: in-memory SQLite, mock auth, async HTTP client
+- New `tests/test_integration.py` — 25+ async tests across 11 test classes
+- Endpoint coverage: health, tools, attacks, reports, drift, agent, synthetic, webhooks, supply-chain, backdoor, error cases
+- `asyncio_mode = auto` in `pytest.ini` for pytest-asyncio
+
+### Unit Tests
+- `TestGarakAdapter` (9 tests) — target parsing, arg building, output parsing
+- `TestPromptfooAdapter` (6 tests) — target mapping, config generation, arg building
+- `TestToolExecutorDryRun` (2 tests) — dry-run returns stub, no subprocess
+- `TestWebhookSchemas` (6 tests) — create/update/response schemas, event validation
+- Total: ~80 tests across 20+ test classes
+
+---
+
 ## [1.3.0] - 2026-02-12
 
 ### Agent Testing Framework (Capability 1)
