@@ -22,7 +22,6 @@ async def dispatch_webhook_event(
 ) -> None:
     """Find all active webhooks subscribed to this event and dispatch."""
     from sqlalchemy import select
-    from sqlalchemy.ext.asyncio import AsyncSession
     from database import AsyncSessionLocal
     from models import WebhookEndpoint
 
