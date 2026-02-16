@@ -35,7 +35,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 91 tests (63 unit + 28 integration).
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 120 tests (63 unit + 57 integration).
 
 ## Dashboard UI (v2.0)
 

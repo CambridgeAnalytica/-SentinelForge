@@ -22,6 +22,21 @@
 - Docker integration: `Dockerfile.dashboard` (multi-stage node:20-alpine), `docker-compose.yml` service
 - `.env.example` updated with `NEXT_PUBLIC_API_URL` and `CORS_ORIGINS` for port 3001
 
+### CLI Commands (v1.5/v1.6 gap closure)
+- `sf schedule create/list/trigger/delete` — cron-based recurring scan management
+- `sf api-key create/list/revoke` — API key management for CI/CD and automation
+- `sf compliance frameworks/summary/report` — compliance framework listing, summary aggregation, PDF/HTML report download
+
+### Tests
+- 29 new integration tests: schedules CRUD + trigger, API keys CRUD, notification channels CRUD + validation, compliance frameworks/summary/report
+- 3 new error case tests for 404 handling across new endpoints
+- **120 total tests** (63 unit + 57 integration), all passing
+
+### CI/CD
+- New `dashboard-build` CI job: Node 20, `npm ci` + `npm run build`
+- Added `slowapi>=0.1.9` to `requirements-test.txt`
+- COMMAND_REFERENCE.md audit: v2.0 tool list, API endpoint sections, environment variables
+
 ---
 
 ## [1.6.0] - 2026-02-16

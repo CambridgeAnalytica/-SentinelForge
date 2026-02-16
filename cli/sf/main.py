@@ -31,6 +31,9 @@ supply_chain_app = typer.Typer(help="Supply chain scanning (NEW)")
 backdoor_app = typer.Typer(help="Backdoor detection scanning (NEW)")
 webhook_app = typer.Typer(help="Webhook notification management (NEW)")
 playbook_app = typer.Typer(help="IR playbook management")
+schedule_app = typer.Typer(help="Scheduled scan management")
+api_key_app = typer.Typer(help="API key management")
+compliance_app = typer.Typer(help="Compliance framework reporting")
 
 app.add_typer(auth_app, name="auth")
 app.add_typer(tools_app, name="tools")
@@ -44,6 +47,9 @@ app.add_typer(supply_chain_app, name="supply-chain")
 app.add_typer(backdoor_app, name="backdoor")
 app.add_typer(webhook_app, name="webhook")
 app.add_typer(playbook_app, name="playbook")
+app.add_typer(schedule_app, name="schedule")
+app.add_typer(api_key_app, name="api-key")
+app.add_typer(compliance_app, name="compliance")
 
 
 # ─── Configuration ──────────────────────────────────────────
@@ -1013,6 +1019,249 @@ def webhook_test(webhook_id: str = typer.Argument(..., help="Webhook ID")):
                 border_style="red",
             )
         )
+
+
+# ─── Schedule Commands ─────────────────────────────────────
+
+
+@schedule_app.command("create")
+def schedule_create(
+    name: str = typer.Option(..., "--name", "-n", help="Schedule name"),
+    scenario: str = typer.Option(..., "--scenario", "-s", help="Scenario ID"),
+    target: str = typer.Option(..., "--target", "-t", help="Target model"),
+    cron: str = typer.Option(..., "--cron", help='Cron expression (e.g. "0 6 * * 1")'),
+):
+    """Create a new scheduled scan."""
+    data = _api_request(
+        "POST",
+        "/schedules",
+        json={
+            "name": name,
+            "cron_expression": cron,
+            "scenario_id": scenario,
+            "target_model": target,
+        },
+    )
+    console.print(
+        Panel(
+            f"Schedule ID: {data['id']}\n"
+            f"Name: {data['name']}\n"
+            f"Cron: {data['cron_expression']}\n"
+            f"Scenario: {data['scenario_id']}\n"
+            f"Target: {data['target_model']}\n"
+            f"Next Run: {data.get('next_run_at', 'N/A')}",
+            title="Schedule Created",
+            border_style="green",
+        )
+    )
+
+
+@schedule_app.command("list")
+def schedule_list():
+    """List all scheduled scans."""
+    data = _api_request("GET", "/schedules")
+    table = Table(title="Scheduled Scans", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Name")
+    table.add_column("Cron")
+    table.add_column("Scenario")
+    table.add_column("Target")
+    table.add_column("Active")
+    table.add_column("Next Run")
+    for s in data:
+        active = "[green]Y[/green]" if s["is_active"] else "[red]N[/red]"
+        next_run = s.get("next_run_at", "")
+        if next_run:
+            next_run = next_run[:16]
+        table.add_row(
+            s["id"][:12] + "...",
+            s["name"],
+            s["cron_expression"],
+            s["scenario_id"],
+            s["target_model"],
+            active,
+            next_run,
+        )
+    console.print(table)
+
+
+@schedule_app.command("trigger")
+def schedule_trigger(schedule_id: str = typer.Argument(..., help="Schedule ID")):
+    """Manually trigger a scheduled scan."""
+    data = _api_request("POST", f"/schedules/{schedule_id}/trigger")
+    console.print(f"[green]Triggered![/green] Run ID: {data['run_id']}")
+
+
+@schedule_app.command("delete")
+def schedule_delete(schedule_id: str = typer.Argument(..., help="Schedule ID")):
+    """Delete a scheduled scan."""
+    _api_request("DELETE", f"/schedules/{schedule_id}")
+    console.print(f"[green]Schedule {schedule_id[:12]}... deleted[/green]")
+
+
+# ─── API Key Commands ──────────────────────────────────────
+
+
+@api_key_app.command("create")
+def api_key_create(
+    name: str = typer.Option(..., "--name", "-n", help="Key name"),
+    scopes: str = typer.Option("read,write", "--scopes", help="Comma-separated scopes"),
+    expires: int = typer.Option(
+        None, "--expires", help="Expiry in days (omit for no expiry)"
+    ),
+):
+    """Create a new API key."""
+    scope_list = [s.strip() for s in scopes.split(",") if s.strip()]
+    payload = {"name": name, "scopes": scope_list}
+    if expires:
+        payload["expires_in_days"] = expires
+    data = _api_request("POST", "/api-keys", json=payload)
+    console.print(
+        Panel(
+            f"Key ID: {data['id']}\n"
+            f"Name: {data['name']}\n"
+            f"Prefix: {data['prefix']}\n"
+            f"Scopes: {', '.join(data['scopes'])}\n"
+            f"Expires: {data.get('expires_at') or 'Never'}\n\n"
+            f"[bold yellow]Raw Key: {data['raw_key']}[/bold yellow]\n\n"
+            f"[dim]Save this key now — it will not be shown again.[/dim]",
+            title="API Key Created",
+            border_style="green",
+        )
+    )
+
+
+@api_key_app.command("list")
+def api_key_list():
+    """List all API keys."""
+    data = _api_request("GET", "/api-keys")
+    table = Table(title="API Keys", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Name")
+    table.add_column("Prefix")
+    table.add_column("Scopes")
+    table.add_column("Active")
+    table.add_column("Expires")
+    table.add_column("Last Used")
+    for k in data:
+        active = "[green]Y[/green]" if k["is_active"] else "[red]N[/red]"
+        expires = k.get("expires_at", "")
+        if expires:
+            expires = expires[:10]
+        else:
+            expires = "Never"
+        last_used = k.get("last_used_at") or "Never"
+        if last_used != "Never":
+            last_used = last_used[:10]
+        table.add_row(
+            k["id"][:12] + "...",
+            k["name"],
+            k["prefix"],
+            ", ".join(k["scopes"]),
+            active,
+            expires,
+            last_used,
+        )
+    console.print(table)
+
+
+@api_key_app.command("revoke")
+def api_key_revoke(key_id: str = typer.Argument(..., help="API key ID")):
+    """Revoke an API key."""
+    _api_request("DELETE", f"/api-keys/{key_id}")
+    console.print(f"[green]API key {key_id[:12]}... revoked[/green]")
+
+
+# ─── Compliance Commands ───────────────────────────────────
+
+
+@compliance_app.command("frameworks")
+def compliance_frameworks():
+    """List supported compliance frameworks."""
+    data = _api_request("GET", "/compliance/frameworks")
+    table = Table(title="Compliance Frameworks", border_style="cyan")
+    table.add_column("ID", style="bold")
+    table.add_column("Name")
+    for fw in data.get("frameworks", []):
+        table.add_row(fw["id"], fw["name"])
+    console.print(table)
+
+
+@compliance_app.command("summary")
+def compliance_summary(
+    framework: str = typer.Option(
+        "owasp_ml_top10",
+        "--framework",
+        "-f",
+        help="Framework ID (owasp_ml_top10, nist_ai_rmf, eu_ai_act)",
+    ),
+):
+    """Get compliance summary for all findings."""
+    data = _api_request("GET", f"/compliance/summary?framework={framework}")
+    risk_score = data.get("risk_score", 0)
+    risk_color = (
+        "red" if risk_score >= 70 else "yellow" if risk_score >= 40 else "green"
+    )
+
+    console.print(
+        Panel(
+            f"Framework: {data.get('framework_name', framework)}\n"
+            f"Risk Score: [{risk_color}]{risk_score}/100[/{risk_color}]\n"
+            f"Total Findings: {data.get('total_findings', 0)}\n"
+            f"Generated: {data.get('generated_at', '')}",
+            title="Compliance Summary",
+            border_style="cyan",
+        )
+    )
+
+    table = Table(title="Categories", border_style="cyan")
+    table.add_column("ID")
+    table.add_column("Category")
+    table.add_column("Findings")
+    table.add_column("Status")
+    for cat in data.get("categories", []):
+        count = cat["total_findings"]
+        status = (
+            "[green]PASS[/green]" if count == 0 else f"[red]{count} finding(s)[/red]"
+        )
+        table.add_row(cat["id"], cat["name"], str(count), status)
+    console.print(table)
+
+
+@compliance_app.command("report")
+def compliance_report(
+    framework: str = typer.Option(
+        "owasp_ml_top10",
+        "--framework",
+        "-f",
+        help="Framework ID",
+    ),
+    format: str = typer.Option("pdf", "--format", help="Report format (pdf or html)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output file path"),
+):
+    """Download a compliance report."""
+    import httpx
+
+    url = f"{_get_api_url()}/compliance/report?framework={framework}&format={format}"
+    headers = _get_headers()
+
+    try:
+        with httpx.Client(timeout=30) as http:
+            resp = http.get(url, headers=headers)
+            resp.raise_for_status()
+
+            if not output:
+                ext = "pdf" if format == "pdf" else "json"
+                output = f"sentinelforge_{framework}_report.{ext}"
+
+            Path(output).write_bytes(resp.content)
+            console.print(f"[green]Report saved to {output}[/green]")
+    except httpx.ConnectError:
+        console.print(f"[red]Cannot connect to API at {_get_api_url()}[/red]")
+        raise typer.Exit(1)
+    except httpx.HTTPStatusError as e:
+        console.print(f"[red]API error: {e.response.status_code}[/red]")
+        raise typer.Exit(1)
 
 
 def main():

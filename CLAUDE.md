@@ -21,7 +21,7 @@ make logs              # tail all service logs
 make build             # builds api, worker, tools images
 
 # Testing
-make test              # runs all Python tests (unit + integration, 91 tests)
+make test              # runs all Python tests (unit + integration, 120 tests)
 make test-python       # pytest across services/api, sdk/python, cli (each in own venv)
 
 # Run tests for a single component (activate its venv first):
@@ -145,6 +145,7 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v1.2**: Alembic, 4 model adapters, PDF reports, S3, evidence hashing
 - **v1.3**: Agent testing, multi-turn adversarial, synthetic data
 - **v1.4**: Webhooks, garak+promptfoo adapters, dry-run, 91 tests (28 integration)
+- **Current**: 120 tests (63 unit + 57 integration) — all routers covered
 - **v1.5**: Scheduled scans, API keys, rate limiting, notifications, OTel, 3 more adapters
 - **v1.6**: Compliance mapping, 9 more adapters (14/14 complete), CI/CD package
 - **v2.0**: Next.js Dashboard UI (8 pages, SWR, Recharts, JWT auth flow)

@@ -88,6 +88,24 @@ jobs:
         run: pip-audit -r services/api/requirements.txt
         continue-on-error: true
 
+  dashboard-build:
+    name: Dashboard Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Build Next.js dashboard
+        working-directory: dashboard
+        run: npm run build
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest

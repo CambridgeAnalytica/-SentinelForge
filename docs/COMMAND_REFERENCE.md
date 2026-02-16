@@ -102,10 +102,15 @@ Building Tools image...
 ...
 => => naming to docker.io/sentinelforge/tools:latest                  0.0s
 
+Building Dashboard image...
+[+] Building 25.3s (10/10) FINISHED
+...
+=> => naming to docker.io/sentinelforge/dashboard:latest              0.0s
+
 ✅ Build complete!
 ```
 
-> **Note**: The images are tagged as `sentinelforge/api:latest`, `sentinelforge/worker:latest`, and `sentinelforge/tools:latest`.
+> **Note**: The images are tagged as `sentinelforge/api:latest`, `sentinelforge/worker:latest`, `sentinelforge/tools:latest`, and `sentinelforge/dashboard:latest`.
 
 **Duration**: 3-5 minutes (first build), 30-60 seconds (subsequent)
 
@@ -123,7 +128,7 @@ make up
 **Expected Output**:
 ```
 🚀 Starting services...
-[+] Running 10/10
+[+] Running 11/11
  ✔ Network sf-network          Created                                0.1s
  ✔ Container sf-postgres       Started                                1.2s
  ✔ Container sf-minio          Started                                1.3s
@@ -131,10 +136,12 @@ make up
  ✔ Container sf-prometheus     Started                                1.4s
  ✔ Container sf-grafana        Started                                1.5s
  ✔ Container sf-api            Started                                2.1s
+ ✔ Container sf-dashboard      Started                                2.0s
  ✔ Container sf-worker         Started                                2.2s
 ✅ Services started!
 API: http://localhost:8000
 API Docs: http://localhost:8000/docs
+Dashboard: http://localhost:3001
 Jaeger UI: http://localhost:16686
 Prometheus: http://localhost:9090
 MinIO Console: http://localhost:9001
@@ -145,7 +152,7 @@ MinIO Console: http://localhost:9001
 docker ps
 ```
 
-**Expected**: All 8+ containers running
+**Expected**: All 9+ containers running
 
 ---
 
@@ -161,8 +168,9 @@ make down
 **Expected Output**:
 ```
 🛑 Stopping services...
-[+] Running 10/10
+[+] Running 11/11
  ✔ Container sf-worker         Removed                                1.2s
+ ✔ Container sf-dashboard      Removed                                1.0s
  ✔ Container sf-api            Removed                                1.3s
  ✔ Container sf-grafana        Removed                                0.8s
  ✔ Container sf-prometheus     Removed                                0.7s
@@ -293,6 +301,7 @@ SBOM saved to: sbom/api-sbom.json
 ```
 NAME                IMAGE                       STATUS
 sf-api              sentinelforge/api          Up 5 minutes (healthy)
+sf-dashboard        sentinelforge/dashboard    Up 5 minutes
 sf-grafana          grafana/grafana            Up 5 minutes
 sf-jaeger           jaegertracing/all-in-one   Up 5 minutes
 sf-minio            minio/minio                Up 5 minutes (healthy)
@@ -448,20 +457,24 @@ sf tools list
 **Expected Output**:
 ```
 Available Tools
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name       ┃ Category         ┃ Description                ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ garak      │ prompt_injection │ LLM vulnerability scanner  │
-│ promptfoo  │ evaluation       │ LLM evaluation framework   │
-│ pyrit      │ red_team         │ Python Risk Identification │
-│ rebuff     │ detection        │ Injection detection        │
-│ textattack │ adversarial_ml   │ Adversarial NLP attacks    │
-│ art        │ adversarial_ml   │ Adversarial Robustness     │
-│ deepeval   │ evaluation       │ LLM evaluation framework   │
-│ trulens    │ observability    │ LLM observability          │
-│ guardrails │ validation       │ Output validation          │
-│ langkit    │ monitoring       │ Safety monitoring          │
-└────────────┴──────────────────┴────────────────────────────┘
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Name         ┃ Category         ┃ Version┃ Description                           ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ garak        │ prompt_injection │ 0.9    │ LLM vulnerability scanner             │
+│ promptfoo    │ evaluation       │ 0.80   │ LLM evaluation framework              │
+│ pyrit        │ red_team         │ 0.5    │ Python Risk Identification Tool       │
+│ rebuff       │ detection        │ 0.3    │ Prompt injection detection            │
+│ textattack   │ adversarial_ml   │ 0.3    │ Adversarial NLP attacks               │
+│ art          │ adversarial_ml   │ 1.17   │ Adversarial Robustness Toolbox        │
+│ deepeval     │ evaluation       │ 1.1    │ LLM evaluation framework              │
+│ trulens      │ observability    │ 0.32   │ LLM observability & feedback          │
+│ guardrails   │ validation       │ 0.4    │ Output validation & PII detection     │
+│ langkit      │ monitoring       │ 0.0.32 │ Safety monitoring                     │
+│ fickling     │ supply_chain     │ 0.0.8  │ Pickle file security scanning         │
+│ cyberseceval │ evaluation       │ 2.0    │ Meta LLM security evals               │
+│ easyedit     │ model_editing    │ 0.1    │ Knowledge editing robustness          │
+│ rigging      │ red_team         │ 0.1    │ Advanced prompting & workflows        │
+└──────────────┴──────────────────┴────────┴───────────────────────────────────────┘
 ```
 
 ---
@@ -915,6 +928,128 @@ sf backdoor show <scan_id>
 
 ---
 
+#### `sf schedule create`
+
+**Purpose**: Create a cron-based recurring scan schedule
+
+**Command**:
+```bash
+sf schedule create --name "Weekly jailbreak test" --scenario jailbreak --target gpt-4 --cron "0 6 * * 1"
+```
+
+**Expected Output**:
+```
+Schedule created: abc12345
+  Name: Weekly jailbreak test
+  Cron: 0 6 * * 1
+  Next run: 2026-02-23T06:00:00Z
+```
+
+#### `sf schedule list`
+
+**Purpose**: List all scheduled scans
+
+**Command**:
+```bash
+sf schedule list
+```
+
+#### `sf schedule trigger`
+
+**Purpose**: Manually trigger a scheduled scan immediately
+
+**Command**:
+```bash
+sf schedule trigger <schedule_id>
+```
+
+#### `sf schedule delete`
+
+**Purpose**: Delete a scheduled scan
+
+**Command**:
+```bash
+sf schedule delete <schedule_id>
+```
+
+---
+
+#### `sf api-key create`
+
+**Purpose**: Create a new API key for CI/CD or automation
+
+**Command**:
+```bash
+sf api-key create --name ci-pipeline --scopes read,write --expires 90
+```
+
+**Expected Output**:
+```
+API Key created (save this — it won't be shown again):
+  Key: sf_a1b2c3d4e5f6g7h8...
+  Name: ci-pipeline
+  Scopes: read, write
+  Expires: 2026-05-17
+```
+
+#### `sf api-key list`
+
+**Purpose**: List all API keys for the current user
+
+**Command**:
+```bash
+sf api-key list
+```
+
+#### `sf api-key revoke`
+
+**Purpose**: Revoke (deactivate) an API key
+
+**Command**:
+```bash
+sf api-key revoke <key_id>
+```
+
+---
+
+#### `sf compliance frameworks`
+
+**Purpose**: List supported compliance frameworks
+
+**Command**:
+```bash
+sf compliance frameworks
+```
+
+**Expected Output**:
+```
+Supported Compliance Frameworks
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  owasp_ml_top10   OWASP Machine Learning Top 10
+  nist_ai_rmf      NIST AI Risk Management Framework
+  eu_ai_act        EU Artificial Intelligence Act
+```
+
+#### `sf compliance summary`
+
+**Purpose**: Get compliance summary aggregating findings by framework categories
+
+**Command**:
+```bash
+sf compliance summary --framework owasp_ml_top10
+```
+
+#### `sf compliance report`
+
+**Purpose**: Generate and download a compliance report (PDF or HTML)
+
+**Command**:
+```bash
+sf compliance report --framework owasp_ml_top10 --format pdf --output report.pdf
+```
+
+---
+
 ## Environment Variables
 
 ### Required Variables
@@ -947,12 +1082,51 @@ sf backdoor show <scan_id>
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_LEVEL` | `info` | Log level (debug, info, warning, error) |
-| `WORKER_CONCURRENCY` | `5` | Number of concurrent worker jobs |
+| `WORKER_CONCURRENCY` | `10` | Number of concurrent worker jobs |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://jaeger:4318` | OpenTelemetry endpoint |
 | `GRAFANA_PASSWORD` | `admin` | Grafana admin password |
-| `CORS_ORIGINS` | `[]` (empty list) | CORS allowed origins (list of URLs). Wildcard `*` is **blocked** in production -- you must set explicit origins. |
+| `CORS_ORIGINS` | `[]` (empty list) | CORS allowed origins (list of URLs). Wildcard `*` is **blocked** in production -- you must set explicit origins. For local dev: `["http://localhost:8000","http://localhost:3001"]` |
 | `DEBUG` | `false` | Enable debug mode (relaxes some security checks -- never use in production) |
 | `METRICS_ENABLED` | `true` | Enable Prometheus metrics collection |
+| `REDIS_URL` | _(empty)_ | Redis connection URL for token blocklist. Falls back to in-memory if not set |
+
+### Rate Limiting (v1.5)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RATE_LIMIT_ENABLED` | `true` | Enable per-endpoint rate limiting via slowapi |
+| `RATE_LIMIT_DEFAULT` | `100/minute` | Default rate limit (applies per API key > JWT > IP) |
+
+### Notification Channels (v1.5)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SMTP_HOST` | _(empty)_ | SMTP server hostname for email notifications |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_USERNAME` | _(empty)_ | SMTP authentication username |
+| `SMTP_PASSWORD` | _(empty)_ | SMTP authentication password |
+| `SMTP_FROM` | `noreply@sentinelforge.io` | Sender email address |
+
+> Slack and Teams channels are configured via `POST /notifications/channels` with webhook URLs, not environment variables.
+
+### Dashboard (v2.0)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | API URL used by the Next.js dashboard |
+
+### Feature Flags
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENABLE_AGENT_TESTING` | `true` | Enable AI agent testing endpoints |
+| `ENABLE_MULTI_TURN` | `true` | Enable multi-turn adversarial attacks |
+| `ENABLE_SYNTHETIC_DATA` | `true` | Enable synthetic data generation |
+| `ENABLE_DRIFT_MONITORING` | `true` | Enable model drift detection |
+| `ENABLE_BACKDOOR_DETECTION` | `true` | Enable backdoor scanning |
+| `ENABLE_SUPPLY_CHAIN_SCAN` | `true` | Enable supply chain scanning |
+| `ENABLE_SCHEDULED_SCANS` | `true` | Enable cron-based scheduled scans |
+| `ENABLE_COMPLIANCE` | `true` | Enable compliance framework mapping |
 
 ---
 
@@ -1344,6 +1518,225 @@ sf webhook create https://my-server.com/hook --events attack.completed,scan.comp
 #### `sf webhook test <id>`
 
 **Purpose**: Send a test ping to a webhook
+
+---
+
+### Scheduled Scan Endpoints (v1.5)
+
+#### `POST /schedules`
+
+**Purpose**: Create a new scheduled scan with a cron expression
+
+**cURL**:
+```bash
+curl -X POST http://localhost:8000/schedules \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekly Prompt Injection",
+    "cron_expression": "0 6 * * 1",
+    "scenario_id": "prompt_injection",
+    "target_model": "gpt-4",
+    "config": {}
+  }'
+```
+
+**Response**:
+```json
+{
+  "id": "uuid-string",
+  "name": "Weekly Prompt Injection",
+  "cron_expression": "0 6 * * 1",
+  "scenario_id": "prompt_injection",
+  "target_model": "gpt-4",
+  "config": {},
+  "is_active": true,
+  "compare_drift": false,
+  "baseline_id": null,
+  "last_run_at": null,
+  "next_run_at": "2026-02-17T06:00:00Z",
+  "created_at": "2026-02-16T12:00:00Z",
+  "updated_at": null
+}
+```
+
+#### `GET /schedules`
+
+**Purpose**: List all scheduled scans for the current user
+
+#### `GET /schedules/{id}`
+
+**Purpose**: Get details of a specific schedule
+
+#### `PUT /schedules/{id}`
+
+**Purpose**: Update a schedule (cron expression, name, active status)
+
+#### `DELETE /schedules/{id}`
+
+**Purpose**: Delete a schedule (returns 204 No Content)
+
+#### `POST /schedules/{id}/trigger`
+
+**Purpose**: Manually trigger a scheduled scan immediately (creates a new attack run)
+
+**Response**:
+```json
+{
+  "message": "Schedule triggered",
+  "run_id": "uuid-string",
+  "schedule_id": "uuid-string"
+}
+```
+
+---
+
+### API Key Endpoints (v1.5)
+
+#### `POST /api-keys`
+
+**Purpose**: Create a new API key for CI/CD or automation. The raw key is returned once and cannot be retrieved again.
+
+**cURL**:
+```bash
+curl -X POST http://localhost:8000/api-keys \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "ci-pipeline",
+    "scopes": ["read", "write"],
+    "expires_in_days": 90
+  }'
+```
+
+**Response**:
+```json
+{
+  "id": "uuid-string",
+  "prefix": "sf_abc123...",
+  "name": "ci-pipeline",
+  "scopes": ["read", "write"],
+  "is_active": true,
+  "last_used_at": null,
+  "expires_at": "2026-05-17T12:00:00Z",
+  "created_at": "2026-02-16T12:00:00Z",
+  "raw_key": "sf_abc123def456..."
+}
+```
+
+> **Important**: Save `raw_key` immediately -- it is only returned on creation and cannot be retrieved later.
+
+#### `GET /api-keys`
+
+**Purpose**: List all API keys for the current user (raw keys are not included)
+
+#### `DELETE /api-keys/{id}`
+
+**Purpose**: Revoke (deactivate) an API key (returns 204 No Content)
+
+> **Usage**: Include the API key in requests via the `X-API-Key` header as an alternative to JWT Bearer tokens.
+
+---
+
+### Notification Channel Endpoints (v1.5)
+
+#### `POST /notifications/channels`
+
+**Purpose**: Register a new notification channel (Slack, email, Teams, or webhook)
+
+**cURL** (Slack example):
+```bash
+curl -X POST http://localhost:8000/notifications/channels \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "security-alerts",
+    "channel_type": "slack",
+    "config": {"webhook_url": "https://hooks.slack.com/services/..."},
+    "events": ["attack.completed", "scan.completed"]
+  }'
+```
+
+**Channel Types and Required Config**:
+
+| Type | Required Config Fields |
+|------|----------------------|
+| `slack` | `webhook_url` |
+| `email` | `to` (email address) |
+| `teams` | `webhook_url` |
+| `webhook` | `url` |
+
+#### `GET /notifications/channels`
+
+**Purpose**: List all notification channels for the current user
+
+#### `PUT /notifications/channels/{id}`
+
+**Purpose**: Update a notification channel
+
+#### `DELETE /notifications/channels/{id}`
+
+**Purpose**: Delete a notification channel (returns 204 No Content)
+
+#### `POST /notifications/channels/{id}/test`
+
+**Purpose**: Send a test notification to verify the channel is working
+
+**Response**:
+```json
+{
+  "channel_id": "uuid-string",
+  "status": "success",
+  "error": null
+}
+```
+
+---
+
+### Compliance Endpoints (v1.6)
+
+#### `GET /compliance/frameworks`
+
+**Purpose**: List supported compliance frameworks
+
+**cURL**:
+```bash
+curl http://localhost:8000/compliance/frameworks \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response**:
+```json
+{
+  "frameworks": [
+    {"id": "owasp_ml_top10", "name": "OWASP Machine Learning Top 10"},
+    {"id": "nist_ai_rmf", "name": "NIST AI Risk Management Framework"},
+    {"id": "eu_ai_act", "name": "EU Artificial Intelligence Act"}
+  ]
+}
+```
+
+#### `GET /compliance/summary?framework=<id>`
+
+**Purpose**: Get compliance summary aggregating all findings by framework categories (auto-tags findings via MITRE ATLAS technique mapping)
+
+**cURL**:
+```bash
+curl "http://localhost:8000/compliance/summary?framework=owasp_ml_top10" \
+  -H "Authorization: Bearer <token>"
+```
+
+#### `GET /compliance/report?framework=<id>&format=pdf`
+
+**Purpose**: Generate and download an auditor-friendly compliance report (PDF or JSON)
+
+**cURL**:
+```bash
+curl -O "http://localhost:8000/compliance/report?framework=owasp_ml_top10&format=pdf" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response**: Binary PDF download (or JSON summary if `format=html`)
 
 ---
 
