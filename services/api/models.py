@@ -263,3 +263,73 @@ class AuditLog(Base):
     details = Column(JSON, default=dict)
     ip_address = Column(String(45), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+# ---------- Scheduled Scans ----------
+
+
+class Schedule(Base):
+    __tablename__ = "schedules"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    name = Column(String(200), nullable=False)
+    cron_expression = Column(String(100), nullable=False)  # e.g. "0 2 * * *"
+    scenario_id = Column(String(100), nullable=False)
+    target_model = Column(String(200), nullable=False)
+    config = Column(JSON, default=dict)  # Tool config, passed to attack run
+    is_active = Column(Boolean, default=True)
+    compare_drift = Column(Boolean, default=False)  # Auto-compare drift each run
+    baseline_id = Column(
+        String, ForeignKey("drift_baselines.id"), nullable=True
+    )  # Drift baseline to compare against
+    last_run_at = Column(DateTime(timezone=True), nullable=True)
+    next_run_at = Column(DateTime(timezone=True), nullable=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+# ---------- API Keys ----------
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    key_hash = Column(String(64), nullable=False, index=True)  # SHA-256
+    prefix = Column(String(12), nullable=False)  # "sf_xxxx" for display
+    name = Column(String(200), nullable=False)
+    scopes = Column(JSON, default=list)  # ["read", "write", "admin"]
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    user = relationship("User")
+
+
+# ---------- Notification Channels ----------
+
+
+class ChannelType(str, PyEnum):
+    WEBHOOK = "webhook"
+    SLACK = "slack"
+    EMAIL = "email"
+    TEAMS = "teams"
+
+
+class NotificationChannel(Base):
+    __tablename__ = "notification_channels"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    channel_type = Column(Enum(ChannelType), nullable=False)
+    name = Column(String(200), nullable=False)
+    config = Column(JSON, default=dict)  # URL, SMTP settings, etc.
+    events = Column(JSON, default=list)  # ["attack.completed", "scan.completed"]
+    is_active = Column(Boolean, default=True)
+    failure_count = Column(Integer, default=0)
+    last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

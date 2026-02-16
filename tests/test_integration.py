@@ -7,7 +7,6 @@ an in-memory SQLite database and mocked auth.
 
 import pytest
 
-
 # ── Health Endpoints ──────────────────────────────────────
 
 
@@ -76,7 +75,10 @@ class TestToolsEndpoints:
         assert resp.status_code == 200
         data = resp.json()
         assert data["tool"] == "garak"
-        assert "dry_run" in data.get("output", "").lower() or data["status"] in ("completed", "stub")
+        assert "dry_run" in data.get("output", "").lower() or data["status"] in (
+            "completed",
+            "stub",
+        )
 
 
 # ── Attacks Endpoints ─────────────────────────────────────
@@ -259,7 +261,10 @@ class TestWebhookEndpoints:
     async def test_update_webhook(self, client):
         create_resp = await client.post(
             "/webhooks/",
-            json={"url": "https://example.com/wh-update", "events": ["attack.completed"]},
+            json={
+                "url": "https://example.com/wh-update",
+                "events": ["attack.completed"],
+            },
         )
         webhook_id = create_resp.json()["id"]
 
@@ -276,7 +281,10 @@ class TestWebhookEndpoints:
     async def test_delete_webhook(self, client):
         create_resp = await client.post(
             "/webhooks/",
-            json={"url": "https://example.com/wh-delete", "events": ["attack.completed"]},
+            json={
+                "url": "https://example.com/wh-delete",
+                "events": ["attack.completed"],
+            },
         )
         webhook_id = create_resp.json()["id"]
 

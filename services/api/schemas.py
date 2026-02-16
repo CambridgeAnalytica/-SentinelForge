@@ -286,3 +286,104 @@ class WebhookTestResponse(BaseModel):
     status: str
     response_code: Optional[int] = None
     error: Optional[str] = None
+
+
+# ---------- Scheduled Scans ----------
+
+
+class ScheduleCreateRequest(BaseModel):
+    name: str
+    cron_expression: str  # e.g. "0 2 * * *" (nightly at 2am)
+    scenario_id: str
+    target_model: str
+    config: Dict[str, Any] = {}
+    compare_drift: bool = False
+    baseline_id: Optional[str] = None
+
+
+class ScheduleUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    cron_expression: Optional[str] = None
+    scenario_id: Optional[str] = None
+    target_model: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+    is_active: Optional[bool] = None
+    compare_drift: Optional[bool] = None
+    baseline_id: Optional[str] = None
+
+
+class ScheduleResponse(BaseModel):
+    id: str
+    name: str
+    cron_expression: str
+    scenario_id: str
+    target_model: str
+    config: Dict[str, Any] = {}
+    is_active: bool
+    compare_drift: bool = False
+    baseline_id: Optional[str] = None
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+# ---------- API Keys ----------
+
+
+class ApiKeyCreateRequest(BaseModel):
+    name: str
+    scopes: List[str] = ["read", "write"]
+    expires_in_days: Optional[int] = None  # None = never expires
+
+
+class ApiKeyResponse(BaseModel):
+    id: str
+    prefix: str
+    name: str
+    scopes: List[str]
+    is_active: bool
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class ApiKeyCreatedResponse(ApiKeyResponse):
+    raw_key: str  # Only returned once on creation
+
+
+# ---------- Notification Channels ----------
+
+VALID_CHANNEL_TYPES = {"webhook", "slack", "email", "teams"}
+
+
+class NotificationChannelCreate(BaseModel):
+    channel_type: str  # webhook, slack, email, teams
+    name: str
+    config: Dict[str, Any] = {}  # URL, SMTP settings, etc.
+    events: List[str] = ["attack.completed"]
+
+
+class NotificationChannelUpdate(BaseModel):
+    name: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+    events: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+
+
+class NotificationChannelResponse(BaseModel):
+    id: str
+    channel_type: str
+    name: str
+    config: Dict[str, Any] = {}
+    events: List[str]
+    is_active: bool
+    failure_count: int = 0
+    last_triggered_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class NotificationTestResponse(BaseModel):
+    channel_id: str
+    status: str
+    error: Optional[str] = None

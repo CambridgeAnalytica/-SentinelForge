@@ -777,7 +777,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v1.4.0
+SentinelForge CLI v2.0.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -975,7 +975,7 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "services": {
     "database": "healthy"
   },

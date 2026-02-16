@@ -1,0 +1,67 @@
+name: 'SentinelForge AI Security Scan'
+description: 'Run AI/ML security scans as part of your CI/CD pipeline. Scans models for vulnerabilities, prompt injection, adversarial robustness, and more.'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api_url:
+    description: 'SentinelForge API base URL'
+    required: true
+    default: 'http://localhost:8000'
+  api_key:
+    description: 'SentinelForge API key (use GitHub Secrets)'
+    required: true
+  scenario:
+    description: 'Attack scenario ID to run'
+    required: true
+  target_model:
+    description: 'Target model identifier (e.g. openai:gpt-4, huggingface:model-name)'
+    required: true
+  fail_on_severity:
+    description: 'Fail the check if findings reach this severity (critical, high, medium, low, none)'
+    required: false
+    default: 'high'
+  timeout:
+    description: 'Maximum time to wait for scan completion (seconds)'
+    required: false
+    default: '600'
+  config:
+    description: 'Extra scan configuration as JSON string'
+    required: false
+    default: '{}'
+  comment_on_pr:
+    description: 'Post scan results as a PR comment'
+    required: false
+    default: 'true'
+
+outputs:
+  scan_id:
+    description: 'ID of the created scan run'
+  status:
+    description: 'Final scan status (completed, failed, timed_out)'
+  total_findings:
+    description: 'Total number of findings'
+  critical_count:
+    description: 'Number of critical findings'
+  high_count:
+    description: 'Number of high-severity findings'
+  report_url:
+    description: 'URL to the full scan report'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run SentinelForge Scan
+      shell: bash
+      env:
+        SF_API_URL: ${{ inputs.api_url }}
+        SF_API_KEY: ${{ inputs.api_key }}
+        SF_SCENARIO: ${{ inputs.scenario }}
+        SF_TARGET_MODEL: ${{ inputs.target_model }}
+        SF_FAIL_ON: ${{ inputs.fail_on_severity }}
+        SF_TIMEOUT: ${{ inputs.timeout }}
+        SF_CONFIG: ${{ inputs.config }}
+        SF_COMMENT_ON_PR: ${{ inputs.comment_on_pr }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: ${{ github.action_path }}/entrypoint.sh

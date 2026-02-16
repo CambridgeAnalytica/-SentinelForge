@@ -23,12 +23,12 @@ logger = logging.getLogger("sentinelforge.executor")
 
 # Patterns that must never appear in user-supplied argument values
 _DANGEROUS_PATTERNS = re.compile(
-    r"[;&|`$\(\)\{\}!<>]"   # shell metacharacters
-    r"|\.\./"                # path traversal
-    r"|/etc/"                # system paths
+    r"[;&|`$\(\)\{\}!<>]"  # shell metacharacters
+    r"|\.\./"  # path traversal
+    r"|/etc/"  # system paths
     r"|/proc/"
     r"|/dev/"
-    r"|~/"                   # home directory expansion
+    r"|~/"  # home directory expansion
 )
 _MAX_ARG_KEY_LEN = 64
 _MAX_ARG_VALUE_LEN = 1024
@@ -38,7 +38,7 @@ _VALID_ARG_KEY = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
     """Validate and sanitize user-supplied tool arguments.
-    
+
     Raises ValueError on any suspicious input.
     """
     if not args:
@@ -258,7 +258,7 @@ class ToolExecutor:
                 "success": False,
                 "stdout": "",
                 "stderr": f"Tool '{tool_name}' binary not found. "
-                          f"Install via: {tool_config.get('install_command', 'N/A')}",
+                f"Install via: {tool_config.get('install_command', 'N/A')}",
                 "duration": 0.0,
                 "return_code": -1,
             }
@@ -307,7 +307,9 @@ class ToolExecutor:
         allowed_keys = set(tool_config.get("allowed_args", []))
         for key, value in safe_args.items():
             if allowed_keys and key not in allowed_keys:
-                logger.warning(f"Skipping disallowed arg '{key}' for tool {tool_config.get('name')}")
+                logger.warning(
+                    f"Skipping disallowed arg '{key}' for tool {tool_config.get('name')}"
+                )
                 continue
             if isinstance(value, bool):
                 if value:
@@ -341,7 +343,10 @@ class ToolExecutor:
 
         if tool_name == "promptfoo":
             try:
-                from tools.promptfoo_adapter import build_promptfoo_config, build_promptfoo_args
+                from tools.promptfoo_adapter import (
+                    build_promptfoo_config,
+                    build_promptfoo_args,
+                )
             except ImportError:
                 return None
 
@@ -356,8 +361,14 @@ class ToolExecutor:
         """Build environment for tool execution."""
         env = os.environ.copy()
         # Pass through API keys
-        for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AZURE_OPENAI_API_KEY",
-                     "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "HUGGINGFACE_API_TOKEN"]:
+        for key in [
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "AZURE_OPENAI_API_KEY",
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "HUGGINGFACE_API_TOKEN",
+        ]:
             if key in os.environ:
                 env[key] = os.environ[key]
         return env
@@ -369,4 +380,6 @@ if __name__ == "__main__":
     print(f"Available tools: {executor.list_tools()}")
     for name in executor.list_tools():
         config = executor.get_tool_config(name)
-        print(f"  {name} v{config.get('version', '?')} - {config.get('description', '')}")
+        print(
+            f"  {name} v{config.get('version', '?')} - {config.get('description', '')}"
+        )

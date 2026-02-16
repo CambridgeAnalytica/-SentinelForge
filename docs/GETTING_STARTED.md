@@ -4,6 +4,10 @@ This guide walks you through setting up SentinelForge on your local machine,
 from zero to running your first AI security test. Every step includes an
 explanation of **what** the command does and **why** you need it.
 
+> **SentinelForge v2.0** — includes compliance mapping, 14 tool adapters,
+> scheduled scans, API key auth, notifications, CI/CD integration, and
+> a full Next.js Dashboard UI (port 3001).
+
 ---
 
 ## Prerequisites
@@ -117,7 +121,7 @@ DEFAULT_ADMIN_PASSWORD=MyStr0ng!Pass#2026
 For the API to accept browser requests locally, set:
 
 ```env
-CORS_ORIGINS=["http://localhost:8000"]
+CORS_ORIGINS=["http://localhost:8000","http://localhost:3001"]
 ```
 
 Alternatively, set `DEBUG=true` during local development to bypass CORS
@@ -157,7 +161,7 @@ Verify everything is running:
 docker compose ps
 ```
 
-You should see containers for `sf-api`, `sf-postgres`, `sf-minio`, `sf-jaeger`,
+You should see containers for `sf-api`, `sf-dashboard`, `sf-postgres`, `sf-minio`, `sf-jaeger`,
 `sf-prometheus`, `sf-grafana`, and two `sf-worker` replicas, all with status
 "Up" or "Up (healthy)".
 
@@ -205,7 +209,7 @@ sf version
 
 Expected output:
 ```
-SentinelForge CLI v1.4.0
+SentinelForge CLI v2.0.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -264,6 +268,7 @@ After completing the steps above, these services are available on your machine:
 | **SentinelForge API** | http://localhost:8000 | Main REST API |
 | **API Documentation** (Swagger) | http://localhost:8000/docs | Interactive API explorer |
 | **Health Check** | http://localhost:8000/health | Service health endpoint |
+| **Dashboard UI** | http://localhost:3001 | Web-based security dashboard |
 | **Grafana** | http://localhost:3000 | Metrics dashboards (default login: admin / admin) |
 | **Jaeger UI** | http://localhost:16686 | Distributed tracing |
 | **Prometheus** | http://localhost:9090 | Raw metrics |
@@ -286,11 +291,11 @@ Expected output:
 ```json
 {
   "status": "healthy",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "services": {
     "database": "healthy"
   },
-  "timestamp": "2026-02-10T12:00:00Z"
+  "timestamp": "2026-02-16T12:00:00Z"
 }
 ```
 
@@ -300,6 +305,7 @@ Expected output:
 
 ```
 API (Port 8000)       - FastAPI orchestration layer
+Dashboard (Port 3001) - Next.js web dashboard
 Worker (Background)   - Python async job executor (polls for queued attack runs)
 Postgres (Port 5432)  - Persistent data storage (attack runs, users, results)
 MinIO (Port 9000)     - S3-compatible artifact/evidence storage
@@ -313,6 +319,7 @@ Grafana (Port 3000)   - Metrics visualization and alerting
 ## What's Next?
 
 - **Explore Tools**: `sf tools list` to see all integrated security tools
+- **Open the Dashboard**: Visit http://localhost:3001 for the web UI
 - **Test an AI Agent**: `sf agent test <endpoint>`
 - **Generate Synthetic Attack Data**: `sf synthetic generate --seed prompts.txt`
 - **Monitor Model Drift**: `sf drift baseline --model gpt-4`
@@ -361,3 +368,97 @@ cd ..
 1. [Deployment Guide](DEPLOYMENT_GUIDE.md) -- Production deployment to AWS or on-premises
 2. [CLI Command Reference](COMMAND_REFERENCE.md) -- Complete list of `sf` commands
 3. [Tools Reference](TOOLS_REFERENCE.md) -- Documentation for all integrated security tools
+4. [CI/CD Integration](../ci/README.md) -- GitHub Actions + GitLab CI setup
+
+---
+
+## Step 8: Create an API Key (for CI/CD or Automation)
+
+API keys let external tools and CI/CD pipelines authenticate without using
+interactive login. You can create one via the CLI or the API.
+
+```bash
+# Create an API key for your CI pipeline
+sf api-key create --name ci-pipeline --scopes read,write
+```
+
+Output:
+```
+API Key created successfully!
+Key:  sf_key_a1b2c3d4e5f6...  (save this — it will not be shown again)
+Name: ci-pipeline
+Scopes: read, write
+```
+
+Store this key securely:
+- **GitHub**: Repository → Settings → Secrets → `SENTINELFORGE_API_KEY`
+- **GitLab**: Project → Settings → CI/CD → Variables → `SENTINELFORGE_API_KEY` (masked)
+
+See [CI/CD Integration](../ci/README.md) for full pipeline setup with GitHub Actions
+and GitLab CI.
+
+---
+
+## Step 9: Set Up Scheduled Scans (Optional)
+
+Scheduled scans let you run security tests automatically on a cron schedule.
+
+```bash
+# Run a prompt injection scan every Monday at 6 AM
+sf schedule create --scenario prompt_injection --cron "0 6 * * 1" --target gpt-4
+
+# View all schedules
+sf schedule list
+
+# Manually trigger a schedule
+sf schedule trigger <schedule_id>
+```
+
+---
+
+## Step 10: Check Compliance Status (Optional)
+
+SentinelForge auto-tags all findings with compliance frameworks.
+
+```bash
+# List supported frameworks
+sf compliance frameworks
+
+# Get compliance summary for a completed scan
+sf compliance summary --run-id <run_id>
+
+# Download an auditor-friendly PDF report
+sf compliance report --run-id <run_id> --format pdf
+```
+
+Supported frameworks:
+- **OWASP ML Top 10** — Machine learning vulnerability taxonomy
+- **NIST AI RMF** — AI Risk Management Framework
+- **EU AI Act** — European Union AI regulation requirements
+
+---
+
+## Step 11: Set Up Notifications (Optional)
+
+Receive scan results via Slack, email, or Microsoft Teams.
+
+```bash
+# Via the API (requires JWT or API key auth)
+curl -X POST http://localhost:8000/notifications/channels \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-slack-channel",
+    "type": "slack",
+    "config": {"webhook_url": "https://hooks.slack.com/services/..."}
+  }'
+```
+
+For email notifications, set these in `.env`:
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=your-email@gmail.com
+```

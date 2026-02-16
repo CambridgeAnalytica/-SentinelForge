@@ -20,26 +20,26 @@
 
 ## Tool Overview
 
-SentinelForge integrates **14 specialized AI security tools**, each running in isolated virtual environments to prevent dependency conflicts.
+SentinelForge integrates **14 specialized AI security tools**, each running in isolated virtual environments to prevent dependency conflicts. **All 14 tools now have dedicated adapters** (v1.6) for parsing targets, building CLI arguments, and converting output into SentinelForge findings.
 
 ### Quick Reference Table
 
-| Tool | Category | Primary Use | MITRE ATLAS |
-|------|----------|-------------|-------------|
-| [garak](#garak) | Prompt Injection | Jailbreak testing, prompt injection | AML.T0051.000 |
-| [promptfoo](#promptfoo) | Evaluation | LLM evaluation, red teaming | AML.T0056.000 |
-| [pyrit](#pyrit) | Red Team | Automated red teaming, multi-turn attacks | AML.T0051.000, AML.T0054.000 |
-| [rebuff](#rebuff) | Detection | Prompt injection detection | AML.T0051.000 |
-| [textattack](#textattack) | Adversarial ML | NLP adversarial attacks | AML.T0043.000 |
-| [art](#art-adversarial-robustness-toolbox) | Adversarial ML | Evasion, poisoning, backdoors | AML.T0043.000, AML.T0040.000 |
-| [deepeval](#deepeval) | Evaluation | Hallucination, bias, toxicity | AML.T0056.000 |
-| [trulens](#trulens) | Observability | Feedback, groundedness | AML.T0056.000 |
-| [guardrails](#guardrails-ai) | Validation | Output validation, PII detection | AML.T0015.000 |
-| [langkit](#langkit) | Monitoring | Safety monitoring | AML.T0056.000 |
-| [fickling](#fickling) | Supply Chain | Pickle file security scanning | AML.T0010.000 |
-| [cyberseceval](#cyberseceval) | Evaluation | Meta's LLM security evals | AML.T0051.000, AML.T0056.000 |
-| [easyedit](#easyedit) | Model Editing | Knowledge editing robustness testing | AML.T0040.000 |
-| [rigging](#rigging) | Red Team | Advanced prompting & attack workflows | AML.T0051.000 |
+| Tool | Category | Adapter | Primary Use | MITRE ATLAS |
+|------|----------|---------|-------------|-------------|
+| [garak](#garak) | Prompt Injection | ✅ `garak_adapter` | Jailbreak testing, prompt injection | AML.T0051.000 |
+| [promptfoo](#promptfoo) | Evaluation | ✅ `promptfoo_adapter` | LLM evaluation, red teaming | AML.T0056.000 |
+| [pyrit](#pyrit) | Red Team | ✅ `pyrit_adapter` | Automated red teaming, multi-turn attacks | AML.T0051.000 |
+| [rebuff](#rebuff) | Detection | ✅ `rebuff_adapter` | Prompt injection detection | AML.T0051.000 |
+| [textattack](#textattack) | Adversarial ML | ✅ `textattack_adapter` | NLP adversarial attacks | AML.T0043.000 |
+| [art](#art-adversarial-robustness-toolbox) | Adversarial ML | ✅ `art_adapter` | Evasion, poisoning, backdoors | AML.T0043.000 |
+| [deepeval](#deepeval) | Evaluation | ✅ `deepeval_adapter` | Hallucination, bias, toxicity | AML.T0056.000 |
+| [trulens](#trulens) | Observability | ✅ `trulens_adapter` | Feedback, groundedness | AML.T0056.000 |
+| [guardrails](#guardrails-ai) | Validation | ✅ `guardrails_adapter` | Output validation, PII detection | AML.T0015.000 |
+| [langkit](#langkit) | Monitoring | ✅ `langkit_adapter` | Safety monitoring | AML.T0056.000 |
+| [fickling](#fickling) | Supply Chain | ✅ `fickling_adapter` | Pickle file security scanning | AML.T0010.000 |
+| [cyberseceval](#cyberseceval) | Evaluation | ✅ `cyberseceval_adapter` | Meta's LLM security evals | AML.T0056.000 |
+| [easyedit](#easyedit) | Model Editing | ✅ `easyedit_adapter` | Knowledge editing robustness | AML.T0040.000 |
+| [rigging](#rigging) | Red Team | ✅ `rigging_adapter` | Advanced prompting & workflows | AML.T0051.000 |
 
 ---
 

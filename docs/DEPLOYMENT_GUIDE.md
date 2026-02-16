@@ -143,8 +143,8 @@ POSTGRES_DB=sentinelforge
 #### CORS Configuration
 
 ```env
-# For local development, allow the API's own origin:
-CORS_ORIGINS=["http://localhost:8000"]
+# For local development, allow the API's own origin and the Dashboard UI:
+CORS_ORIGINS=["http://localhost:8000","http://localhost:3001"]
 
 # Or use DEBUG=true to bypass CORS enforcement entirely (dev only):
 DEBUG=true
@@ -190,6 +190,7 @@ docker compose up -d
  - Container sf-prometheus     Started
  - Container sf-grafana        Started
  - Container sf-api            Started
+ - Container sf-dashboard       Started
  - Container sf-worker         Started
 ```
 
@@ -202,6 +203,7 @@ docker compose ps
 ```
 NAME                IMAGE                         STATUS
 sf-api              sentinelforge-api            Up (healthy)
+sf-dashboard        sentinelforge-dashboard       Up
 sf-grafana          grafana/grafana              Up
 sf-jaeger           jaegertracing/all-in-one     Up
 sf-minio            minio/minio                  Up (healthy)
@@ -220,7 +222,7 @@ cd ..
 
 **Expected Output**:
 ```
-Successfully installed sentinelforge-cli-1.4.0
+Successfully installed sentinelforge-cli-2.0.0
 ```
 
 **Verify CLI**:
@@ -230,7 +232,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v1.4.0
+SentinelForge CLI v2.0.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -241,6 +243,7 @@ Open these URLs in your browser:
 | Service | URL | Credentials |
 |---------|-----|-------------|
 | API Documentation | http://localhost:8000/docs | N/A |
+| Dashboard UI | http://localhost:3001 | SentinelForge admin credentials |
 | Grafana | http://localhost:3000 | admin / admin |
 | Jaeger UI | http://localhost:16686 | N/A |
 | Prometheus | http://localhost:9090 | N/A |
@@ -262,7 +265,7 @@ Invoke-RestMethod http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "services": {
     "database": "healthy"
   },
@@ -381,8 +384,8 @@ docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/sentinelforge/api:latest
 docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/sentinelforge/worker:latest
 ```
 
-> **Note**: The `make build` target builds all three Docker images (api, worker,
-> tools) using the Dockerfiles in `infra/docker/`.
+> **Note**: The `make build` target builds all four Docker images (api, worker,
+> tools, dashboard) using the Dockerfiles in `infra/docker/`.
 
 ### Step 4: Create RDS PostgreSQL
 

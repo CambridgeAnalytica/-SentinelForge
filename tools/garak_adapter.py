@@ -7,7 +7,6 @@ SentinelForge sends: target="openai:gpt-4", args={"probes": "encoding.InjectBase
 
 import json
 import logging
-import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("sentinelforge.garak_adapter")
@@ -76,8 +75,10 @@ def build_garak_args(
     """
     parsed = parse_target(target)
     cli_args = [
-        "--model_type", parsed["model_type"],
-        "--model_name", parsed["model_name"],
+        "--model_type",
+        parsed["model_type"],
+        "--model_name",
+        parsed["model_name"],
     ]
 
     args = args or {}
@@ -126,15 +127,17 @@ def parse_garak_output(stdout: str) -> List[Dict[str, Any]]:
         probe_name = record.get("probe", "unknown")
         detector = record.get("detector", "unknown")
 
-        findings.append({
-            "tool": "garak",
-            "title": f"garak: {probe_name} detected by {detector}",
-            "severity": severity,
-            "description": record.get("output", record.get("prompt", "")),
-            "mitre_technique": "AML.T0051.000",
-            "remediation": f"Review and harden against {probe_name} attack vector.",
-            "raw": record,
-        })
+        findings.append(
+            {
+                "tool": "garak",
+                "title": f"garak: {probe_name} detected by {detector}",
+                "severity": severity,
+                "description": record.get("output", record.get("prompt", "")),
+                "mitre_technique": "AML.T0051.000",
+                "remediation": f"Review and harden against {probe_name} attack vector.",
+                "raw": record,
+            }
+        )
 
     return findings
 

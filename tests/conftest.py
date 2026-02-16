@@ -18,7 +18,6 @@ os.environ.setdefault("SENTINELFORGE_DRY_RUN", "1")
 # Note: pytest.ini sets pythonpath = ". services/api" so both
 # "from services.api.schemas import X" and "from schemas import X" work.
 
-import pytest
 import pytest_asyncio
 from datetime import datetime, timezone
 
@@ -27,7 +26,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 # Now safe to import SentinelForge modules (they use relative imports like `from database import Base`)
 from database import Base
 from models import User, UserRole
-
 
 # ── Test database engine (SQLite in-memory) ──
 _test_engine = create_async_engine(

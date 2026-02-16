@@ -109,7 +109,7 @@ def version():
     """Show SentinelForge version."""
     console.print(
         Panel(
-            "[bold cyan]SentinelForge CLI v1.4.0[/bold cyan]\n"
+            "[bold cyan]SentinelForge CLI v2.0.0[/bold cyan]\n"
             "Enterprise AI Security Testing Platform\n"
             "[dim]https://github.com/CambridgeAnalytica/-SentinelForge[/dim]",
             title="🛡️ SentinelForge",

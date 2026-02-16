@@ -49,6 +49,7 @@ tools:
     cli: pyrit
     venv: /opt/venvs/pyrit
     install_command: "pip install pyrit-ai"
+    adapter: pyrit_adapter
     capabilities:
       - automated_jailbreak
       - multi_turn_attacks
@@ -102,6 +103,7 @@ tools:
     cli: deepeval
     venv: /opt/venvs/deepeval
     install_command: "pip install deepeval"
+    adapter: deepeval_adapter
     capabilities:
       - hallucination_detection
       - bias_evaluation
@@ -121,6 +123,7 @@ tools:
     cli: textattack
     venv: /opt/venvs/textattack
     install_command: "pip install textattack"
+    adapter: textattack_adapter
     capabilities:
       - word_substitution
       - character_attacks
@@ -141,6 +144,7 @@ tools:
     cli: art
     venv: /opt/venvs/art
     install_command: "pip install adversarial-robustness-toolbox"
+    adapter: art_adapter
     capabilities:
       - evasion_attacks
       - poisoning_attacks
@@ -161,6 +165,7 @@ tools:
     cli: rebuff
     venv: /opt/venvs/rebuff
     install_command: "pip install rebuff"
+    adapter: rebuff_adapter
     capabilities:
       - injection_detection
       - canary_tokens
@@ -176,6 +181,7 @@ tools:
     cli: guardrails
     venv: /opt/venvs/guardrails
     install_command: "pip install guardrails-ai"
+    adapter: guardrails_adapter
     capabilities:
       - output_validation
       - pii_detection
@@ -195,6 +201,7 @@ tools:
     cli: trulens-eval
     venv: /opt/venvs/trulens
     install_command: "pip install trulens-eval"
+    adapter: trulens_adapter
     capabilities:
       - feedback_functions
       - conversation_tracking
@@ -210,6 +217,7 @@ tools:
     cli: langkit
     venv: /opt/venvs/langkit
     install_command: "pip install langkit"
+    adapter: langkit_adapter
     capabilities:
       - prompt_monitoring
       - response_monitoring
@@ -229,6 +237,7 @@ tools:
     cli: fickling
     venv: /opt/venvs/fickling
     install_command: "pip install fickling"
+    adapter: fickling_adapter
     capabilities:
       - pickle_analysis
       - malicious_payload_detection
@@ -243,6 +252,7 @@ tools:
     cli: cyberseceval
     venv: /opt/venvs/cyberseceval
     install_command: "pip install cyberseceval"
+    adapter: cyberseceval_adapter
     capabilities:
       - insecure_code_detection
       - cyberattack_helpfulness
@@ -259,6 +269,7 @@ tools:
     cli: easyedit
     venv: /opt/venvs/easyedit
     install_command: "pip install easyeditor"
+    adapter: easyedit_adapter
     capabilities:
       - knowledge_editing
       - model_update_testing
@@ -273,6 +284,7 @@ tools:
     cli: rigging
     venv: /opt/venvs/rigging
     install_command: "pip install rigging"
+    adapter: rigging_adapter
     capabilities:
       - advanced_prompting
       - conversation_chains

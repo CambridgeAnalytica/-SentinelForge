@@ -15,12 +15,16 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 
 ### Core Capabilities
 - **Multi-Service Architecture**: FastAPI orchestration + Python async worker pool (asyncio + asyncpg)
-- **14 Integrated Tools**: tools in isolated virtual environments
+- **14 Integrated Tools**: All with dedicated adapters, running in isolated virtual environments
 - **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure OpenAI, and AWS Bedrock (4 built-in adapters)
 - **Modular Probe System**: Extensible SDK for custom evaluations
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
-- **Enterprise Security**: JWT authentication with RBAC (OIDC/OAuth2 optional, not enabled by default), SBOM, signed images, vulnerability scanning
+- **Enterprise Security**: JWT + API key dual authentication, rate limiting, RBAC, SBOM, signed images
 - **Rich Reporting**: HTML, PDF, and JSONL reports with MITRE ATLAS + OWASP LLM Top 10 mapping
+- **Compliance Mapping**: Auto-tag findings with OWASP ML Top 10, NIST AI RMF, EU AI Act
+- **Scheduled Scans**: Cron-based recurring scans with notification channels (Slack, email, Teams)
+- **CI/CD Integration**: GitHub Actions action and GitLab CI template for pipeline security scanning
+- **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, and settings management (port 3001)
 
 ### Innovative Capabilities
 
@@ -31,7 +35,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform also includes webhook notifications, real tool adapters (garak, promptfoo) with dry-run mode, and 91 tests (63 unit + 28 integration).
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 91 tests (63 unit + 28 integration).
 
 ## Quick Start
 
@@ -109,14 +113,14 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 
 ```
 +--------------+      +---------------+      +--------------+
-|   CLI/UI     |----->|  API Service  |----->|   Postgres   |
+|   CLI        |----->|  API Service  |----->|   Postgres   |
 +--------------+      |   (FastAPI)   |      +--------------+
                       +-------+-------+
-                              | Queue
-                              v
-                      +---------------+      +--------------+
-                      | Worker Pool   |----->|    MinIO      |
-                      | (Python async,|--+   |  (Artifacts)  |
++--------------+              | Queue
+|  Dashboard   |              v
+| (Next.js     |      +---------------+      +--------------+
+|  Port 3001)  |      | Worker Pool   |----->|    MinIO      |
++--------------+      | (Python async,|--+   |  (Artifacts)  |
                       |  2 replicas)  |  |   +--------------+
                       +-------+-------+  |
                               |          |
@@ -132,6 +136,7 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 
 ```
 sentinelforge/
+├── dashboard/            # Next.js web dashboard (v2.0, port 3001)
 ├── services/
 │   ├── api/              # FastAPI orchestration service
 │   └── worker/           # Python async worker (asyncio + asyncpg)
@@ -145,7 +150,7 @@ sentinelforge/
 ├── scenarios/            # Pre-built attack scenarios (YAML)
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
-│   ├── docker/           # Dockerfiles (API, Worker, Tools)
+│   ├── docker/           # Dockerfiles (API, Worker, Tools, Dashboard)
 │   ├── terraform/aws/    # AWS ECS/Fargate Terraform modules
 │   ├── helm/             # Kubernetes Helm charts
 │   ├── observability/    # Prometheus + Grafana config
@@ -212,6 +217,20 @@ sf report show abc123
 # Playbooks
 sf playbook list
 sf playbook run jailbreak_detected --context findings.json
+
+# Scheduled Scans (v1.5)
+sf schedule create --scenario prompt_injection --cron "0 6 * * 1" --target gpt-4
+sf schedule list
+sf schedule trigger <schedule_id>
+
+# API Keys (v1.5)
+sf api-key create --name ci-pipeline --scopes read,write
+sf api-key list
+
+# Compliance (v1.6)
+sf compliance frameworks
+sf compliance summary --run-id abc123
+sf compliance report --run-id abc123 --format pdf
 ```
 
 ## Security & Compliance
@@ -221,10 +240,12 @@ sf playbook run jailbreak_detected --context findings.json
 - **Vulnerability Scanning**: Automated grype scans in CI
 - **Audit Logging**: Complete audit trail of all runs and access
 - **RBAC**: Role-based access control (Admin/Operator/Viewer)
-- **JWT Authentication**: Token-based auth with configurable expiration
+- **Dual Authentication**: JWT Bearer tokens + API key (`X-API-Key` header)
+- **Rate Limiting**: Configurable per-endpoint throttling via slowapi
 - **Secrets Management**: Environment-based configuration (`.env`)
 - **Evidence Redaction**: Configurable patterns for sensitive data
 - **Evidence Chain**: SHA-256 hash chain for tamper-proof finding integrity
+- **Compliance Frameworks**: OWASP ML Top 10, NIST AI RMF, EU AI Act auto-tagging
 - **Database Migrations**: Alembic-managed schema versioning
 
 ## Documentation
@@ -234,6 +255,7 @@ sf playbook run jailbreak_detected --context findings.json
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) -- Local, AWS, and on-premises deployment
 - [Command Reference](docs/COMMAND_REFERENCE.md) -- All CLI, Make, Docker, and API commands
 - [Tools Reference](docs/TOOLS_REFERENCE.md) -- All 14 integrated AI security tools
+- [CI/CD Integration](ci/README.md) -- GitHub Actions + GitLab CI setup
 - [Changelog](CHANGELOG.md) -- Version history and release notes
 
 ## Development

@@ -1,0 +1,108 @@
+# SentinelForge GitLab CI Template
+# Include this template in your .gitlab-ci.yml:
+#
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/sentinelforge/sentinelforge/main/ci/gitlab/.gitlab-ci-template.yml'
+#
+#   sentinelforge-scan:
+#     extends: .sentinelforge-scan
+#     variables:
+#       SF_API_URL: "https://your-sentinelforge.example.com"
+#       SF_SCENARIO: "prompt-injection-suite"
+#       SF_TARGET_MODEL: "openai:gpt-4"
+#       SF_FAIL_ON: "high"
+
+.sentinelforge-scan:
+  stage: test
+  image: curlimages/curl:latest
+  variables:
+    SF_API_URL: ""
+    SF_API_KEY: ""
+    SF_SCENARIO: ""
+    SF_TARGET_MODEL: ""
+    SF_FAIL_ON: "high"
+    SF_TIMEOUT: "600"
+    SF_CONFIG: "{}"
+  before_script:
+    - apk add --no-cache jq bash
+  script:
+    - |
+      set -euo pipefail
+
+      echo "🛡️ SentinelForge Security Scan"
+      echo "  Scenario: ${SF_SCENARIO}"
+      echo "  Target:   ${SF_TARGET_MODEL}"
+      echo "  API:      ${SF_API_URL}"
+
+      # Launch scan
+      RESPONSE=$(curl -sf -X POST \
+        -H "X-API-Key: ${SF_API_KEY}" \
+        -H "Content-Type: application/json" \
+        "${SF_API_URL}/attacks/runs" \
+        -d "{\"scenario_id\": \"${SF_SCENARIO}\", \"target_model\": \"${SF_TARGET_MODEL}\", \"config\": ${SF_CONFIG}}")
+
+      SCAN_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+      if [ -z "$SCAN_ID" ]; then
+        echo "ERROR: Failed to launch scan"
+        exit 1
+      fi
+      echo "  Scan ID: ${SCAN_ID}"
+
+      # Poll for completion
+      ELAPSED=0
+      while [ $ELAPSED -lt $SF_TIMEOUT ]; do
+        STATUS=$(curl -sf \
+          -H "X-API-Key: ${SF_API_KEY}" \
+          "${SF_API_URL}/attacks/runs/${SCAN_ID}" | jq -r '.status')
+
+        echo "  [${ELAPSED}s] Status: ${STATUS}"
+
+        if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+          break
+        fi
+
+        sleep 10
+        ELAPSED=$((ELAPSED + 10))
+      done
+
+      if [ "$STATUS" != "completed" ] && [ "$STATUS" != "failed" ]; then
+        echo "WARN: Scan timed out after ${SF_TIMEOUT}s"
+        exit 1
+      fi
+
+      # Parse results
+      RESULTS=$(curl -sf \
+        -H "X-API-Key: ${SF_API_KEY}" \
+        "${SF_API_URL}/attacks/runs/${SCAN_ID}")
+
+      TOTAL=$(echo "$RESULTS" | jq '.findings | length')
+      CRITICAL=$(echo "$RESULTS" | jq '[.findings[] | select(.severity == "critical")] | length')
+      HIGH=$(echo "$RESULTS" | jq '[.findings[] | select(.severity == "high")] | length')
+      MEDIUM=$(echo "$RESULTS" | jq '[.findings[] | select(.severity == "medium")] | length')
+      LOW=$(echo "$RESULTS" | jq '[.findings[] | select(.severity == "low")] | length')
+
+      echo ""
+      echo "📊 Results: ${TOTAL} findings"
+      echo "  🔴 Critical: ${CRITICAL}"
+      echo "  🟠 High:     ${HIGH}"
+      echo "  🟡 Medium:   ${MEDIUM}"
+      echo "  🟢 Low:      ${LOW}"
+
+      # Enforce severity gate
+      case "$SF_FAIL_ON" in
+        critical)
+          [ "$CRITICAL" -gt 0 ] && echo "FAIL: Critical findings detected" && exit 1 ;;
+        high)
+          [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ] && echo "FAIL: High+ findings detected" && exit 1 ;;
+        medium)
+          [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ] || [ "$MEDIUM" -gt 0 ] && echo "FAIL: Medium+ findings detected" && exit 1 ;;
+        low)
+          [ "$TOTAL" -gt 0 ] && echo "FAIL: Findings detected" && exit 1 ;;
+      esac
+
+      echo "✅ Scan passed severity gate (fail_on=${SF_FAIL_ON})"
+  artifacts:
+    reports:
+      dotenv: sentinelforge.env
+    when: always
+  allow_failure: false

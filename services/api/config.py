@@ -83,6 +83,18 @@ class Settings(BaseSettings):
     ENABLE_DRIFT_MONITORING: bool = True
     ENABLE_BACKDOOR_DETECTION: bool = True
     ENABLE_SUPPLY_CHAIN_SCAN: bool = True
+    ENABLE_SCHEDULED_SCANS: bool = True
+
+    # Rate Limiting
+    RATE_LIMIT_DEFAULT: str = "100/minute"
+    RATE_LIMIT_ENABLED: bool = True
+
+    # Email / SMTP (for notification channels)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@sentinelforge.io"
 
     # General
     DEBUG: bool = False

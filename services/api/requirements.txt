@@ -26,3 +26,5 @@ markdown==3.7
 psycopg2-binary==2.9.10
 redis[hiredis]>=5.0.0
 pip-audit>=2.7.0
+slowapi>=0.1.9
+croniter>=2.0.0

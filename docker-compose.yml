@@ -61,7 +61,7 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -184,6 +184,23 @@ services:
       - ./tools:/app/tools:ro
     deploy:
       replicas: 2
+    networks:
+      - sf-network
+    restart: unless-stopped
+
+  # Dashboard (Next.js)
+  dashboard:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.dashboard
+    container_name: sf-dashboard
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8000
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
     networks:
       - sf-network
     restart: unless-stopped

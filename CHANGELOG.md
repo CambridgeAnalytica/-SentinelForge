@@ -1,5 +1,108 @@
 # SentinelForge - CHANGELOG
 
+## [2.0.0] - 2026-02-16
+
+### Dashboard UI (Next.js)
+- Full-featured web dashboard at `http://localhost:3001`
+- **Scan Dashboard** (`/`): stat cards, severity donut chart, 14-day findings trend, recent scans table
+- **Findings Explorer** (`/findings`): filter bar (severity, tool, MITRE technique, search), sortable table, detail slide-over with evidence JSON
+- **Drift Timeline** (`/drift`): baseline selector, safety score line chart, category breakdown bars
+- **Schedule Manager** (`/schedules`): CRUD table, visual cron expression builder, manual trigger
+- **Compliance View** (`/compliance`): framework tabs, coverage heatmap grid, summary stats, PDF download
+- **Report Viewer** (`/reports`): report list with download, in-browser preview (iframe), generate dialog with format toggles
+- **Notifications & Webhooks** (`/settings/notifications`): channel management with type icons, test/delete actions, create channel modal
+- **API Key Management** (`/settings/api-keys`): key table with scopes, create modal, one-time copy-to-clipboard
+
+### Dashboard Infrastructure
+- Tech stack: Next.js 16, Tailwind CSS, Recharts, SWR, Lucide icons
+- Collapsible sidebar navigation + top bar with health status and user menu
+- JWT authentication flow with login page and auth context
+- SWR-based data fetching hooks for all API endpoints with TypeScript interfaces
+- Dark-first design system with severity color palette (critical/high/medium/low/info)
+- Docker integration: `Dockerfile.dashboard` (multi-stage node:20-alpine), `docker-compose.yml` service
+- `.env.example` updated with `NEXT_PUBLIC_API_URL` and `CORS_ORIGINS` for port 3001
+
+---
+
+## [1.6.0] - 2026-02-16
+
+### Compliance Mapping & Reporting
+- Auto-tagging of findings with 3 compliance frameworks: OWASP ML Top 10, NIST AI RMF, EU AI Act
+- Reverse MITRE ATLAS index for automatic framework category mapping
+- New endpoints: `GET /compliance/frameworks`, `GET /compliance/summary`, `GET /compliance/report`
+- Auditor-friendly PDF report generation via WeasyPrint with executive summary
+- New module: `services/api/data/compliance_frameworks.py` (framework data), `services/compliance_service.py` (engine)
+
+### Remaining Tool Adapters (9 new — 14/14 complete)
+- `fickling_adapter.py` — pickle file supply chain scanning (JSON + text output parsing)
+- `art_adapter.py` — Adversarial Robustness Toolbox (FGSM, PGD, backdoor, extraction)
+- `rebuff_adapter.py` — prompt injection detection (heuristic, canary, similarity modes)
+- `guardrails_adapter.py` — LLM output validation (PII, toxicity, schema enforcement)
+- `trulens_adapter.py` — feedback functions (groundedness, relevance, RAG evaluation)
+- `langkit_adapter.py` — prompt/response monitoring (toxicity, sentiment, PII)
+- `cyberseceval_adapter.py` — Meta's LLM security evaluation (insecure code, cyberattack helpfulness)
+- `easyedit_adapter.py` — knowledge editing vulnerability testing (ROME, MEMIT)
+- `rigging_adapter.py` — multi-step red teaming conversation workflows
+- All 14 tools in `registry.yaml` now have `adapter:` field
+
+### CI/CD Integration Package
+- GitHub Actions composite action (`ci/github/action.yml`) — `uses: sentinelforge/scan@v1`
+- Entrypoint script with scan launcher, completion poller, severity gate enforcement
+- Formatted PR comments with severity badges (🔴/🟠/🟡/✅), findings table, and top-5 detail
+- GitLab CI template (`ci/gitlab/.gitlab-ci-template.yml`) — `extends: .sentinelforge-scan`
+- Comprehensive usage docs (`ci/README.md`) with examples for both platforms
+- Configurable `fail_on_severity` gate: `critical`, `high`, `medium`, `low`, `none`
+
+### Tests
+- All 91 tests pass (63 unit + 28 integration) with 0 errors
+
+---
+
+## [1.5.0] - 2026-02-16
+
+### Scheduled / Recurring Scans
+- New `Schedule` SQLAlchemy model with cron expression, next_run_at tracking
+- CRUD endpoints: `POST /schedules`, `GET /schedules`, `PUT /schedules/{id}`, `DELETE /schedules/{id}`
+- Manual trigger endpoint: `POST /schedules/{id}/trigger`
+- Worker-side DB polling with `croniter` for schedule evaluation
+- Pydantic schemas: `ScheduleCreate`, `ScheduleUpdate`, `ScheduleResponse`
+
+### More Tool Adapters (3 new)
+- `deepeval_adapter.py` — hallucination, bias, and toxicity evaluation
+- `textattack_adapter.py` — NLP adversarial attacks (TextFooler, DeepWordBug, BAE)
+- `pyrit_adapter.py` — automated red teaming with jailbreak templates
+
+### Rate Limiting + API Keys
+- `slowapi` middleware with smart key function: API key → JWT → IP fallback
+- `ApiKey` SQLAlchemy model (SHA-256 hashed keys, expiry, scopes, last_used_at)
+- Dual authentication in `middleware/auth.py`: `X-API-Key` header + JWT Bearer
+- CRUD endpoints: `POST /api-keys`, `GET /api-keys`, `DELETE /api-keys/{id}`
+- Configurable rate limits via `RATE_LIMIT_DEFAULT` and `RATE_LIMIT_ENABLED`
+
+### Notification Channels
+- Generic dispatcher in `services/notification_service.py`
+- 4 channel types: webhook, Slack, email (SMTP), Microsoft Teams (Adaptive Cards)
+- `NotificationChannel` model with per-channel configuration
+- CRUD endpoints: `POST /notifications/channels`, `GET /notifications/channels`, etc.
+- Test endpoint: `POST /notifications/channels/{id}/test`
+
+### OpenTelemetry Wiring
+- `telemetry.py` with OTLP trace exporter (Jaeger) and Prometheus metrics exporter
+- API instrumented via `FastAPIInstrumentor`, worker instrumented for job tracing
+- Prometheus `/metrics` endpoint for scraping
+- Updated worker `requirements.txt` with OTel packages
+
+### Configuration
+- New settings in `config.py`:
+  - `RATE_LIMIT_DEFAULT`, `RATE_LIMIT_ENABLED`
+  - `ENABLE_SCHEDULED_SCANS`
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`
+
+### Tests
+- All 91 tests pass (63 unit + 28 integration) with 0 errors
+
+---
+
 ## [1.4.0] - 2026-02-14
 
 ### Webhook Notifications
@@ -270,4 +373,4 @@
 
 ---
 
-**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total).
+**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total). v1.5 adds scheduled/recurring scans, 3 more tool adapters, rate limiting with API key auth, notification channels (Slack/email/Teams), and OpenTelemetry wiring. v1.6 adds compliance mapping (OWASP ML Top 10 / NIST AI RMF / EU AI Act), completes all 14 tool adapters, and ships the CI/CD integration package (GitHub Actions + GitLab CI). v2.0 adds the full-featured Next.js Dashboard UI with 8 pages, JWT auth flow, real-time data visualization, and Docker integration.

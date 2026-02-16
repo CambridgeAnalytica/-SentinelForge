@@ -80,10 +80,17 @@ logs/
 *.crt
 secrets/
 
+# Node.js / Next.js (Dashboard)
+node_modules/
+.next/
+out/
+npm-debug.log*
+
 # Temporary
 tmp/
 temp/
 *.tmp
+nul
 
 # Claude Code
 CLAUDE.md

@@ -7,6 +7,7 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 - **[README.md](../README.md)** - Project overview, features, and architecture
 - **[Getting Started Guide](GETTING_STARTED.md)** - Quick setup for local development
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions (local, AWS, on-premises)
+- **[CI/CD Integration](../ci/README.md)** - GitHub Actions + GitLab CI setup guide
 
 ## Reference Guides
 
@@ -36,9 +37,11 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 | `.env` | Environment variables (create from `.env.example`) |
 | `docker-compose.yml` | Multi-service orchestration |
 | `Makefile` | Development commands |
-| `tools/registry.yaml` | Tool registry configuration (14 tools) |
+| `tools/registry.yaml` | Tool registry configuration (14 tools, 14 adapters) |
 | `scenarios/*.yaml` | Attack scenario definitions |
 | `playbooks/*.yaml` | Incident response playbooks |
+| `ci/github/action.yml` | GitHub Actions composite action |
+| `ci/gitlab/.gitlab-ci-template.yml` | GitLab CI reusable template |
 
 ### Docker Images
 
@@ -47,6 +50,7 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 | `sentinelforge-api` | `infra/docker/Dockerfile.api` | FastAPI service |
 | `sentinelforge-worker` | `infra/docker/Dockerfile.worker` | Python async worker (asyncio + asyncpg) |
 | `sentinelforge-tools` | `infra/docker/Dockerfile.tools` | BlackICE tools (14 isolated venvs) |
+| `sentinelforge-dashboard` | `infra/docker/Dockerfile.dashboard` | Next.js web dashboard |
 
 ## Quick Reference
 
@@ -105,6 +109,9 @@ sf attack list
 | List tools | `sf tools list` |
 | Run attack | `sf attack run <scenario> --target <model>` |
 | Generate report | `sf report generate <run_id>` |
+| Create schedule | `sf schedule create --scenario <id> --cron "..."` |
+| Create API key | `sf api-key create --name <name>` |
+| Compliance summary | `sf compliance summary --run-id <id>` |
 
 ### Service URLs (Local)
 
@@ -112,6 +119,8 @@ sf attack list
 |---------|-----|-------------|
 | API Docs | http://localhost:8000/docs | N/A (browse interactively) |
 | API Health | http://localhost:8000/health | N/A |
+| Dashboard UI | http://localhost:3001 | SentinelForge admin credentials |
+| Prometheus Metrics | http://localhost:8000/metrics | N/A |
 | Grafana | http://localhost:3000 | admin / admin (default Grafana password) |
 | Jaeger | http://localhost:16686 | N/A |
 | Prometheus | http://localhost:9090 | N/A |
@@ -127,13 +136,15 @@ sf attack list
 2. [COMMAND_REFERENCE.md](COMMAND_REFERENCE.md#docker-compose-commands) - Container management
 3. `docker-compose.yml` - Service definitions
 4. `infra/observability/` - Monitoring configuration (Prometheus, Grafana)
+5. `ci/` - CI/CD integration templates (GitHub Actions, GitLab CI)
 
 ### For Security Engineers
 
-1. [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) - All 14 security tools
+1. [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) - All 14 security tools with adapters
 2. [COMMAND_REFERENCE.md](COMMAND_REFERENCE.md#cli-commands) - CLI usage
 3. `scenarios/` - Attack scenarios (YAML definitions)
 4. `playbooks/` - Incident response playbooks (YAML definitions)
+5. `services/api/data/compliance_frameworks.py` - Compliance framework mappings
 
 ### For Developers
 
@@ -165,7 +176,7 @@ See [DEPLOYMENT_GUIDE.md#troubleshooting](DEPLOYMENT_GUIDE.md#troubleshooting) f
 
 ```
 +------------------------------------------+
-|  CLI (sf) / Web UI                       |
+|  CLI (sf) / Dashboard UI (Port 3001)     |
 +-------------------+----------------------+
                     |
                     v
@@ -205,6 +216,6 @@ To extend SentinelForge:
 
 ## Version
 
-Current version: **1.4.0**
+Current version: **2.0.0**
 
 See [CHANGELOG.md](../CHANGELOG.md) for release notes.
