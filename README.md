@@ -37,6 +37,31 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 
 > **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 91 tests (63 unit + 28 integration).
 
+## Dashboard UI (v2.0)
+
+SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
+
+### Pages
+
+| Page | Path | What It Does |
+|------|------|-------------|
+| **Scan Dashboard** | `/` | Stat cards (total scans, findings, critical count), severity donut chart, 14-day findings trend line, recent scans table |
+| **Findings Explorer** | `/findings` | Filter by severity, tool, MITRE technique, or free-text search; sortable table; detail slide-over with raw evidence JSON |
+| **Drift Timeline** | `/drift` | Select a baseline, view safety score over time as a line chart, category breakdown bars for 8 safety dimensions |
+| **Schedule Manager** | `/schedules` | CRUD table for cron-based recurring scans, visual cron expression builder, manual trigger button |
+| **Compliance View** | `/compliance` | Framework tabs (OWASP ML Top 10, NIST AI RMF, EU AI Act), coverage heatmap grid, summary stats, PDF download |
+| **Report Viewer** | `/reports` | Report list with download links, in-browser preview (iframe), generate dialog with format toggles (HTML/PDF/JSONL) |
+| **Notifications & Webhooks** | `/settings/notifications` | Channel management (Slack, email, Teams, webhook) with type icons, test/delete actions, create channel modal |
+| **API Key Management** | `/settings/api-keys` | Key table with scopes and expiry, create modal, one-time copy-to-clipboard for new keys |
+
+### Technical Details
+
+- **Auth**: JWT login page with auth context; tokens stored client-side
+- **Data Fetching**: SWR hooks with TypeScript interfaces for all API endpoints
+- **Design**: Dark-first theme with severity color palette (critical/high/medium/low/info)
+- **Sidebar**: Collapsible navigation + top bar with API health indicator and user menu
+- **Docker**: Multi-stage build (`node:20-alpine`), served on port 3001, included in `docker compose up -d`
+
 ## Quick Start
 
 ### Prerequisites
