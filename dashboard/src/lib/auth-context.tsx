@@ -1,0 +1,76 @@
+"use client";
+
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useCallback,
+} from "react";
+import { getToken, login as apiLogin, logout as apiLogout, clearToken } from "./api";
+
+interface User {
+    username: string;
+    role: string;
+}
+
+interface AuthState {
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    login: (username: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+    login: async () => { },
+    logout: async () => { },
+});
+
+function getInitialUser(): User | null {
+    if (typeof window === "undefined") return null;
+    const token = getToken();
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return { username: payload.sub ?? "admin", role: payload.role ?? "admin" };
+    } catch {
+        clearToken();
+        return null;
+    }
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<User | null>(getInitialUser);
+    const isLoading = false;
+
+    const login = useCallback(async (username: string, password: string) => {
+        await apiLogin(username, password);
+        setUser({ username, role: "admin" });
+    }, []);
+
+    const logout = useCallback(async () => {
+        await apiLogout();
+        setUser(null);
+    }, []);
+
+    return (
+        <AuthContext.Provider
+            value={{
+                user,
+                isAuthenticated: !!user,
+                isLoading,
+                login,
+                logout,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+export function useAuth() {
+    return useContext(AuthContext);
+}

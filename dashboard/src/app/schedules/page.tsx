@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSchedules } from "@/hooks/use-api";
 import { api } from "@/lib/api";
-import { capitalize, timeAgo, cn } from "@/lib/utils";
+import { timeAgo, cn } from "@/lib/utils";
 import { Calendar, Plus, Play, Trash2, X } from "lucide-react";
 import { mutate } from "swr";
 

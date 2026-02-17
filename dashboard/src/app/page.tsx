@@ -39,7 +39,6 @@ export default function DashboardPage() {
   const allRuns = runs ?? [];
   const allFindings = allRuns.flatMap((r) => r.findings ?? []);
   const activeRuns = allRuns.filter((r) => r.status === "running").length;
-  const completedRuns = allRuns.filter((r) => r.status === "completed").length;
   const criticalCount = allFindings.filter(
     (f) => f.severity === "critical"
   ).length;
