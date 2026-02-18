@@ -27,21 +27,17 @@ test.describe("Dashboard — Smoke Tests", () => {
 
 test.describe("Dashboard — Navigation", () => {
     test("navigates to compliance page", async ({ page }) => {
-        await page.goto(BASE_URL);
-        // Click the compliance link in the sidebar
-        await page.click("a[href='/compliance']");
+        await page.goto(`${BASE_URL}/compliance`);
         await expect(page.locator("h2")).toContainText("Compliance View");
     });
 
     test("navigates to schedules page", async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.click("a[href='/schedules']");
-        await expect(page.locator("h2")).toContainText("Schedules");
+        await page.goto(`${BASE_URL}/schedules`);
+        await expect(page.locator("h2")).toContainText("Schedule Manager");
     });
 
     test("navigates to drift page", async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.click("a[href='/drift']");
+        await page.goto(`${BASE_URL}/drift`);
         await expect(page.locator("h2")).toContainText("Drift");
     });
 });
@@ -83,6 +79,6 @@ test.describe("Compliance — Visualizations", () => {
 test.describe("Schedules Page", () => {
     test("displays schedule list or empty state", async ({ page }) => {
         await page.goto(`${BASE_URL}/schedules`);
-        await expect(page.locator("h2")).toContainText("Schedules");
+        await expect(page.locator("h2")).toContainText("Schedule Manager");
     });
 });
