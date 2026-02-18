@@ -390,6 +390,122 @@ resource "aws_cloudwatch_log_group" "worker" {
   tags = local.tags
 }
 
+# ---------- ECR Repository (Dashboard) ----------
+resource "aws_ecr_repository" "dashboard" {
+  name                 = "${var.project_name}/dashboard"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = local.tags
+}
+
+# ---------- CloudWatch Log Group (Dashboard) ----------
+resource "aws_cloudwatch_log_group" "dashboard" {
+  name              = "/ecs/${var.project_name}/dashboard"
+  retention_in_days = 30
+
+  tags = local.tags
+}
+
+# ---------- ECS Task Definition (Dashboard) ----------
+resource "aws_ecs_task_definition" "dashboard" {
+  family                   = "${var.project_name}-dashboard"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = var.dashboard_cpu
+  memory                   = var.dashboard_memory
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([{
+    name  = "dashboard"
+    image = "${aws_ecr_repository.dashboard.repository_url}:latest"
+
+    portMappings = [{
+      containerPort = 3000
+      protocol      = "tcp"
+    }]
+
+    environment = [
+      { name = "NEXT_PUBLIC_API_URL", value = "https://${aws_lb.main.dns_name}/api" },
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/${var.project_name}/dashboard"
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "dashboard"
+      }
+    }
+  }])
+
+  tags = local.tags
+}
+
+# ---------- ALB Target Group (Dashboard) ----------
+resource "aws_lb_target_group" "dashboard" {
+  name        = "${var.project_name}-dash-tg"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = module.vpc.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = "/"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    interval            = 30
+  }
+
+  tags = local.tags
+}
+
+# ---------- ALB Listener Rule (Dashboard) ----------
+resource "aws_lb_listener_rule" "dashboard" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 200
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.dashboard.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/dashboard*", "/_next/*"]
+    }
+  }
+
+  tags = local.tags
+}
+
+# ---------- ECS Service (Dashboard) ----------
+resource "aws_ecs_service" "dashboard" {
+  name            = "${var.project_name}-dashboard"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.dashboard.arn
+  desired_count   = var.dashboard_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = module.vpc.private_subnet_ids
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.dashboard.arn
+    container_name   = "dashboard"
+    container_port   = 3000
+  }
+
+  tags = local.tags
+}
+
 # ---------- Locals ----------
 locals {
   tags = {

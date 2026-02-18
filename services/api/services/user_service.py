@@ -177,6 +177,37 @@ async def authenticate_user(
     return None
 
 
+async def create_user(
+    db: AsyncSession, username: str, password: str, role: str = "viewer"
+) -> User:
+    """Create a new user with validated password and role."""
+    # Validate password strength
+    pw_error = validate_password_strength(password)
+    if pw_error:
+        raise ValueError(pw_error)
+
+    # Validate role
+    try:
+        user_role = UserRole(role)
+    except ValueError:
+        raise ValueError(f"Invalid role: {role}. Must be one of: admin, operator, viewer")
+
+    # Check duplicate username
+    existing = await db.execute(select(User).where(User.username == username))
+    if existing.scalar_one_or_none():
+        raise ValueError(f"Username '{username}' already exists")
+
+    user = User(
+        username=username,
+        hashed_password=hash_password(password),
+        role=user_role,
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    return user
+
+
 async def ensure_admin_user():
     """Create default admin user if none exists."""
     if not settings.DEFAULT_ADMIN_USERNAME or not settings.DEFAULT_ADMIN_PASSWORD:

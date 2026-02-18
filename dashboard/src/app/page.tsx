@@ -2,6 +2,7 @@
 
 import { useAttackRuns } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import {
   PieChart,
   Pie,
@@ -30,6 +31,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data: runs, isLoading } = useAttackRuns();
 
   if (isLoading) {
@@ -271,7 +273,8 @@ export default function DashboardPage() {
                 allRuns.slice(0, 20).map((run) => (
                   <tr
                     key={run.id}
-                    className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors"
+                    onClick={() => router.push(`/attacks/${run.id}`)}
+                    className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors cursor-pointer"
                   >
                     <td className="px-4 py-2.5 font-medium text-foreground">
                       {run.scenario_id}

@@ -136,3 +136,22 @@ variable "admin_password" {
   type        = string
   sensitive   = true
 }
+
+# ---------- Dashboard ECS ----------
+variable "dashboard_cpu" {
+  description = "Dashboard task CPU units (1024 = 1 vCPU)"
+  type        = number
+  default     = 256
+}
+
+variable "dashboard_memory" {
+  description = "Dashboard task memory in MB"
+  type        = number
+  default     = 512
+}
+
+variable "dashboard_desired_count" {
+  description = "Number of dashboard tasks"
+  type        = number
+  default     = 1
+}

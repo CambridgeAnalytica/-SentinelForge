@@ -1,9 +1,11 @@
 "use client";
 
 import useSWR from "swr";
+import { useState, useEffect, useRef } from "react";
 import { apiFetch } from "@/lib/api";
 
 const fetcher = <T,>(path: string) => apiFetch<T>(path);
+const SSE_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /* ── Attack Runs ── */
 
@@ -32,6 +34,8 @@ export interface Finding {
     evidence?: Record<string, unknown>;
     remediation?: string;
     evidence_hash?: string;
+    fingerprint?: string;
+    is_new?: boolean;
     created_at: string;
 }
 
@@ -41,6 +45,54 @@ export function useAttackRuns() {
 
 export function useAttackRun(id: string | null) {
     return useSWR<AttackRun>(id ? `/attacks/runs/${id}` : null, fetcher);
+}
+
+export function useAttackRunDetail(id: string | null) {
+    const swr = useSWR<AttackRun>(id ? `/attacks/runs/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+    return swr;
+}
+
+/** SSE hook for real-time attack run progress */
+export function useAttackRunSSE(runId: string | null) {
+    const [progress, setProgress] = useState<{ status: string; progress: number } | null>(null);
+    const [connected, setConnected] = useState(false);
+    const esRef = useRef<EventSource | null>(null);
+
+    useEffect(() => {
+        if (!runId) return;
+        const token = localStorage.getItem("sf_token");
+        const url = `${SSE_BASE}/attacks/runs/${runId}/stream${token ? `?token=${token}` : ""}`;
+        const es = new EventSource(url);
+        esRef.current = es;
+
+        es.onopen = () => setConnected(true);
+        es.addEventListener("progress", (e: MessageEvent) => {
+            try {
+                setProgress(JSON.parse(e.data));
+            } catch { /* ignore */ }
+        });
+        es.addEventListener("done", (e: MessageEvent) => {
+            try {
+                setProgress(JSON.parse(e.data));
+            } catch { /* ignore */ }
+            es.close();
+            setConnected(false);
+        });
+        es.addEventListener("error", () => {
+            es.close();
+            setConnected(false);
+        });
+
+        return () => {
+            es.close();
+            setConnected(false);
+        };
+    }, [runId]);
+
+    return { progress, connected };
 }
 
 /* ── Drift ── */

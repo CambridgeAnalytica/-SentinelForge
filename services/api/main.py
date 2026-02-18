@@ -27,6 +27,8 @@ from routers import (
     webhooks,
 )
 from routers import schedules, api_keys, notifications, compliance
+from routers import audit as audit_router
+from routers import sse as sse_router
 from middleware.logging_middleware import RequestLoggingMiddleware
 
 # Configure logging
@@ -101,7 +103,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -139,6 +141,8 @@ app.include_router(
     notifications.router, prefix="/notifications", tags=["Notifications"]
 )
 app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
+app.include_router(audit_router.router, prefix="/audit", tags=["Audit Log"])
+app.include_router(sse_router.router, prefix="/attacks", tags=["SSE"])
 
 
 # ── Prometheus metrics endpoint ──

@@ -116,6 +116,8 @@ class Finding(Base):
     remediation = Column(Text, nullable=True)
     evidence_hash = Column(String(64), nullable=True)  # SHA-256 hex
     previous_hash = Column(String(64), nullable=True)  # Chain link to previous finding
+    fingerprint = Column(String(64), nullable=True, index=True)  # Dedup fingerprint
+    is_new = Column(Boolean, default=True)  # True if first occurrence of fingerprint
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     run = relationship("AttackRun", back_populates="findings")
@@ -333,3 +335,18 @@ class NotificationChannel(Base):
     last_triggered_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+# ---------- Compliance Mappings ----------
+
+
+class ComplianceMapping(Base):
+    __tablename__ = "compliance_mappings"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    framework_id = Column(String(100), nullable=False, index=True)
+    category_id = Column(String(100), nullable=False)
+    finding_id = Column(String, ForeignKey("findings.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+    finding = relationship("Finding")

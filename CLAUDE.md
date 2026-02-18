@@ -21,7 +21,7 @@ make logs              # tail all service logs
 make build             # builds api, worker, tools images
 
 # Testing
-make test              # runs all Python tests (unit + integration, 120 tests)
+make test              # runs all Python tests (unit + integration + RBAC, 138 tests)
 make test-python       # pytest across services/api, sdk/python, cli (each in own venv)
 
 # Run tests for a single component (activate its venv first):
@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 8 pages, charts, auth flow |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 10 pages, charts, auth flow |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -96,6 +96,8 @@ All routers in `services/api/routers/`:
 - `/api-keys` — API key management for CI/CD and automation (api_keys.py)
 - `/notifications` — notification channel management: Slack, email, Teams (notifications.py)
 - `/compliance` — compliance framework mapping and reporting (compliance.py)
+- `/audit` — admin-only audit log with filtering and pagination (audit.py)
+- `/attacks/runs/{id}/stream` — SSE real-time attack progress streaming (sse.py)
 
 ### Data flow for attack execution
 
@@ -137,6 +139,9 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **Dual auth**: JWT Bearer tokens + API keys (`X-API-Key` header) with SHA-256 hashing and scopes.
 - **Rate limiting**: slowapi middleware with smart key function (API key > JWT > IP fallback).
 - **Compliance mapping**: OWASP ML Top 10, NIST AI RMF, EU AI Act auto-tagging via MITRE ATLAS reverse index.
+- **Findings dedup**: SHA-256 fingerprinting with new/recurring classification via `services/deduplication.py`.
+- **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`.
+- **Custom scenarios**: In-memory CRUD for user-created attack scenarios via POST/PUT/DELETE `/attacks/scenarios`.
 
 ## Version Summary
 
@@ -145,7 +150,8 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v1.2**: Alembic, 4 model adapters, PDF reports, S3, evidence hashing
 - **v1.3**: Agent testing, multi-turn adversarial, synthetic data
 - **v1.4**: Webhooks, garak+promptfoo adapters, dry-run, 91 tests (28 integration)
-- **Current**: 120 tests (63 unit + 57 integration) — all routers covered
 - **v1.5**: Scheduled scans, API keys, rate limiting, notifications, OTel, 3 more adapters
 - **v1.6**: Compliance mapping, 9 more adapters (14/14 complete), CI/CD package
 - **v2.0**: Next.js Dashboard UI (8 pages, SWR, Recharts, JWT auth flow)
+- **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
+- **Current**: 138 tests (63 unit + 57 integration + 18 RBAC) — 19 routers, 10 dashboard pages

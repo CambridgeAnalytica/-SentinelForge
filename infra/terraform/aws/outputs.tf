@@ -34,3 +34,13 @@ output "ecs_cluster" {
   description = "ECS cluster name"
   value       = aws_ecs_cluster.main.name
 }
+
+output "ecr_dashboard_url" {
+  description = "ECR repository URL for Dashboard image"
+  value       = aws_ecr_repository.dashboard.repository_url
+}
+
+output "ecs_dashboard_service" {
+  description = "ECS dashboard service name"
+  value       = aws_ecs_service.dashboard.name
+}

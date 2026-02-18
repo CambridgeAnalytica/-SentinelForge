@@ -109,6 +109,164 @@ class SentinelForgeClient:
             },
         ).json()
 
+    # ── Webhooks ──
+    def list_webhooks(self) -> List[dict]:
+        return self._client.get("/webhooks/").json()
+
+    def create_webhook(
+        self, url: str, events: List[str] = None, description: str = None
+    ) -> dict:
+        return self._client.post(
+            "/webhooks/",
+            json={
+                "url": url,
+                "events": events or ["attack.completed"],
+                "description": description,
+            },
+        ).json()
+
+    def get_webhook(self, webhook_id: str) -> dict:
+        return self._client.get(f"/webhooks/{webhook_id}").json()
+
+    def update_webhook(
+        self,
+        webhook_id: str,
+        url: str = None,
+        events: List[str] = None,
+        is_active: bool = None,
+        description: str = None,
+    ) -> dict:
+        payload = {}
+        if url is not None:
+            payload["url"] = url
+        if events is not None:
+            payload["events"] = events
+        if is_active is not None:
+            payload["is_active"] = is_active
+        if description is not None:
+            payload["description"] = description
+        return self._client.put(f"/webhooks/{webhook_id}", json=payload).json()
+
+    def delete_webhook(self, webhook_id: str) -> dict:
+        return self._client.delete(f"/webhooks/{webhook_id}").json()
+
+    def test_webhook(self, webhook_id: str) -> dict:
+        return self._client.post(f"/webhooks/{webhook_id}/test").json()
+
+    # ── Schedules ──
+    def list_schedules(self) -> List[dict]:
+        return self._client.get("/schedules").json()
+
+    def create_schedule(
+        self,
+        name: str,
+        cron_expression: str,
+        scenario_id: str,
+        target_model: str,
+        config: dict = None,
+        compare_drift: bool = False,
+        baseline_id: str = None,
+    ) -> dict:
+        payload = {
+            "name": name,
+            "cron_expression": cron_expression,
+            "scenario_id": scenario_id,
+            "target_model": target_model,
+            "config": config or {},
+            "compare_drift": compare_drift,
+        }
+        if baseline_id:
+            payload["baseline_id"] = baseline_id
+        return self._client.post("/schedules", json=payload).json()
+
+    def get_schedule(self, schedule_id: str) -> dict:
+        return self._client.get(f"/schedules/{schedule_id}").json()
+
+    def update_schedule(self, schedule_id: str, **kwargs) -> dict:
+        return self._client.put(f"/schedules/{schedule_id}", json=kwargs).json()
+
+    def delete_schedule(self, schedule_id: str) -> None:
+        resp = self._client.delete(f"/schedules/{schedule_id}")
+        resp.raise_for_status()
+
+    def trigger_schedule(self, schedule_id: str) -> dict:
+        return self._client.post(f"/schedules/{schedule_id}/trigger").json()
+
+    # ── API Keys ──
+    def list_api_keys(self) -> List[dict]:
+        return self._client.get("/api-keys").json()
+
+    def create_api_key(
+        self,
+        name: str,
+        scopes: List[str] = None,
+        expires_in_days: int = None,
+    ) -> dict:
+        payload = {"name": name, "scopes": scopes or ["read", "write"]}
+        if expires_in_days is not None:
+            payload["expires_in_days"] = expires_in_days
+        return self._client.post("/api-keys", json=payload).json()
+
+    def revoke_api_key(self, key_id: str) -> None:
+        resp = self._client.delete(f"/api-keys/{key_id}")
+        resp.raise_for_status()
+
+    # ── Compliance ──
+    def list_compliance_frameworks(self) -> dict:
+        return self._client.get("/compliance/frameworks").json()
+
+    def get_compliance_summary(self, framework: str) -> dict:
+        return self._client.get(
+            "/compliance/summary", params={"framework": framework}
+        ).json()
+
+    def download_compliance_report(
+        self, framework: str, format: str = "pdf"
+    ) -> bytes:
+        resp = self._client.get(
+            "/compliance/report",
+            params={"framework": framework, "format": format},
+        )
+        resp.raise_for_status()
+        return resp.content
+
+    # ── Notification Channels ──
+    def list_notification_channels(self) -> List[dict]:
+        return self._client.get("/notifications/channels").json()
+
+    def create_notification_channel(
+        self,
+        channel_type: str,
+        name: str,
+        config: dict = None,
+        events: List[str] = None,
+    ) -> dict:
+        return self._client.post(
+            "/notifications/channels",
+            json={
+                "channel_type": channel_type,
+                "name": name,
+                "config": config or {},
+                "events": events or ["attack.completed"],
+            },
+        ).json()
+
+    def update_notification_channel(
+        self, channel_id: str, **kwargs
+    ) -> dict:
+        return self._client.put(
+            f"/notifications/channels/{channel_id}", json=kwargs
+        ).json()
+
+    def delete_notification_channel(self, channel_id: str) -> None:
+        resp = self._client.delete(f"/notifications/channels/{channel_id}")
+        resp.raise_for_status()
+
+    def test_notification_channel(self, channel_id: str) -> dict:
+        return self._client.post(
+            f"/notifications/channels/{channel_id}/test"
+        ).json()
+
     def close(self):
         self._client.close()
 

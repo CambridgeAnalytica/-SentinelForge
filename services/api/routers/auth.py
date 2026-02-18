@@ -5,15 +5,17 @@ Authentication endpoints with rate limiting and token revocation.
 import time
 import logging
 from collections import defaultdict
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from schemas import LoginRequest, TokenResponse, UserInfo
-from services.user_service import authenticate_user, create_access_token, revoke_token
-from middleware.auth import get_current_user
-from models import User
+from schemas import LoginRequest, TokenResponse, UserInfo, RegisterRequest, RoleUpdateRequest
+from services.user_service import authenticate_user, create_access_token, revoke_token, create_user
+from middleware.auth import get_current_user, require_admin
+from models import User, UserRole
 
 router = APIRouter()
 logger = logging.getLogger("sentinelforge.auth")
@@ -93,3 +95,82 @@ async def logout(
         revoke_token(token)
         logger.info(f"Token revoked for user {user.username}")
     return {"message": "Successfully logged out, token revoked"}
+
+
+# ---------- Admin-Only User Management ----------
+
+
+@router.post("/register", response_model=UserInfo, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    request: RegisterRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Register a new user (admin only)."""
+    try:
+        user = await create_user(db, request.username, request.password, request.role)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    logger.info(f"Admin {admin.username} created user {user.username} with role {user.role.value}")
+    return UserInfo(
+        id=user.id,
+        username=user.username,
+        role=user.role.value,
+        is_active=user.is_active,
+    )
+
+
+@router.get("/users", response_model=List[UserInfo])
+async def list_users(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all users (admin only)."""
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    users = result.scalars().all()
+    return [
+        UserInfo(
+            id=u.id,
+            username=u.username,
+            role=u.role.value,
+            is_active=u.is_active,
+        )
+        for u in users
+    ]
+
+
+@router.patch("/users/{user_id}/role", response_model=UserInfo)
+async def update_user_role(
+    user_id: str,
+    request: RoleUpdateRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a user's role (admin only)."""
+    # Validate role
+    try:
+        new_role = UserRole(request.role)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid role: {request.role}. Must be one of: admin, operator, viewer",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    old_role = user.role.value
+    user.role = new_role
+    await db.flush()
+
+    logger.info(f"Admin {admin.username} changed {user.username} role: {old_role} → {new_role.value}")
+    return UserInfo(
+        id=user.id,
+        username=user.username,
+        role=user.role.value,
+        is_active=user.is_active,
+    )
+

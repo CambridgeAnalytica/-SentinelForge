@@ -4,7 +4,7 @@ This guide walks you through setting up SentinelForge on your local machine,
 from zero to running your first AI security test. Every step includes an
 explanation of **what** the command does and **why** you need it.
 
-> **SentinelForge v2.0** — includes compliance mapping, 14 tool adapters,
+> **SentinelForge v2.1** — includes compliance mapping, 14 tool adapters,
 > scheduled scans, API key auth, notifications, CI/CD integration, and
 > a full Next.js Dashboard UI (port 3001).
 
@@ -209,7 +209,7 @@ sf version
 
 Expected output:
 ```
-SentinelForge CLI v2.0.0
+SentinelForge CLI v2.1.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -291,7 +291,7 @@ Expected output:
 ```json
 {
   "status": "healthy",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "services": {
     "database": "healthy"
   },

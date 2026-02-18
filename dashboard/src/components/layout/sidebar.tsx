@@ -15,6 +15,8 @@ import {
     Settings,
     ChevronLeft,
     Shield,
+    ClipboardList,
+    Swords,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +27,8 @@ const navItems = [
     { href: "/schedules", label: "Schedules", icon: Calendar },
     { href: "/compliance", label: "Compliance", icon: ShieldCheck },
     { href: "/reports", label: "Reports", icon: FileText },
+    { href: "/scenarios", label: "Scenarios", icon: Swords },
+    { href: "/audit", label: "Audit Log", icon: ClipboardList },
     { type: "divider" as const },
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     { href: "/settings/api-keys", label: "API Keys", icon: Key },

@@ -27,6 +27,16 @@ class UserInfo(BaseModel):
     is_active: bool
 
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "viewer"  # admin, operator, viewer
+
+
+class RoleUpdateRequest(BaseModel):
+    role: str  # admin, operator, viewer
+
+
 # ---------- Tools ----------
 
 

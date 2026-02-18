@@ -1,6 +1,80 @@
 # SentinelForge - CHANGELOG
 
+## [2.1.0] - 2026-02-18
+
+### Admin User Management
+- New admin-only endpoints: `POST /auth/register`, `GET /auth/users`, `PATCH /auth/users/{id}/role`
+- `require_admin` dependency now wired to auth router (previously defined but unused)
+- `create_user()` service function with password strength validation and duplicate check
+
+### Audit Log UI
+- New dashboard page (`/audit`) with paginated table, action/user/date filters, and detail expansion
+- Admin-only `GET /audit` API endpoint with filtering and pagination
+- Sidebar nav item added
+
+### Live Progress via SSE
+- New `GET /attacks/runs/{run_id}/stream` endpoint — Server-Sent Events for real-time attack progress
+- `useAttackRunSSE` React hook replaces 5-second SWR polling for running/queued attack runs
+- Auto-closes when run completes or client disconnects
+
+### Findings Deduplication
+- SHA-256 fingerprint column on `Finding` model (hash of title+tool+severity+mitre)
+- `is_new` boolean column — `True` if first occurrence of fingerprint across all runs
+- `compute_fingerprint()` and `classify_findings()` in `services/deduplication.py`
+- "NEW" / "RECURRING" badges displayed in attack run detail view
+
+### Custom Scenario Builder
+- New dashboard page (`/scenarios`) with visual editor for attack scenarios
+- Tool multi-select, MITRE technique tags, JSON config editor, YAML preview pane
+- `POST/PUT/DELETE /attacks/scenarios` CRUD endpoints (operator-only)
+- Sidebar nav item added
+
+### CI/CD
+- Playwright E2E test job added to `.github/workflows/ci.yml`
+- Uploads test-results as GitHub artifact on failure
+
+### Documentation
+- Test count corrected: **138 total tests** (was incorrectly listed as 120)
+- CHANGELOG updated with v2.0.1 and v2.1.0 enhancements
+
+---
+
+## [2.0.1] - 2026-02-17
+
+### SDK Gap Closure
+- 22 new methods added to `sentinelforge_sdk/__init__.py`: webhooks CRUD + test, schedules CRUD + trigger, API keys CRUD, compliance (frameworks, summary, report), notifications CRUD + test
+
+### Alembic Migration 004
+- New migration `004_v1_5_schedules_apikeys_notifications.py` adding tables for `schedules`, `api_keys`, `notification_channels`, `compliance_mappings`
+- `ComplianceMapping` model added to `models.py`
+
+### RBAC Enforcement Tests
+- `tests/test_rbac.py` with VIEWER/OPERATOR/ADMIN fixtures and role-based 403 verification
+
+### Dashboard Detail Pages
+- Attack run detail (`/attacks/[id]`) with real-time polling, progress bar, findings drilldown, evidence chain
+- Compliance page enhanced with coverage progress bar and findings-per-category bar chart
+- Main dashboard scan rows now clickable → navigate to detail page
+
+### Infrastructure
+- Helm chart: `dashboard-deployment.yaml`, `dashboard-service.yaml` templates; dashboard config in `values.yaml`
+- Terraform: Dashboard ECR repo, ECS Fargate task/service, ALB target group + listener rule, CloudWatch logs
+- Grafana: `api-performance.json` and `security-posture.json` dashboards with `provisioning.yaml`
+
+### E2E Tests
+- Playwright test suite (`tests/e2e/dashboard.spec.ts`) covering smoke, navigation, and drill-down flows
+- `playwright.config.ts` with auto-start dev server
+
+### OpenAPI Export
+- `scripts/export_openapi.py` — extracts schema from FastAPI app or running server, generates `openapi.json` + optional Redoc HTML
+
+### Tests
+- **138 total tests** (63 unit + 57 integration + 18 RBAC)
+
+---
+
 ## [2.0.0] - 2026-02-16
+
 
 ### Dashboard UI (Next.js)
 - Full-featured web dashboard at `http://localhost:3001`
@@ -30,7 +104,7 @@
 ### Tests
 - 29 new integration tests: schedules CRUD + trigger, API keys CRUD, notification channels CRUD + validation, compliance frameworks/summary/report
 - 3 new error case tests for 404 handling across new endpoints
-- **120 total tests** (63 unit + 57 integration), all passing
+- **138 total tests** (63 unit + 57 integration + 18 RBAC), all passing
 
 ### CI/CD
 - New `dashboard-build` CI job: Node 20, `npm ci` + `npm run build`

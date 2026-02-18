@@ -127,7 +127,7 @@ export default function CompliancePage() {
                         ))}
                     </div>
 
-                    {/* Summary stats */}
+                    {/* Summary stats + coverage progress */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <StatCard
                             label="Coverage"
@@ -155,6 +155,93 @@ export default function CompliancePage() {
                             color="text-low"
                         />
                     </div>
+
+                    {/* Coverage progress bar */}
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <div className="mb-2 flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground">
+                                Overall Coverage
+                            </span>
+                            <span className="font-mono text-foreground">
+                                {Math.round(coveragePct)}%
+                            </span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-secondary">
+                            <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                    width: `${Math.max(coveragePct, 1)}%`,
+                                    background: `linear-gradient(90deg, ${coveragePct >= 80
+                                            ? "#22c55e"
+                                            : coveragePct >= 50
+                                                ? "#eab308"
+                                                : "#ef4444"
+                                        } 0%, ${coveragePct >= 80
+                                            ? "#16a34a"
+                                            : coveragePct >= 50
+                                                ? "#ca8a04"
+                                                : "#dc2626"
+                                        } 100%)`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Category findings bar chart */}
+                    {summaryData && Object.keys(summaryData).length > 0 && (
+                        <div className="rounded-xl border border-border bg-card p-4">
+                            <h3 className="mb-3 text-sm font-semibold text-foreground">
+                                Findings per Category
+                            </h3>
+                            <div className="space-y-2">
+                                {(current?.categories ?? [])
+                                    .map((cat) => ({
+                                        name: cat.name,
+                                        id: cat.id,
+                                        count: summaryData?.[cat.id]?.finding_count ?? 0,
+                                        covered: summaryData?.[cat.id]?.covered ?? false,
+                                    }))
+                                    .sort((a, b) => b.count - a.count)
+                                    .map((cat) => {
+                                        const maxCount = Math.max(
+                                            ...Object.values(summaryData).map(
+                                                (c) => c.finding_count
+                                            ),
+                                            1
+                                        );
+                                        return (
+                                            <div
+                                                key={cat.id}
+                                                className="flex items-center gap-3"
+                                            >
+                                                <span className="w-32 shrink-0 truncate text-xs text-muted-foreground">
+                                                    {cat.name}
+                                                </span>
+                                                <div className="relative flex-1 h-5">
+                                                    <div
+                                                        className={cn(
+                                                            "absolute inset-y-0 left-0 rounded transition-all duration-500",
+                                                            cat.covered
+                                                                ? "bg-low/30"
+                                                                : "bg-muted/30"
+                                                        )}
+                                                        style={{
+                                                            width: `${Math.max(
+                                                                (cat.count / maxCount) * 100,
+                                                                cat.count > 0 ? 4 : 0
+                                                            )}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span className="w-8 shrink-0 text-right text-xs font-mono text-foreground">
+                                                    {cat.count}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Coverage heatmap */}
                     <div className="rounded-xl border border-border bg-card p-4">

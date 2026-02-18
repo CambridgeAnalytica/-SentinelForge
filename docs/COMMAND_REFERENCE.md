@@ -214,7 +214,7 @@ make test
 ```
 🧪 Running Python tests...
 ============================= test session starts ==============================
-collected 91 items
+collected 138 items
 
 tests/test_integration.py::TestHealthEndpoints::test_liveness PASSED
 tests/test_integration.py::TestHealthEndpoints::test_readiness PASSED
@@ -232,12 +232,12 @@ tests/test_sentinelforge.py::TestToolExecutorDryRun::test_dry_run_returns_stub P
 tests/test_sentinelforge.py::TestWebhookSchemas::test_webhook_create_request_defaults PASSED
 tests/test_sentinelforge.py::TestSDK::test_client_init PASSED
 tests/test_sentinelforge.py::TestSDK::test_client_context_manager PASSED
-============================== 91 passed in 3.55s ==============================
+============================== 138 passed in 4.25s =============================
 ✅ Python tests complete!
 
 ```
 
-> **Note**: Tests are split across two files: `tests/test_integration.py` (28 async integration tests covering all API endpoints) and `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes). Run `make test-python` to run only Python tests.
+> **Note**: Tests are split across three files: `tests/test_integration.py` (57 async integration tests covering all API endpoints), `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes), and `tests/test_rbac.py` (18 RBAC enforcement tests). Run `make test-python` to run only Python tests.
 
 ---
 
@@ -790,7 +790,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v2.0.0
+SentinelForge CLI v2.1.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -1149,7 +1149,7 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "services": {
     "database": "healthy"
   },
@@ -1267,6 +1267,159 @@ curl -X POST http://localhost:8000/auth/logout \
 ```
 
 > **Note**: This endpoint revokes the token on the server so it can no longer be used, even before its natural expiration. The CLI command `sf auth logout` does **not** call this endpoint -- it only removes the local token file.
+
+---
+
+### Admin Endpoints (v2.1)
+
+#### `POST /auth/register`
+
+**Purpose**: Register a new user (admin only)
+
+**cURL**:
+```bash
+curl -X POST http://localhost:8000/auth/register \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "new_user", "password": "Str0ng!Pass#99", "role": "operator"}'
+```
+
+**Response**:
+```json
+{
+  "id": "uuid-string",
+  "username": "new_user",
+  "role": "operator",
+  "is_active": true
+}
+```
+
+---
+
+#### `GET /auth/users`
+
+**Purpose**: List all users (admin only)
+
+**cURL**:
+```bash
+curl http://localhost:8000/auth/users \
+  -H "Authorization: Bearer <admin_token>"
+```
+
+---
+
+#### `PATCH /auth/users/{id}/role`
+
+**Purpose**: Update a user's role (admin only)
+
+**cURL**:
+```bash
+curl -X PATCH http://localhost:8000/auth/users/{user_id}/role \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"role": "operator"}'
+```
+
+**Valid Roles**: `admin`, `operator`, `viewer`
+
+---
+
+### Audit Log Endpoints (v2.1)
+
+#### `GET /audit`
+
+**Purpose**: List audit log entries with optional filters (admin only)
+
+**cURL**:
+```bash
+curl "http://localhost:8000/audit?action=auth.login&limit=25&offset=0" \
+  -H "Authorization: Bearer <admin_token>"
+```
+
+**Query Parameters**: `action`, `user_id`, `resource_type`, `limit` (1-200), `offset`
+
+**Response**:
+```json
+{
+  "total": 150,
+  "limit": 25,
+  "offset": 0,
+  "items": [
+    {
+      "id": "uuid-string",
+      "user_id": "uuid-string",
+      "action": "auth.login",
+      "resource_type": null,
+      "resource_id": null,
+      "details": {},
+      "ip_address": "127.0.0.1",
+      "created_at": "2026-02-18T12:00:00"
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /audit/actions`
+
+**Purpose**: List distinct audit actions for filter dropdowns (admin only)
+
+**Response**:
+```json
+{
+  "actions": ["auth.login", "auth.logout", "attack.completed", "admin.register_user"]
+}
+```
+
+---
+
+### SSE Streaming Endpoint (v2.1)
+
+#### `GET /attacks/runs/{run_id}/stream`
+
+**Purpose**: Real-time Server-Sent Events stream for attack run progress
+
+**Usage**:
+```javascript
+const es = new EventSource("/attacks/runs/{run_id}/stream?token=<jwt>");
+es.addEventListener("progress", (e) => console.log(JSON.parse(e.data)));
+es.addEventListener("done", (e) => { console.log("Complete"); es.close(); });
+es.addEventListener("error", (e) => { console.error(e.data); es.close(); });
+```
+
+**Event Types**: `progress` (periodic status updates), `done` (terminal), `error` (failure)
+
+---
+
+### Custom Scenario CRUD (v2.1)
+
+#### `POST /attacks/scenarios`
+
+**Purpose**: Create a custom attack scenario (operator only)
+
+**cURL**:
+```bash
+curl -X POST http://localhost:8000/attacks/scenarios \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "my-custom-scenario",
+    "name": "Custom Prompt Injection",
+    "description": "My custom scenario",
+    "tools": ["garak", "promptfoo"],
+    "mitre_techniques": ["AML.T0051.000"],
+    "config": {}
+  }'
+```
+
+#### `PUT /attacks/scenarios/{scenario_id}`
+
+**Purpose**: Update a custom scenario (operator only)
+
+#### `DELETE /attacks/scenarios/{scenario_id}`
+
+**Purpose**: Delete a custom scenario (operator only, returns 204)
 
 ---
 

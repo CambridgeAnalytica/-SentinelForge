@@ -16,6 +16,7 @@ from database import get_db
 from models import AttackRun, RunStatus, Finding, User
 from schemas import AttackScenario, AttackRunRequest, AttackRunResponse, AttackRunDetail
 from middleware.auth import get_current_user, require_operator
+from services.deduplication import classify_findings
 
 router = APIRouter()
 logger = logging.getLogger("sentinelforge.attacks")
@@ -40,7 +41,7 @@ def _load_scenarios() -> List[dict]:
         if scenario_dir.exists():
             for f in sorted(scenario_dir.glob("*.yaml")):
                 try:
-                    with open(f) as fh:
+                    with open(f, encoding="utf-8") as fh:
                         data = yaml.safe_load(fh)
                         if data:
                             scenarios.append(data)
@@ -153,6 +154,13 @@ async def launch_attack(
     run.completed_at = datetime.now(timezone.utc)
     await db.flush()
 
+    # Classify findings as new vs. recurring
+    try:
+        dedup_stats = await classify_findings(run.id, db)
+        logger.info(f"Dedup stats for run {run.id}: {dedup_stats}")
+    except Exception as e:
+        logger.warning(f"Dedup classification failed for run {run.id}: {e}")
+
     # Dispatch webhook notification
     event = "attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed"
     background_tasks.add_task(
@@ -240,6 +248,9 @@ async def get_run(
                 "description": f.description,
                 "mitre_technique": f.mitre_technique,
                 "remediation": f.remediation,
+                "fingerprint": f.fingerprint,
+                "is_new": f.is_new,
+                "evidence_hash": f.evidence_hash,
             }
             for f in findings
         ],
@@ -387,3 +398,84 @@ async def _dispatch_webhook(event_type: str, payload: dict) -> None:
         await dispatch_webhook_event(event_type, payload)
     except Exception as e:
         logger.error(f"Webhook dispatch error: {e}")
+
+
+# ---------- Custom Scenario CRUD ----------
+
+_custom_scenarios: list = []  # In-memory store for user-created scenarios
+
+
+@router.post("/scenarios", status_code=201)
+async def create_scenario(
+    scenario: AttackScenario,
+    user: User = Depends(require_operator),
+):
+    """Create a custom attack scenario (operator-only)."""
+    # Check for ID collision with existing scenarios
+    existing = _load_scenarios()
+    if any(s.get("id") == scenario.id for s in existing) or any(
+        s["id"] == scenario.id for s in _custom_scenarios
+    ):
+        raise HTTPException(status_code=409, detail=f"Scenario ID '{scenario.id}' already exists")
+
+    entry = {
+        "id": scenario.id,
+        "name": scenario.name,
+        "description": scenario.description,
+        "tools": scenario.tools,
+        "mitre_techniques": scenario.mitre_techniques,
+        "config": scenario.config,
+        "custom": True,
+        "created_by": user.username,
+    }
+    _custom_scenarios.append(entry)
+
+    # Invalidate cache so new scenario appears in list
+    global _scenarios_cache
+    _scenarios_cache = None
+
+    logger.info(f"Custom scenario '{scenario.id}' created by {user.username}")
+    return entry
+
+
+@router.put("/scenarios/{scenario_id}")
+async def update_scenario(
+    scenario_id: str,
+    scenario: AttackScenario,
+    user: User = Depends(require_operator),
+):
+    """Update a custom attack scenario (operator-only)."""
+    for i, s in enumerate(_custom_scenarios):
+        if s["id"] == scenario_id:
+            _custom_scenarios[i] = {
+                "id": scenario.id,
+                "name": scenario.name,
+                "description": scenario.description,
+                "tools": scenario.tools,
+                "mitre_techniques": scenario.mitre_techniques,
+                "config": scenario.config,
+                "custom": True,
+                "created_by": s.get("created_by", user.username),
+            }
+            global _scenarios_cache
+            _scenarios_cache = None
+            return _custom_scenarios[i]
+
+    raise HTTPException(status_code=404, detail="Custom scenario not found")
+
+
+@router.delete("/scenarios/{scenario_id}", status_code=204)
+async def delete_scenario(
+    scenario_id: str,
+    user: User = Depends(require_operator),
+):
+    """Delete a custom attack scenario (operator-only)."""
+    for i, s in enumerate(_custom_scenarios):
+        if s["id"] == scenario_id:
+            _custom_scenarios.pop(i)
+            global _scenarios_cache
+            _scenarios_cache = None
+            logger.info(f"Custom scenario '{scenario_id}' deleted by {user.username}")
+            return
+
+    raise HTTPException(status_code=404, detail="Custom scenario not found")

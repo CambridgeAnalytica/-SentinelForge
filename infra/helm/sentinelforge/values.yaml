@@ -12,11 +12,11 @@ api:
     port: 8000
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 1000m
+      cpu: 500m
       memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
   env:
     LOG_LEVEL: info
     CORS_ORIGINS: "[]"
@@ -31,14 +31,34 @@ worker:
     pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 1000m
+      cpu: 500m
       memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
   env:
     WORKER_CONCURRENCY: "5"
     WORKER_LOG_LEVEL: info
+
+# ---------- Dashboard Service ----------
+dashboard:
+  replicaCount: 1
+  image:
+    repository: sentinelforge/dashboard
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  env:
+    NEXT_PUBLIC_API_URL: "http://sf-api:8000"
 
 # ---------- PostgreSQL ----------
 postgresql:

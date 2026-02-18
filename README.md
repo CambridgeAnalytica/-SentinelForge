@@ -24,7 +24,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 - **Compliance Mapping**: Auto-tag findings with OWASP ML Top 10, NIST AI RMF, EU AI Act
 - **Scheduled Scans**: Cron-based recurring scans with notification channels (Slack, email, Teams)
 - **CI/CD Integration**: GitHub Actions action and GitLab CI template for pipeline security scanning
-- **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, and settings management (port 3001)
+- **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, scenario builder, audit log, and settings management (port 3001)
 
 ### Innovative Capabilities
 
@@ -35,9 +35,9 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 120 tests (63 unit + 57 integration).
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 138 tests (63 unit + 57 integration + 18 RBAC).
 
-## Dashboard UI (v2.0)
+## Dashboard UI (v2.1)
 
 SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
 
@@ -53,6 +53,8 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **Report Viewer** | `/reports` | Report list with download links, in-browser preview (iframe), generate dialog with format toggles (HTML/PDF/JSONL) |
 | **Notifications & Webhooks** | `/settings/notifications` | Channel management (Slack, email, Teams, webhook) with type icons, test/delete actions, create channel modal |
 | **API Key Management** | `/settings/api-keys` | Key table with scopes and expiry, create modal, one-time copy-to-clipboard for new keys |
+| **Scenario Builder** | `/scenarios` | Visual editor for custom attack scenarios with tool selection, MITRE techniques, and JSON config |
+| **Audit Log** | `/audit` | Admin-only event log with action/user filters, expandable detail rows, pagination |
 
 ### Technical Details
 
@@ -161,7 +163,7 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 
 ```
 sentinelforge/
-├── dashboard/            # Next.js web dashboard (v2.0, port 3001)
+├── dashboard/            # Next.js web dashboard (v2.1, port 3001)
 ├── services/
 │   ├── api/              # FastAPI orchestration service
 │   └── worker/           # Python async worker (asyncio + asyncpg)
