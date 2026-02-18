@@ -12,8 +12,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from schemas import LoginRequest, TokenResponse, UserInfo, RegisterRequest, RoleUpdateRequest
-from services.user_service import authenticate_user, create_access_token, revoke_token, create_user
+from schemas import (
+    LoginRequest,
+    TokenResponse,
+    UserInfo,
+    RegisterRequest,
+    RoleUpdateRequest,
+)
+from services.user_service import (
+    authenticate_user,
+    create_access_token,
+    revoke_token,
+    create_user,
+)
 from middleware.auth import get_current_user, require_admin
 from models import User, UserRole
 
@@ -112,7 +123,9 @@ async def register_user(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    logger.info(f"Admin {admin.username} created user {user.username} with role {user.role.value}")
+    logger.info(
+        f"Admin {admin.username} created user {user.username} with role {user.role.value}"
+    )
     return UserInfo(
         id=user.id,
         username=user.username,
@@ -160,17 +173,20 @@ async def update_user_role(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     old_role = user.role.value
     user.role = new_role
     await db.flush()
 
-    logger.info(f"Admin {admin.username} changed {user.username} role: {old_role} → {new_role.value}")
+    logger.info(
+        f"Admin {admin.username} changed {user.username} role: {old_role} → {new_role.value}"
+    )
     return UserInfo(
         id=user.id,
         username=user.username,
         role=user.role.value,
         is_active=user.is_active,
     )
-

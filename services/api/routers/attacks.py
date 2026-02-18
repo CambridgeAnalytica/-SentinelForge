@@ -416,7 +416,9 @@ async def create_scenario(
     if any(s.get("id") == scenario.id for s in existing) or any(
         s["id"] == scenario.id for s in _custom_scenarios
     ):
-        raise HTTPException(status_code=409, detail=f"Scenario ID '{scenario.id}' already exists")
+        raise HTTPException(
+            status_code=409, detail=f"Scenario ID '{scenario.id}' already exists"
+        )
 
     entry = {
         "id": scenario.id,

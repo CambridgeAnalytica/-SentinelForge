@@ -32,12 +32,14 @@ def compute_fingerprint(
     This means two findings from different runs with the same title, tool,
     severity, and MITRE technique will produce the same fingerprint.
     """
-    canonical = "|".join([
-        title.strip().lower(),
-        tool_name.strip().lower(),
-        severity.strip().lower(),
-        (mitre_technique or "").strip().lower(),
-    ])
+    canonical = "|".join(
+        [
+            title.strip().lower(),
+            tool_name.strip().lower(),
+            severity.strip().lower(),
+            (mitre_technique or "").strip().lower(),
+        ]
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -52,9 +54,7 @@ async def classify_findings(run_id: str, db: AsyncSession) -> dict:
 
     Returns summary dict: {"new": int, "recurring": int, "total": int}
     """
-    result = await db.execute(
-        select(Finding).where(Finding.run_id == run_id)
-    )
+    result = await db.execute(select(Finding).where(Finding.run_id == run_id))
     findings = result.scalars().all()
 
     stats = {"new": 0, "recurring": 0, "total": len(findings)}

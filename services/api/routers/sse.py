@@ -26,7 +26,7 @@ async def _event_generator(run_id: str, db: AsyncSession):
         result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
         run = result.scalar_one_or_none()
         if not run:
-            yield "event: error\ndata: {\"error\": \"Run not found\"}\n\n"
+            yield 'event: error\ndata: {"error": "Run not found"}\n\n'
             return
 
         data = (
@@ -58,7 +58,9 @@ async def stream_run_progress(
     result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
     run = result.scalar_one_or_none()
     if not run:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+        )
 
     return StreamingResponse(
         _event_generator(run_id, db),

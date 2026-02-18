@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, Fragment, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ClipboardList, ChevronDown, ChevronRight, Filter } from "lucide-react";
 
@@ -17,7 +17,7 @@ interface AuditEntry {
     created_at: string | null;
 }
 
-export default function AuditLogPage() {
+function AuditLogContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [logs, setLogs] = useState<AuditEntry[]>([]);
@@ -141,9 +141,8 @@ export default function AuditLogPage() {
                             <tr><td colSpan={6} className="px-4 py-8 text-center text-zinc-500">No audit entries found</td></tr>
                         )}
                         {!loading && logs.map((log) => (
-                            <>
+                            <Fragment key={log.id}>
                                 <tr
-                                    key={log.id}
                                     className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
                                     onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                                 >
@@ -154,19 +153,19 @@ export default function AuditLogPage() {
                                         }
                                     </td>
                                     <td className="px-4 py-3 text-zinc-300 whitespace-nowrap font-mono text-xs">
-                                        {log.created_at ? new Date(log.created_at).toLocaleString() : "—"}
+                                        {log.created_at ? new Date(log.created_at).toLocaleString() : "\u2014"}
                                     </td>
                                     <td className={`px-4 py-3 font-medium ${actionColor(log.action)}`}>
                                         {log.action}
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{log.user_id ?? "—"}</td>
+                                    <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{log.user_id ?? "\u2014"}</td>
                                     <td className="px-4 py-3 text-zinc-300">
-                                        {log.resource_type ? `${log.resource_type}/${log.resource_id ?? ""}` : "—"}
+                                        {log.resource_type ? `${log.resource_type}/${log.resource_id ?? ""}` : "\u2014"}
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs">{log.ip_address ?? "—"}</td>
+                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs">{log.ip_address ?? "\u2014"}</td>
                                 </tr>
                                 {expanded === log.id && (
-                                    <tr key={`${log.id}-details`} className="border-b border-zinc-800/50">
+                                    <tr className="border-b border-zinc-800/50">
                                         <td colSpan={6} className="px-4 py-4 bg-zinc-900/50">
                                             <div className="text-xs font-medium text-zinc-500 mb-1">Details</div>
                                             <pre className="text-xs text-zinc-400 font-mono bg-zinc-950 rounded p-3 overflow-x-auto">
@@ -175,7 +174,7 @@ export default function AuditLogPage() {
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
@@ -204,5 +203,13 @@ export default function AuditLogPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AuditLogPage() {
+    return (
+        <Suspense fallback={<div className="px-4 py-8 text-center text-zinc-500">Loading audit log...</div>}>
+            <AuditLogContent />
+        </Suspense>
     );
 }

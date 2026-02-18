@@ -19,7 +19,9 @@ logger = logging.getLogger("sentinelforge.audit_router")
 
 @router.get("")
 async def list_audit_logs(
-    action: Optional[str] = Query(None, description="Filter by action (e.g. auth.login)"),
+    action: Optional[str] = Query(
+        None, description="Filter by action (e.g. auth.login)"
+    ),
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     resource_type: Optional[str] = Query(None, description="Filter by resource type"),
     limit: int = Query(50, ge=1, le=200),

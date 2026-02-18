@@ -190,7 +190,9 @@ async def create_user(
     try:
         user_role = UserRole(role)
     except ValueError:
-        raise ValueError(f"Invalid role: {role}. Must be one of: admin, operator, viewer")
+        raise ValueError(
+            f"Invalid role: {role}. Must be one of: admin, operator, viewer"
+        )
 
     # Check duplicate username
     existing = await db.execute(select(User).where(User.username == username))

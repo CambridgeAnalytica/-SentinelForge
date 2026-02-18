@@ -35,9 +35,7 @@ def upgrade():
         sa.Column("last_run_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("next_run_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("run_count", sa.Integer(), server_default="0"),
-        sa.Column(
-            "user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False
-        ),
+        sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -54,9 +52,7 @@ def upgrade():
     op.create_table(
         "api_keys",
         sa.Column("id", sa.String(), primary_key=True),
-        sa.Column(
-            "user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False
-        ),
+        sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("key_hash", sa.String(64), nullable=False, index=True),
         sa.Column("prefix", sa.String(12), nullable=False),
         sa.Column("name", sa.String(200), nullable=False),
@@ -75,9 +71,7 @@ def upgrade():
     op.create_table(
         "notification_channels",
         sa.Column("id", sa.String(), primary_key=True),
-        sa.Column(
-            "user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False
-        ),
+        sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column(
             "channel_type",
             sa.Enum("webhook", "slack", "email", "teams", name="channeltype"),
@@ -88,9 +82,7 @@ def upgrade():
         sa.Column("events", sa.JSON(), server_default="[]"),
         sa.Column("is_active", sa.Boolean(), server_default="true"),
         sa.Column("failure_count", sa.Integer(), server_default="0"),
-        sa.Column(
-            "last_triggered_at", sa.DateTime(timezone=True), nullable=True
-        ),
+        sa.Column("last_triggered_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
