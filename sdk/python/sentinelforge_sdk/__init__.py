@@ -220,9 +220,7 @@ class SentinelForgeClient:
             "/compliance/summary", params={"framework": framework}
         ).json()
 
-    def download_compliance_report(
-        self, framework: str, format: str = "pdf"
-    ) -> bytes:
+    def download_compliance_report(self, framework: str, format: str = "pdf") -> bytes:
         resp = self._client.get(
             "/compliance/report",
             params={"framework": framework, "format": format},
@@ -251,9 +249,7 @@ class SentinelForgeClient:
             },
         ).json()
 
-    def update_notification_channel(
-        self, channel_id: str, **kwargs
-    ) -> dict:
+    def update_notification_channel(self, channel_id: str, **kwargs) -> dict:
         return self._client.put(
             f"/notifications/channels/{channel_id}", json=kwargs
         ).json()
@@ -263,9 +259,7 @@ class SentinelForgeClient:
         resp.raise_for_status()
 
     def test_notification_channel(self, channel_id: str) -> dict:
-        return self._client.post(
-            f"/notifications/channels/{channel_id}/test"
-        ).json()
+        return self._client.post(f"/notifications/channels/{channel_id}/test").json()
 
     def close(self):
         self._client.close()
