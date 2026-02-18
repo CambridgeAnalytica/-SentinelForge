@@ -140,6 +140,9 @@ jobs:
         working-directory: dashboard
         run: npm ci
 
+      - name: Install Playwright
+        run: npm install @playwright/test
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
