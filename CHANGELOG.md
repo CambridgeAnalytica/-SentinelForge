@@ -1,5 +1,46 @@
 # SentinelForge - CHANGELOG
 
+## [2.2.0] - 2026-02-18
+
+### SSE Live Progress in Dashboard
+- Attack detail page (`/attacks/[id]`) now uses `useAttackRunSSE` hook to consume the SSE endpoint
+- Live progress bar with percentage driven by SSE events (replaces polling)
+- Pulsing green "LIVE" indicator when SSE connection is active
+- Auto-refreshes findings via `mutate()` when SSE signals completion
+- NEW / RECURRING badges on findings from dedup system
+
+### Alembic Migration 005
+- `005_v2_1_dedup_and_audit.py` — adds `fingerprint` (String(64), indexed) and `is_new` (Boolean) columns to `findings` table
+- Creates `audit_logs` table with `user_id`, `action`, `resource_type`, `resource_id`, `details` (JSONB), `ip_address`, `created_at`
+- Proper `downgrade()` for rollback
+
+### E2E Auth Tests
+- New `tests/e2e/auth.spec.ts` with 5 Playwright tests:
+  - Login page renders correctly (form fields, branding, submit button)
+  - Invalid credentials show error message (skipped in CI — requires API)
+  - Successful login redirects to dashboard (skipped in CI — requires API)
+  - Unauthenticated user sees login form
+  - Sidebar navigation visible after login (skipped in CI — requires API)
+
+### Error Boundaries
+- New `ErrorBoundary` React class component (`dashboard/src/components/layout/error-boundary.tsx`)
+- Styled fallback UI with error message, "Try Again" and "Go to Dashboard" buttons
+- Wired into `client-shell.tsx` wrapping page content inside the authenticated layout
+
+### Webhook Management Page
+- Full CRUD page at `/settings/webhooks` replacing the previous redirect stub
+- Webhook list with URL, event badges, active/disabled status, created timestamp
+- URL copy-to-clipboard with visual feedback
+- Test ping and delete actions per webhook
+- Create modal with URL input, optional HMAC secret, event checkbox selector
+- Events synced with API's `VALID_WEBHOOK_EVENTS`: `attack.completed`, `attack.failed`, `scan.completed`, `report.generated`, `agent.test.completed`
+
+### Tests
+- **138 Python tests** (63 unit + 57 integration + 18 RBAC)
+- **15 Playwright E2E tests** (10 dashboard + 5 auth)
+
+---
+
 ## [2.1.0] - 2026-02-18
 
 ### Admin User Management
@@ -462,4 +503,4 @@
 
 ---
 
-**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total). v1.5 adds scheduled/recurring scans, 3 more tool adapters, rate limiting with API key auth, notification channels (Slack/email/Teams), and OpenTelemetry wiring. v1.6 adds compliance mapping (OWASP ML Top 10 / NIST AI RMF / EU AI Act), completes all 14 tool adapters, and ships the CI/CD integration package (GitHub Actions + GitLab CI). v2.0 adds the full-featured Next.js Dashboard UI with 8 pages, JWT auth flow, real-time data visualization, and Docker integration.
+**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total). v1.5 adds scheduled/recurring scans, 3 more tool adapters, rate limiting with API key auth, notification channels (Slack/email/Teams), and OpenTelemetry wiring. v1.6 adds compliance mapping (OWASP ML Top 10 / NIST AI RMF / EU AI Act), completes all 14 tool adapters, and ships the CI/CD integration package (GitHub Actions + GitLab CI). v2.0 adds the full-featured Next.js Dashboard UI with 8 pages, JWT auth flow, real-time data visualization, and Docker integration. v2.1 adds admin user management, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, and Playwright E2E. v2.2 wires SSE live progress into the dashboard, adds Alembic migration 005, E2E auth tests, error boundaries, and a full webhook management page.

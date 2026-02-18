@@ -35,9 +35,9 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), and 138 tests (63 unit + 57 integration + 18 RBAC).
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
 
-## Dashboard UI (v2.1)
+## Dashboard UI (v2.2)
 
 SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
 
@@ -51,7 +51,8 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **Schedule Manager** | `/schedules` | CRUD table for cron-based recurring scans, visual cron expression builder, manual trigger button |
 | **Compliance View** | `/compliance` | Framework tabs (OWASP ML Top 10, NIST AI RMF, EU AI Act), coverage heatmap grid, summary stats, PDF download |
 | **Report Viewer** | `/reports` | Report list with download links, in-browser preview (iframe), generate dialog with format toggles (HTML/PDF/JSONL) |
-| **Notifications & Webhooks** | `/settings/notifications` | Channel management (Slack, email, Teams, webhook) with type icons, test/delete actions, create channel modal |
+| **Notifications** | `/settings/notifications` | Channel management (Slack, email, Teams) with type icons, test/delete actions, create channel modal |
+| **Webhook Endpoints** | `/settings/webhooks` | Webhook CRUD with URL copy, event checkboxes, test ping, active/disabled status, HMAC secret |
 | **API Key Management** | `/settings/api-keys` | Key table with scopes and expiry, create modal, one-time copy-to-clipboard for new keys |
 | **Scenario Builder** | `/scenarios` | Visual editor for custom attack scenarios with tool selection, MITRE techniques, and JSON config |
 | **Audit Log** | `/audit` | Admin-only event log with action/user filters, expandable detail rows, pagination |
@@ -62,6 +63,8 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 - **Data Fetching**: SWR hooks with TypeScript interfaces for all API endpoints
 - **Design**: Dark-first theme with severity color palette (critical/high/medium/low/info)
 - **Sidebar**: Collapsible navigation + top bar with API health indicator and user menu
+- **Error Boundaries**: React error boundary wrapping page content with styled retry/home fallback
+- **Live Progress**: SSE-driven progress bar on attack detail page with pulsing LIVE indicator
 - **Docker**: Multi-stage build (`node:20-alpine`), served on port 3001, included in `docker compose up -d`
 
 ## Quick Start
@@ -163,7 +166,7 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 
 ```
 sentinelforge/
-├── dashboard/            # Next.js web dashboard (v2.1, port 3001)
+├── dashboard/            # Next.js web dashboard (v2.2, port 3001)
 ├── services/
 │   ├── api/              # FastAPI orchestration service
 │   └── worker/           # Python async worker (asyncio + asyncpg)

@@ -21,7 +21,7 @@ make logs              # tail all service logs
 make build             # builds api, worker, tools images
 
 # Testing
-make test              # runs all Python tests (unit + integration + RBAC, 138 tests)
+make test              # runs all Python tests (unit + integration + RBAC, 138 tests) + 15 Playwright E2E
 make test-python       # pytest across services/api, sdk/python, cli (each in own venv)
 
 # Run tests for a single component (activate its venv first):
@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 10 pages, charts, auth flow |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 11 pages, charts, auth flow, error boundaries |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -140,8 +140,9 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **Rate limiting**: slowapi middleware with smart key function (API key > JWT > IP fallback).
 - **Compliance mapping**: OWASP ML Top 10, NIST AI RMF, EU AI Act auto-tagging via MITRE ATLAS reverse index.
 - **Findings dedup**: SHA-256 fingerprinting with new/recurring classification via `services/deduplication.py`.
-- **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`.
+- **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`. Dashboard consumes via `useAttackRunSSE` hook with live progress bar.
 - **Custom scenarios**: In-memory CRUD for user-created attack scenarios via POST/PUT/DELETE `/attacks/scenarios`.
+- **Error boundaries**: React `ErrorBoundary` class component in `client-shell.tsx` wrapping page content with styled retry/home fallback.
 
 ## Version Summary
 
@@ -154,4 +155,5 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v1.6**: Compliance mapping, 9 more adapters (14/14 complete), CI/CD package
 - **v2.0**: Next.js Dashboard UI (8 pages, SWR, Recharts, JWT auth flow)
 - **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
-- **Current**: 138 tests (63 unit + 57 integration + 18 RBAC) — 19 routers, 10 dashboard pages
+- **v2.2**: SSE live progress in dashboard, Alembic migration 005, E2E auth tests, error boundaries, webhook CRUD page
+- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 11 dashboard pages

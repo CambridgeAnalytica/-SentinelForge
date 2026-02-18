@@ -186,6 +186,8 @@ See [DEPLOYMENT_GUIDE.md#troubleshooting](DEPLOYMENT_GUIDE.md#troubleshooting) f
 |  +- Probes  +- Tools   +- Reports       |
 |  +- Drift   +- Backdoor +- Supply Chain |
 |  +- Agent   +- Synthetic +- Webhooks   |
+|  +- Schedules +- API Keys +- Compliance|
+|  +- Notifications +- Audit  +- SSE     |
 +-------------------+----------------------+
                     |
                     v
@@ -216,6 +218,6 @@ To extend SentinelForge:
 
 ## Version
 
-Current version: **2.0.0**
+Current version: **2.2.0**
 
 See [CHANGELOG.md](../CHANGELOG.md) for release notes.

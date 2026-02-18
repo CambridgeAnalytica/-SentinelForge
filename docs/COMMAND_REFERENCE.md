@@ -237,7 +237,7 @@ tests/test_sentinelforge.py::TestSDK::test_client_context_manager PASSED
 
 ```
 
-> **Note**: Tests are split across three files: `tests/test_integration.py` (57 async integration tests covering all API endpoints), `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes), and `tests/test_rbac.py` (18 RBAC enforcement tests). Run `make test-python` to run only Python tests.
+> **Note**: Tests are split across three files: `tests/test_integration.py` (57 async integration tests covering all API endpoints), `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes), and `tests/test_rbac.py` (18 RBAC enforcement tests). There are also 20 Playwright E2E tests in `tests/e2e/` (dashboard smoke tests + auth flow). Run `make test-python` to run only Python tests.
 
 ---
 
@@ -790,7 +790,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v2.1.0
+SentinelForge CLI v2.2.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -1149,11 +1149,11 @@ curl http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "services": {
     "database": "healthy"
   },
-  "timestamp": "2026-02-12T14:46:00Z"
+  "timestamp": "2026-02-18T14:46:00Z"
 }
 ```
 
