@@ -235,6 +235,10 @@ def _get_adapter_if_available(target_model: str, provider: Optional[str]):
         else:
             p = "openai"  # default
 
+        # Ollama uses OpenAI-compatible API — normalize provider
+        if p == "ollama":
+            p = "openai"
+
         # Check for API key
         key_map = {
             "openai": "OPENAI_API_KEY",

@@ -2,6 +2,7 @@
 
 import { useAttackRunDetail, useAttackRunSSE, type Finding } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft,
@@ -15,6 +16,9 @@ import {
     ChevronUp,
     Shield,
     Radio,
+    FileText,
+    Download,
+    Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -96,6 +100,10 @@ export default function AttackRunDetailPage() {
                         {run.started_at && <> · Started {timeAgo(run.started_at)}</>}
                     </p>
                 </div>
+                {/* Report generation buttons */}
+                {run.status === "completed" && (
+                    <ReportButtons runId={run.id} />
+                )}
             </div>
 
             {/* Progress bar for running attacks — driven by SSE when connected */}
@@ -357,6 +365,62 @@ function JsonBlock({
             <pre className="overflow-x-auto rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
                 {JSON.stringify(data, null, 2)}
             </pre>
+        </div>
+    );
+}
+
+function ReportButtons({ runId }: { runId: string }) {
+    const [generating, setGenerating] = useState<string | null>(null);
+
+    async function generate(format: "html" | "pdf") {
+        setGenerating(format);
+        try {
+            const reports = await api.post<{ id: string; format: string }[]>(
+                "/reports/generate",
+                { run_id: runId, formats: [format] }
+            );
+            if (reports?.[0]?.id) {
+                // Open the report view/download in a new tab
+                const token = localStorage.getItem("sf_token");
+                const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+                const endpoint = format === "pdf" ? "download" : "view";
+                const url = `${base}/reports/${reports[0].id}/${endpoint}${token ? `?token=${token}` : ""}`;
+                window.open(url, "_blank");
+            }
+        } catch {
+            // Fallback: try inline generation via view endpoint
+            alert("Report generation failed. Check API logs.");
+        } finally {
+            setGenerating(null);
+        }
+    }
+
+    return (
+        <div className="flex gap-2 shrink-0">
+            <button
+                onClick={() => generate("html")}
+                disabled={generating !== null}
+                className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+            >
+                {generating === "html" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                    <FileText className="h-3.5 w-3.5" />
+                )}
+                HTML Report
+            </button>
+            <button
+                onClick={() => generate("pdf")}
+                disabled={generating !== null}
+                className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+                {generating === "pdf" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                    <Download className="h-3.5 w-3.5" />
+                )}
+                PDF Report
+            </button>
         </div>
     );
 }

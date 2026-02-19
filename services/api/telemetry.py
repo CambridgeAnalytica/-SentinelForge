@@ -21,7 +21,7 @@ logger = logging.getLogger("sentinelforge.telemetry")
 _RESOURCE = Resource.create(
     {
         SERVICE_NAME: "sentinelforge-api",
-        SERVICE_VERSION: "1.5.0",
+        SERVICE_VERSION: "2.2.0",
         "deployment.environment": "production",
     }
 )

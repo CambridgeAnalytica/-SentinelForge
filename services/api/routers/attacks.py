@@ -282,17 +282,38 @@ async def verify_evidence_chain(
 
 
 async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
-    """Execute an attack scenario. Returns results dict."""
+    """Execute an attack scenario. Returns results dict.
+
+    Execution phases:
+    1. Direct LLM testing — sends scenario test-case prompts to the target
+    2. External tool execution — runs installed tools (garak, etc.) if available
+    3. Multi-turn adversarial — escalation-based conversation attacks
+    """
     results = {
         "scenario": scenario["id"],
         "target": target,
         "tools_executed": [],
+        "direct_test_results": [],
         "findings": [],
         "multi_turn_results": [],
         "summary": {},
     }
 
-    # Execute tools
+    # ── Phase 1: Direct LLM testing (always runs) ──
+    try:
+        from services.direct_test_service import run_direct_tests
+
+        direct_results = await run_direct_tests(scenario, target, config)
+        results["direct_test_results"] = direct_results.get("test_results", [])
+        results["findings"].extend(direct_results.get("findings", []))
+        logger.info(
+            f"Direct testing: {direct_results.get('summary', {}).get('total_prompts', 0)} prompts, "
+            f"{direct_results.get('summary', {}).get('failed_prompts', 0)} failures"
+        )
+    except Exception as e:
+        logger.error(f"Direct testing failed: {e}")
+
+    # ── Phase 2: External tool execution (if tools are installed) ──
     for tool_name in scenario.get("tools", []):
         tool_result = {
             "tool": tool_name,
@@ -309,44 +330,34 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
             tool_result["status"] = (
                 "completed" if exec_result.get("success") else "failed"
             )
-        except (ImportError, Exception):
-            tool_result["status"] = "stub"
-            tool_result["output"] = (
-                f"Tool '{tool_name}' not available in this environment. "
-                f"Install via Docker tools image for full execution. Stub result generated."
-            )
 
-            # Generate stub findings for demo/testing
-            results["findings"].append(
-                {
-                    "tool": tool_name,
-                    "severity": "info",
-                    "title": f"{tool_name}: Stub execution against {target}",
-                    "description": f"Tool '{tool_name}' was not available. Install in Docker "
-                    f"tools container for real results.",
-                    "mitre_technique": (
-                        scenario.get("mitre_techniques", [None])[0]
-                        if scenario.get("mitre_techniques")
-                        else None
-                    ),
-                    "remediation": f"Deploy SentinelForge with Docker to enable {tool_name}.",
-                }
+            # Parse tool output into findings if available
+            if exec_result.get("success") and exec_result.get("stdout"):
+                tool_findings = _parse_tool_findings(
+                    tool_name, exec_result["stdout"], scenario
+                )
+                results["findings"].extend(tool_findings)
+
+        except (ImportError, FileNotFoundError, Exception) as exc:
+            tool_result["status"] = "skipped"
+            tool_result["output"] = (
+                f"Tool '{tool_name}' not installed — skipped. "
+                f"Direct LLM testing was used instead."
             )
+            logger.info(f"Tool '{tool_name}' not available, skipped: {exc}")
 
         results["tools_executed"].append(tool_result)
 
-    # Multi-turn adversarial conversations (if enabled in scenario config)
+    # ── Phase 3: Multi-turn adversarial (if enabled) ──
     if config.get("multi_turn"):
         from services.multi_turn_service import run_multi_turn_attack
 
         max_turns = config.get("max_turns", 10)
         provider = config.get("provider")
 
-        # Run multi-turn for each test case of type "multi_turn"
         test_cases = scenario.get("test_cases", [])
         multi_turn_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
 
-        # If no explicit multi-turn test cases, run with default strategy
         if not multi_turn_cases:
             multi_turn_cases = [
                 {"strategy": "gradual_trust", "name": "Default Multi-Turn"}
@@ -364,30 +375,65 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
                     config=config,
                 )
                 results["multi_turn_results"].append(mt_result)
-                # Merge multi-turn findings into main findings
                 results["findings"].extend(mt_result.get("findings", []))
             except Exception as e:
                 logger.error(f"Multi-turn attack failed ({strategy}): {e}")
                 results["multi_turn_results"].append(
-                    {
-                        "strategy": strategy,
-                        "error": str(e),
-                    }
+                    {"strategy": strategy, "error": str(e)}
                 )
 
-    # Summary
+    # ── Summary ──
+    direct_summary = {}
+    if results["direct_test_results"]:
+        total_prompts = sum(
+            len(tc.get("prompt_results", []))
+            for tc in results["direct_test_results"]
+        )
+        failed_prompts = sum(
+            1
+            for tc in results["direct_test_results"]
+            for pr in tc.get("prompt_results", [])
+            if not pr.get("passed", True)
+        )
+        direct_summary = {
+            "total_prompts_tested": total_prompts,
+            "prompts_failed": failed_prompts,
+            "pass_rate": (total_prompts - failed_prompts) / max(total_prompts, 1),
+        }
+
     results["summary"] = {
         "total_tools": len(results["tools_executed"]),
-        "completed": sum(
+        "tools_completed": sum(
             1 for t in results["tools_executed"] if t["status"] == "completed"
         ),
-        "failed": sum(1 for t in results["tools_executed"] if t["status"] == "failed"),
-        "stubs": sum(1 for t in results["tools_executed"] if t["status"] == "stub"),
+        "tools_skipped": sum(
+            1 for t in results["tools_executed"] if t["status"] == "skipped"
+        ),
+        "direct_tests": direct_summary,
         "multi_turn_attacks": len(results["multi_turn_results"]),
         "total_findings": len(results["findings"]),
     }
 
     return results
+
+
+def _parse_tool_findings(
+    tool_name: str, stdout: str, scenario: dict
+) -> list:
+    """Parse real tool output into findings using the appropriate adapter."""
+    try:
+        if tool_name == "garak":
+            from tools.garak_adapter import parse_garak_output
+            return parse_garak_output(stdout)
+        if tool_name == "promptfoo":
+            from tools.promptfoo_adapter import parse_promptfoo_output
+            return parse_promptfoo_output(stdout)
+        if tool_name == "deepeval":
+            from tools.deepeval_adapter import parse_deepeval_output
+            return parse_deepeval_output(stdout)
+    except Exception as e:
+        logger.warning(f"Failed to parse {tool_name} output: {e}")
+    return []
 
 
 async def _dispatch_webhook(event_type: str, payload: dict) -> None:

@@ -69,14 +69,20 @@ async def get_current_user(
     if api_key_raw:
         return await _authenticate_api_key(api_key_raw, db)
 
-    # 2. Try JWT Bearer
-    if not credentials:
+    # 2. Try JWT Bearer (header or ?token= query param)
+    token_str = credentials.credentials if credentials else None
+
+    # Fallback: check query param for browser-based access (report downloads, SSE)
+    if not token_str:
+        token_str = request.query_params.get("token")
+
+    if not token_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication (provide Bearer token or X-API-Key)",
+            detail="Missing authentication (provide Bearer token, X-API-Key, or ?token= query param)",
         )
 
-    payload = decode_token(credentials.credentials)
+    payload = decode_token(token_str)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
