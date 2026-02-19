@@ -183,6 +183,8 @@ def _get_adapter_for_model(model_name: str, provider: str = None):
         kwargs = {}
         if provider == "openai":
             kwargs = {"api_key": settings.OPENAI_API_KEY, "model": model_name}
+            if settings.OPENAI_BASE_URL:
+                kwargs["base_url"] = settings.OPENAI_BASE_URL
         elif provider == "anthropic":
             kwargs = {"api_key": settings.ANTHROPIC_API_KEY, "model": model_name}
         elif provider == "azure_openai":
@@ -207,7 +209,10 @@ def _get_adapter_for_model(model_name: str, provider: str = None):
     if lower.startswith("gpt") or lower.startswith("o1") or lower.startswith("o3"):
         if not settings.OPENAI_API_KEY:
             return None
-        return get_adapter("openai", api_key=settings.OPENAI_API_KEY, model=model_name)
+        kwargs = {"api_key": settings.OPENAI_API_KEY, "model": model_name}
+        if settings.OPENAI_BASE_URL:
+            kwargs["base_url"] = settings.OPENAI_BASE_URL
+        return get_adapter("openai", **kwargs)
     elif lower.startswith("claude"):
         if not settings.ANTHROPIC_API_KEY:
             return None
@@ -227,7 +232,10 @@ def _get_adapter_for_model(model_name: str, provider: str = None):
 
     # Check if any key is available, try openai as default
     if settings.OPENAI_API_KEY:
-        return get_adapter("openai", api_key=settings.OPENAI_API_KEY, model=model_name)
+        kwargs = {"api_key": settings.OPENAI_API_KEY, "model": model_name}
+        if settings.OPENAI_BASE_URL:
+            kwargs["base_url"] = settings.OPENAI_BASE_URL
+        return get_adapter("openai", **kwargs)
     if settings.ANTHROPIC_API_KEY:
         return get_adapter(
             "anthropic", api_key=settings.ANTHROPIC_API_KEY, model=model_name

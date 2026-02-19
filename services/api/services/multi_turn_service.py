@@ -256,6 +256,10 @@ def _get_adapter_if_available(target_model: str, provider: Optional[str]):
             }
         elif p == "azure_openai":
             kwargs["base_url"] = os.environ.get("AZURE_OPENAI_ENDPOINT", "")
+        elif p == "openai":
+            base_url = os.environ.get("OPENAI_BASE_URL", "")
+            if base_url:
+                kwargs["base_url"] = base_url
 
         return get_adapter(p, **kwargs)
     except Exception as e:

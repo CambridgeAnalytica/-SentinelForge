@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
     # LLM Provider Keys
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""  # Override for local LLMs (LM Studio, Ollama, vLLM)
     ANTHROPIC_API_KEY: str = ""
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
