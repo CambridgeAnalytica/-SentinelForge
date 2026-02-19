@@ -30,9 +30,16 @@ async def health_check():
         "healthy" if all(v == "healthy" for v in services.values()) else "degraded"
     )
 
+    # Read version from the FastAPI app instance
+    try:
+        from main import app as _app
+        version = _app.version
+    except Exception:
+        version = "unknown"
+
     return HealthResponse(
         status=overall,
-        version="1.4.0",
+        version=version,
         services=services,
         timestamp=datetime.now(timezone.utc),
     )

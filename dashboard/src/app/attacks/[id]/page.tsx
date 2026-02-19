@@ -1,6 +1,6 @@
 "use client";
 
-import { useAttackRunDetail, type Finding } from "@/hooks/use-api";
+import { useAttackRunDetail, useAttackRunSSE, type Finding } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -14,8 +14,9 @@ import {
     ChevronDown,
     ChevronUp,
     Shield,
+    Radio,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"];
 
@@ -23,7 +24,24 @@ export default function AttackRunDetailPage() {
     const params = useParams();
     const router = useRouter();
     const id = typeof params.id === "string" ? params.id : null;
-    const { data: run, isLoading, error } = useAttackRunDetail(id);
+    const { data: run, isLoading, error, mutate } = useAttackRunDetail(id);
+
+    // SSE live progress — only connect when run is active
+    const isActive = run?.status === "running" || run?.status === "queued";
+    const { progress: sseProgress, connected: sseConnected } = useAttackRunSSE(
+        isActive ? id : null
+    );
+
+    // When SSE signals completion, refresh full data from API
+    useEffect(() => {
+        if (sseProgress && (sseProgress.status === "completed" || sseProgress.status === "failed")) {
+            mutate();
+        }
+    }, [sseProgress?.status, mutate]);
+
+    // Use SSE progress when available, fall back to SWR data
+    const liveProgress = sseProgress?.progress ?? run?.progress ?? 0;
+    const liveStatus = sseProgress?.status ?? run?.status;
 
     if (isLoading) return <PageSkeleton />;
     if (error || !run) {
@@ -46,7 +64,6 @@ export default function AttackRunDetailPage() {
         (a, b) =>
             SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity)
     );
-    const isActive = run.status === "running" || run.status === "queued";
 
     return (
         <div className="space-y-6">
@@ -63,7 +80,16 @@ export default function AttackRunDetailPage() {
                         <h2 className="text-2xl font-bold text-foreground">
                             {run.scenario_id}
                         </h2>
-                        <StatusBadge status={run.status} />
+                        <StatusBadge status={liveStatus ?? run.status} />
+                        {sseConnected && (
+                            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                                </span>
+                                LIVE
+                            </span>
+                        )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Target: <span className="font-medium text-foreground">{run.target_model}</span>
@@ -72,22 +98,22 @@ export default function AttackRunDetailPage() {
                 </div>
             </div>
 
-            {/* Progress bar for running attacks */}
+            {/* Progress bar for running attacks — driven by SSE when connected */}
             {isActive && (
                 <div className="rounded-xl border border-border bg-card p-4">
                     <div className="mb-2 flex items-center justify-between text-sm">
                         <span className="flex items-center gap-2 text-muted-foreground">
                             <Clock className="h-4 w-4 animate-spin" />
-                            {run.status === "queued" ? "Waiting in queue…" : "Scan in progress…"}
+                            {liveStatus === "queued" ? "Waiting in queue…" : "Scan in progress…"}
                         </span>
                         <span className="font-mono text-foreground">
-                            {Math.round((run.progress ?? 0) * 100)}%
+                            {Math.round(liveProgress * 100)}%
                         </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-secondary">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-primary to-info transition-all duration-500"
-                            style={{ width: `${Math.max((run.progress ?? 0) * 100, 2)}%` }}
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-info transition-all duration-300"
+                            style={{ width: `${Math.max(liveProgress * 100, 2)}%` }}
                         />
                     </div>
                 </div>

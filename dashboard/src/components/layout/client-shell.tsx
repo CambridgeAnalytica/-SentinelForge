@@ -1,14 +1,23 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { ErrorBoundary } from "./error-boundary";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const isLoginPage = pathname === "/login";
+
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated && !isLoginPage) {
+            router.replace("/login");
+        }
+    }, [isLoading, isAuthenticated, isLoginPage, router]);
 
     if (isLoading) {
         return (
@@ -18,7 +27,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
         );
     }
 
-    // Login page gets a bare layout
+    // Login page or unauthenticated — bare layout (redirect in progress)
     if (isLoginPage || !isAuthenticated) {
         return <>{children}</>;
     }
@@ -28,7 +37,9 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
             <Sidebar />
             <div className="flex flex-1 flex-col overflow-hidden">
                 <Topbar />
-                <main className="flex-1 overflow-y-auto p-6">{children}</main>
+                <main className="flex-1 overflow-y-auto p-6">
+                    <ErrorBoundary>{children}</ErrorBoundary>
+                </main>
             </div>
         </div>
     );

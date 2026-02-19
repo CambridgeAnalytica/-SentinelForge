@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useAttackRuns } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { NewScanModal } from "@/components/new-scan-modal";
 import {
   PieChart,
   Pie,
@@ -19,6 +21,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Plus,
   Shield,
 } from "lucide-react";
 
@@ -33,6 +36,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter();
   const { data: runs, isLoading } = useAttackRuns();
+  const [showNewScan, setShowNewScan] = useState(false);
 
   if (isLoading) {
     return <PageSkeleton />;
@@ -94,12 +98,22 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Scan Dashboard</h2>
-        <p className="text-sm text-muted-foreground">
-          Overview of attack runs, findings, and security posture
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Scan Dashboard</h2>
+          <p className="text-sm text-muted-foreground">
+            Overview of attack runs, findings, and security posture
+          </p>
+        </div>
+        <button
+          onClick={() => setShowNewScan(true)}
+          className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> New Scan
+        </button>
       </div>
+
+      {showNewScan && <NewScanModal onClose={() => setShowNewScan(false)} />}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
