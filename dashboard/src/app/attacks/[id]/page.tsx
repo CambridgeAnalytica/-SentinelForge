@@ -3,6 +3,7 @@
 import { useAttackRunDetail, useAttackRunSSE, type Finding } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft,
@@ -19,6 +20,7 @@ import {
     FileText,
     Download,
     Loader2,
+    Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -27,6 +29,8 @@ const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"];
 export default function AttackRunDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useAuth();
+    const isAdmin = user?.role === "admin";
     const id = typeof params.id === "string" ? params.id : null;
     const { data: run, isLoading, error, mutate } = useAttackRunDetail(id);
 
@@ -69,6 +73,15 @@ export default function AttackRunDetailPage() {
             SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity)
     );
 
+    async function handleToggleFP(findingId: string) {
+        try {
+            await api.patch(`/attacks/findings/${findingId}/false-positive`);
+            mutate();
+        } catch {
+            alert("Failed to toggle false positive status.");
+        }
+    }
+
     return (
         <div className="space-y-6">
             {/* Back nav + header */}
@@ -100,10 +113,15 @@ export default function AttackRunDetailPage() {
                         {run.started_at && <> · Started {timeAgo(run.started_at)}</>}
                     </p>
                 </div>
-                {/* Report generation buttons */}
-                {run.status === "completed" && (
-                    <ReportButtons runId={run.id} />
-                )}
+                {/* Report + delete buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                    {run.status === "completed" && (
+                        <ReportButtons runId={run.id} />
+                    )}
+                    {isAdmin && (
+                        <DeleteButton runId={run.id} onDeleted={() => router.push("/")} />
+                    )}
+                </div>
             </div>
 
             {/* Progress bar for running attacks — driven by SSE when connected */}
@@ -127,19 +145,19 @@ export default function AttackRunDetailPage() {
                 </div>
             )}
 
-            {/* Stats row */}
+            {/* Stats row — exclude false positives from counts */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <MiniStat
                     icon={Shield}
-                    label="Total Findings"
-                    value={findings.length}
+                    label="Active Findings"
+                    value={findings.filter((f) => !f.false_positive).length}
                     color="text-primary"
                 />
                 <MiniStat
                     icon={AlertTriangle}
                     label="Critical / High"
                     value={
-                        findings.filter((f) => f.severity === "critical" || f.severity === "high").length
+                        findings.filter((f) => !f.false_positive && (f.severity === "critical" || f.severity === "high")).length
                     }
                     color="text-critical"
                 />
@@ -184,7 +202,7 @@ export default function AttackRunDetailPage() {
                 ) : (
                     <div className="divide-y divide-border">
                         {sorted.map((f) => (
-                            <FindingRow key={f.id} finding={f} />
+                            <FindingRow key={f.id} finding={f} onToggleFP={isAdmin ? handleToggleFP : undefined} />
                         ))}
                     </div>
                 )}
@@ -278,10 +296,11 @@ function MiniStat({
     );
 }
 
-function FindingRow({ finding }: { finding: Finding }) {
+function FindingRow({ finding, onToggleFP }: { finding: Finding; onToggleFP?: (id: string) => void }) {
     const [open, setOpen] = useState(false);
+    const isFP = finding.false_positive;
     return (
-        <div>
+        <div className={cn(isFP && "opacity-50")}>
             <button
                 onClick={() => setOpen(!open)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors"
@@ -289,15 +308,20 @@ function FindingRow({ finding }: { finding: Finding }) {
                 <span
                     className={cn(
                         "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                        severityBadge(finding.severity)
+                        isFP ? "bg-zinc-700/50 text-zinc-500 line-through" : severityBadge(finding.severity)
                     )}
                 >
-                    {finding.severity?.toUpperCase()}
+                    {isFP ? "FP" : finding.severity?.toUpperCase()}
                 </span>
-                <span className="flex-1 text-sm font-medium text-foreground truncate">
+                <span className={cn("flex-1 text-sm font-medium truncate", isFP ? "text-muted-foreground line-through" : "text-foreground")}>
                     {finding.title}
                 </span>
-                {finding.is_new !== undefined && (
+                {isFP && (
+                    <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                        FALSE POSITIVE
+                    </span>
+                )}
+                {!isFP && finding.is_new !== undefined && (
                     <span
                         className={cn(
                             "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
@@ -345,6 +369,19 @@ function FindingRow({ finding }: { finding: Finding }) {
                                 {JSON.stringify(finding.evidence, null, 2)}
                             </pre>
                         </div>
+                    )}
+                    {onToggleFP && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onToggleFP(finding.id); }}
+                            className={cn(
+                                "mt-2 flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                                isFP
+                                    ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                    : "border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                            )}
+                        >
+                            {isFP ? "Restore Finding" : "Mark as False Positive"}
+                        </button>
                     )}
                 </div>
             )}
@@ -422,6 +459,55 @@ function ReportButtons({ runId }: { runId: string }) {
                 PDF Report
             </button>
         </div>
+    );
+}
+
+function DeleteButton({ runId, onDeleted }: { runId: string; onDeleted: () => void }) {
+    const [confirming, setConfirming] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    async function handleDelete() {
+        setDeleting(true);
+        try {
+            await api.delete(`/attacks/runs/${runId}`);
+            onDeleted();
+        } catch {
+            alert("Failed to delete scan run.");
+        } finally {
+            setDeleting(false);
+            setConfirming(false);
+        }
+    }
+
+    if (confirming) {
+        return (
+            <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Delete?</span>
+                <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex h-8 items-center gap-1.5 rounded-md bg-destructive px-3 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                >
+                    {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Yes, delete"}
+                </button>
+                <button
+                    onClick={() => setConfirming(false)}
+                    className="flex h-8 items-center rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                >
+                    Cancel
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <button
+            onClick={() => setConfirming(true)}
+            className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title="Delete this scan"
+        >
+            <Trash2 className="h-3.5 w-3.5" />
+        </button>
     );
 }
 

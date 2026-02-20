@@ -13,9 +13,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AttackRun, RunStatus, Finding, User
+from models import AttackRun, RunStatus, Finding, Report, User, AuditLog
 from schemas import AttackScenario, AttackRunRequest, AttackRunResponse, AttackRunDetail
-from middleware.auth import get_current_user, require_operator
+from middleware.auth import get_current_user, require_operator, require_admin
 from services.deduplication import classify_findings
 
 router = APIRouter()
@@ -106,6 +106,18 @@ async def launch_attack(
         f"Created attack run {run.id}: {request.scenario_id} → {request.target_model}"
     )
 
+    # Audit log: attack launched
+    db.add(AuditLog(
+        user_id=user.id,
+        action="attack.launched",
+        resource_type="attack_run",
+        resource_id=run.id,
+        details={
+            "scenario_id": request.scenario_id,
+            "target_model": request.target_model,
+        },
+    ))
+
     # In a production system, this would be dispatched to the worker pool.
     # For now, we run synchronously in-process.
     run.status = RunStatus.RUNNING
@@ -161,6 +173,22 @@ async def launch_attack(
     except Exception as e:
         logger.warning(f"Dedup classification failed for run {run.id}: {e}")
 
+    # Audit log: attack completed/failed
+    findings_count = len(results.get("findings", [])) if run.status == RunStatus.COMPLETED else 0
+    db.add(AuditLog(
+        user_id=user.id,
+        action="attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed",
+        resource_type="attack_run",
+        resource_id=run.id,
+        details={
+            "scenario_id": run.scenario_id,
+            "target_model": run.target_model,
+            "status": run.status.value,
+            "findings_count": findings_count,
+        },
+    ))
+    await db.flush()
+
     # Dispatch webhook notification
     event = "attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed"
     background_tasks.add_task(
@@ -174,6 +202,10 @@ async def launch_attack(
         },
     )
 
+    # Load findings for the response
+    findings_result = await db.execute(select(Finding).where(Finding.run_id == run.id))
+    run_findings = findings_result.scalars().all()
+
     return AttackRunResponse(
         id=run.id,
         scenario_id=run.scenario_id,
@@ -183,6 +215,23 @@ async def launch_attack(
         created_at=run.created_at,
         started_at=run.started_at,
         completed_at=run.completed_at,
+        findings=[
+            {
+                "id": f.id,
+                "tool_name": f.tool_name,
+                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                "title": f.title,
+                "description": f.description,
+                "mitre_technique": f.mitre_technique,
+                "remediation": f.remediation,
+                "evidence": f.evidence,
+                "evidence_hash": f.evidence_hash,
+                "is_new": f.is_new,
+                "false_positive": f.false_positive,
+                "created_at": f.created_at.isoformat() if f.created_at else None,
+            }
+            for f in run_findings
+        ],
     )
 
 
@@ -191,24 +240,50 @@ async def list_runs(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all attack runs."""
+    """List all attack runs with their findings."""
     result = await db.execute(
         select(AttackRun).order_by(AttackRun.created_at.desc()).limit(50)
     )
     runs = result.scalars().all()
-    return [
-        AttackRunResponse(
-            id=r.id,
-            scenario_id=r.scenario_id,
-            target_model=r.target_model,
-            status=r.status.value,
-            progress=r.progress,
-            created_at=r.created_at,
-            started_at=r.started_at,
-            completed_at=r.completed_at,
+
+    responses = []
+    for r in runs:
+        # Load findings for each run
+        findings_result = await db.execute(
+            select(Finding).where(Finding.run_id == r.id)
         )
-        for r in runs
-    ]
+        findings = findings_result.scalars().all()
+
+        responses.append(
+            AttackRunResponse(
+                id=r.id,
+                scenario_id=r.scenario_id,
+                target_model=r.target_model,
+                status=r.status.value,
+                progress=r.progress,
+                created_at=r.created_at,
+                started_at=r.started_at,
+                completed_at=r.completed_at,
+                findings=[
+                    {
+                        "id": f.id,
+                        "tool_name": f.tool_name,
+                        "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                        "title": f.title,
+                        "description": f.description,
+                        "mitre_technique": f.mitre_technique,
+                        "remediation": f.remediation,
+                        "evidence": f.evidence,
+                        "evidence_hash": f.evidence_hash,
+                        "is_new": f.is_new,
+                        "false_positive": f.false_positive,
+                        "created_at": f.created_at.isoformat() if f.created_at else None,
+                    }
+                    for f in findings
+                ],
+            )
+        )
+    return responses
 
 
 @router.get("/runs/{run_id}", response_model=AttackRunDetail)
@@ -243,13 +318,15 @@ async def get_run(
             {
                 "id": f.id,
                 "tool_name": f.tool_name,
-                "severity": f.severity.value,
+                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
                 "title": f.title,
                 "description": f.description,
                 "mitre_technique": f.mitre_technique,
                 "remediation": f.remediation,
                 "fingerprint": f.fingerprint,
                 "is_new": f.is_new,
+                "false_positive": f.false_positive,
+                "evidence": f.evidence,
                 "evidence_hash": f.evidence_hash,
             }
             for f in findings
@@ -279,6 +356,73 @@ async def verify_evidence_chain(
     findings = findings_result.scalars().all()
 
     return _verify(findings)
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+async def delete_run(
+    run_id: str,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete an attack run and its findings + reports (admin only)."""
+    from sqlalchemy import delete as sql_delete
+
+    result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Delete related records first (foreign key constraints)
+    await db.execute(sql_delete(Finding).where(Finding.run_id == run_id))
+    await db.execute(sql_delete(Report).where(Report.run_id == run_id))
+    # Delete the run itself
+    await db.execute(sql_delete(AttackRun).where(AttackRun.id == run_id))
+
+    # Audit log
+    db.add(AuditLog(
+        user_id=user.id,
+        action="attack.deleted",
+        resource_type="attack_run",
+        resource_id=run_id,
+        details={
+            "scenario_id": run.scenario_id,
+            "target_model": run.target_model,
+        },
+    ))
+    await db.commit()
+
+    logger.info(f"Attack run {run_id} deleted by {user.username}")
+
+
+@router.patch("/findings/{finding_id}/false-positive")
+async def toggle_false_positive(
+    finding_id: str,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark or unmark a finding as a false positive (admin only)."""
+    result = await db.execute(select(Finding).where(Finding.id == finding_id))
+    finding = result.scalar_one_or_none()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    finding.false_positive = not finding.false_positive
+    db.add(AuditLog(
+        user_id=user.id,
+        action="finding.false_positive_toggled",
+        resource_type="finding",
+        resource_id=finding_id,
+        details={
+            "false_positive": finding.false_positive,
+            "title": finding.title,
+        },
+    ))
+    await db.commit()
+
+    return {
+        "id": finding.id,
+        "false_positive": finding.false_positive,
+    }
 
 
 async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:

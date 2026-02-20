@@ -36,6 +36,7 @@ export interface Finding {
     evidence_hash?: string;
     fingerprint?: string;
     is_new?: boolean;
+    false_positive?: boolean;
     created_at: string;
 }
 

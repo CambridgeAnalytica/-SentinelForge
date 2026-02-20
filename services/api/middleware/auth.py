@@ -114,9 +114,10 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
 
 
 async def require_operator(user: User = Depends(get_current_user)) -> User:
-    """Require operator or admin role."""
-    if user.role not in (UserRole.ADMIN, UserRole.OPERATOR):
+    """Require analyst, operator, or admin role (can run tests, schedule, generate reports)."""
+    if user.role not in (UserRole.ADMIN, UserRole.OPERATOR, UserRole.ANALYST):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Operator role required"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Analyst or admin role required",
         )
     return user

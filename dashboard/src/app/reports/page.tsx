@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useReports } from "@/hooks/use-api";
+import { useReports, useAttackRuns } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { cn, timeAgo } from "@/lib/utils";
 import { FileText, Download, Plus, X, Eye, Loader2 } from "lucide-react";
@@ -160,10 +160,13 @@ export default function ReportsPage() {
 }
 
 function GenerateReportModal({ onClose }: { onClose: () => void }) {
+    const { data: runs } = useAttackRuns();
     const [runId, setRunId] = useState("");
     const [formats, setFormats] = useState<string[]>(["html"]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const completedRuns = (runs ?? []).filter((r) => r.status === "completed");
 
     function toggleFormat(fmt: string) {
         setFormats((prev) =>
@@ -192,7 +195,7 @@ function GenerateReportModal({ onClose }: { onClose: () => void }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-            <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-6">
+            <div className="relative z-10 w-full max-w-lg rounded-xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-foreground">Generate Report</h3>
                     <button
@@ -212,15 +215,27 @@ function GenerateReportModal({ onClose }: { onClose: () => void }) {
 
                     <div className="space-y-1">
                         <label className="text-sm font-medium text-foreground">
-                            Run ID
+                            Select Completed Scan
                         </label>
-                        <input
-                            value={runId}
-                            onChange={(e) => setRunId(e.target.value)}
-                            required
-                            placeholder="abc123..."
-                            className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
+                        {completedRuns.length > 0 ? (
+                            <select
+                                value={runId}
+                                onChange={(e) => setRunId(e.target.value)}
+                                required
+                                className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
+                            >
+                                <option value="">Choose a scan...</option>
+                                {completedRuns.map((r) => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.scenario_id} &mdash; {r.target_model} ({(r.findings ?? []).length} findings) &mdash; {r.id.slice(0, 8)}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <p className="text-sm text-muted-foreground py-2">
+                                No completed scans available. Run an attack first.
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -248,7 +263,7 @@ function GenerateReportModal({ onClose }: { onClose: () => void }) {
 
                     <button
                         type="submit"
-                        disabled={loading || formats.length === 0}
+                        disabled={loading || formats.length === 0 || !runId}
                         className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >
                         {loading ? (

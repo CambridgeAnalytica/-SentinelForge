@@ -26,7 +26,7 @@ from services.user_service import (
     create_user,
 )
 from middleware.auth import get_current_user, require_admin
-from models import User, UserRole
+from models import User, UserRole, AuditLog
 
 router = APIRouter()
 logger = logging.getLogger("sentinelforge.auth")
@@ -72,10 +72,27 @@ async def login(
 
     user = await authenticate_user(db, request.username, request.password)
     if not user:
+        # Audit failed login
+        db.add(AuditLog(
+            action="auth.login_failed",
+            resource_type="auth",
+            details={"username": request.username, "ip": client_ip},
+        ))
+        await db.flush()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
+
+    # Audit successful login
+    db.add(AuditLog(
+        user_id=user.id,
+        action="auth.login",
+        resource_type="auth",
+        details={"username": user.username, "ip": client_ip},
+    ))
+    await db.flush()
+
     token = create_access_token({"sub": user.id, "role": user.role.value})
     return TokenResponse(
         access_token=token,
@@ -167,7 +184,7 @@ async def update_user_role(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid role: {request.role}. Must be one of: admin, operator, viewer",
+            detail=f"Invalid role: {request.role}. Must be one of: admin, analyst",
         )
 
     result = await db.execute(select(User).where(User.id == user_id))
@@ -190,3 +207,44 @@ async def update_user_role(
         role=user.role.value,
         is_active=user.is_active,
     )
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a user (admin only). Cannot delete yourself."""
+    if user_id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    from sqlalchemy import update as sql_update, delete as sql_delete
+
+    # Nullify audit log references to this user (preserve the log, remove FK)
+    await db.execute(
+        sql_update(AuditLog).where(AuditLog.user_id == user_id).values(user_id=None)
+    )
+    # Delete the user
+    await db.execute(sql_delete(User).where(User.id == user_id))
+    # Record the deletion in audit log
+    db.add(AuditLog(
+        user_id=admin.id,
+        action="user.deleted",
+        resource_type="user",
+        resource_id=user_id,
+        details={"username": user.username, "role": user.role.value},
+    ))
+    await db.commit()
+
+    logger.info(f"Admin {admin.username} deleted user {user.username}")

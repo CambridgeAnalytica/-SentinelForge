@@ -48,7 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = useCallback(async (username: string, password: string) => {
         await apiLogin(username, password);
-        setUser({ username, role: "admin" });
+        // Parse role from JWT token
+        const token = getToken();
+        let role = "analyst";
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                role = payload.role ?? "analyst";
+            } catch { /* fallback to analyst */ }
+        }
+        setUser({ username, role });
     }, []);
 
     const logout = useCallback(async () => {

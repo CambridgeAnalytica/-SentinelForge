@@ -92,6 +92,7 @@ class AttackRunResponse(BaseModel):
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    findings: List[Dict[str, Any]] = []
 
 
 class AttackRunDetail(AttackRunResponse):

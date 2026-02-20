@@ -44,8 +44,9 @@ class RunStatus(str, PyEnum):
 
 class UserRole(str, PyEnum):
     ADMIN = "admin"
-    OPERATOR = "operator"
-    VIEWER = "viewer"
+    ANALYST = "analyst"
+    OPERATOR = "operator"  # Legacy — maps to analyst
+    VIEWER = "viewer"      # Legacy — read-only
 
 
 class ReportFormat(str, PyEnum):
@@ -118,6 +119,7 @@ class Finding(Base):
     previous_hash = Column(String(64), nullable=True)  # Chain link to previous finding
     fingerprint = Column(String(64), nullable=True, index=True)  # Dedup fingerprint
     is_new = Column(Boolean, default=True)  # True if first occurrence of fingerprint
+    false_positive = Column(Boolean, default=False)  # Analyst-marked false positive
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     run = relationship("AttackRun", back_populates="findings")

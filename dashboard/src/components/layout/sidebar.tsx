@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import {
     LayoutDashboard,
     Search,
@@ -17,10 +18,15 @@ import {
     Shield,
     ClipboardList,
     Swords,
+    Users,
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
+type NavItem =
+    | { href: string; label: string; icon: React.ComponentType<{ className?: string }>; adminOnly?: boolean }
+    | { type: "divider" };
+
+const navItems: NavItem[] = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/findings", label: "Findings", icon: Search },
     { href: "/drift", label: "Drift", icon: TrendingDown },
@@ -29,15 +35,18 @@ const navItems = [
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/scenarios", label: "Scenarios", icon: Swords },
     { href: "/audit", label: "Audit Log", icon: ClipboardList },
-    { type: "divider" as const },
+    { type: "divider" },
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     { href: "/settings/api-keys", label: "API Keys", icon: Key },
     { href: "/settings/webhooks", label: "Webhooks", icon: Settings },
-] as const;
+    { href: "/settings/users", label: "Users", icon: Users, adminOnly: true },
+];
 
 export function Sidebar() {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const { user } = useAuth();
+    const isAdmin = user?.role === "admin";
 
     return (
         <aside
@@ -59,16 +68,16 @@ export function Sidebar() {
             {/* Nav */}
             <nav className="flex-1 space-y-1 px-2 py-3 overflow-y-auto">
                 {navItems.map((item, i) => {
-                    if ("type" in item && item.type === "divider") {
+                    if ("type" in item) {
                         return <div key={i} className="my-2 border-t border-sidebar-border" />;
                     }
-                    const navItem = item as { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
-                    const active = pathname === navItem.href;
-                    const Icon = navItem.icon;
+                    if (item.adminOnly && !isAdmin) return null;
+                    const active = pathname === item.href;
+                    const Icon = item.icon;
                     return (
                         <Link
-                            key={navItem.href}
-                            href={navItem.href}
+                            key={item.href}
+                            href={item.href}
                             className={cn(
                                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                                 active
@@ -77,7 +86,7 @@ export function Sidebar() {
                             )}
                         >
                             <Icon className="h-4 w-4 shrink-0" />
-                            {!collapsed && <span>{navItem.label}</span>}
+                            {!collapsed && <span>{item.label}</span>}
                         </Link>
                     );
                 })}
