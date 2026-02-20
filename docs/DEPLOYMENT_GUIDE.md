@@ -222,7 +222,7 @@ cd ..
 
 **Expected Output**:
 ```
-Successfully installed sentinelforge-cli-2.0.0
+Successfully installed sentinelforge-cli-2.2.0
 ```
 
 **Verify CLI**:
@@ -232,7 +232,7 @@ sf version
 
 **Expected Output**:
 ```
-SentinelForge CLI v2.0.0
+SentinelForge CLI v2.2.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -265,7 +265,7 @@ Invoke-RestMethod http://localhost:8000/health
 ```json
 {
   "status": "healthy",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "services": {
     "database": "healthy"
   },

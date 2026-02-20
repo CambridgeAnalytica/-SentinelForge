@@ -237,7 +237,7 @@ tests/test_sentinelforge.py::TestSDK::test_client_context_manager PASSED
 
 ```
 
-> **Note**: Tests are split across three files: `tests/test_integration.py` (57 async integration tests covering all API endpoints), `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes), and `tests/test_rbac.py` (18 RBAC enforcement tests). There are also 20 Playwright E2E tests in `tests/e2e/` (dashboard smoke tests + auth flow). Run `make test-python` to run only Python tests.
+> **Note**: Tests are split across three files: `tests/test_integration.py` (57 async integration tests covering all API endpoints), `tests/test_sentinelforge.py` (63 unit tests across 20+ test classes), and `tests/test_rbac.py` (18 RBAC enforcement tests). There are also 15 Playwright E2E tests in `tests/e2e/` (dashboard smoke tests + auth flow). Run `make test-python` to run only Python tests.
 
 ---
 
@@ -540,14 +540,19 @@ sf attack list
 
 **Expected Output**:
 ```
-Attack Scenarios
-┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-┃ ID                ┃ Name                          ┃ Tools          ┃
-┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-│ prompt_injection  │ Comprehensive Prompt Inject.. │ garak,promptf..│
-│ jailbreak         │ Jailbreak Testing             │ garak, pyrit   │
-│ multi-turn        │ Multi-Turn Adversarial        │ custom         │
-└───────────────────┴───────────────────────────────┴────────────────┘
+Attack Scenarios (8 scenarios, 47 test cases, 235 prompts)
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃ ID                           ┃ Name                              ┃ Severity    ┃ Tools            ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ prompt_injection             │ Comprehensive Prompt Injection..  │ high        │ garak,promptfoo  │
+│ jailbreak                    │ Jailbreak Resistance Testing      │ critical    │ garak, pyrit     │
+│ data_leakage                 │ Data Leakage & PII Exposure..    │ high        │ garak,guardrails │
+│ toxicity_bias                │ Toxicity & Bias Assessment        │ high        │ deepeval,langkit │
+│ hallucination                │ Hallucination & Factual Accur..  │ medium      │ deepeval,trulens │
+│ system_prompt_defense        │ System Prompt Defense Testing     │ critical    │ garak,promptfoo  │
+│ multi_turn_social_engineering│ Multi-Turn Social Engineering     │ critical    │ pyrit,garak      │
+│ rag_poisoning                │ RAG Poisoning & Retrieval At..   │ high        │ garak,promptfoo  │
+└──────────────────────────────┴───────────────────────────────────┴─────────────┴──────────────────┘
 ```
 
 ---

@@ -115,7 +115,13 @@ Store the returned `raw_key` in your CI/CD secrets:
 
 | Scenario | When to Run | Description |
 |----------|-------------|-------------|
-| `prompt-injection-suite` | Every PR | Fast check for injection vulnerabilities |
-| `full-security-audit` | Weekly / Release | Comprehensive multi-tool scan |
+| `prompt_injection` | Every PR | 48 prompts covering direct injection, encoding, context manipulation, payload splitting |
+| `jailbreak` | Every PR | 39 prompts for DAN/STAN, roleplay, token smuggling, philosophical override |
+| `system_prompt_defense` | Every PR | 29 prompts across 6 extraction techniques |
+| `data_leakage` | Weekly / Release | 30 prompts for PII, credential, and training data extraction |
+| `toxicity_bias` | Weekly / Release | 22 prompts for toxicity, demographic bias, stereotypes, hate speech |
+| `hallucination` | Weekly / Release | 21 prompts for factual accuracy, source fabrication, confidence calibration |
+| `multi_turn_social_engineering` | Weekly / Release | 28 multi-turn prompts with 3 manipulation strategies |
+| `rag_poisoning` | On RAG changes | 18 prompts for RAG-specific injection, conflicting context, exfiltration |
 | `drift-baseline-check` | Nightly | Compare against drift baselines |
 | `supply-chain-scan` | On dependency changes | Check model artifacts |

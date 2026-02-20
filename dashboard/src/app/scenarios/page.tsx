@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Swords, Plus, Trash2, Save, Eye, Code, X } from "lucide-react";
+import { Swords, Plus, Trash2, Save, Eye, Code, X, Shield, Repeat, FileText } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -9,8 +9,14 @@ interface Scenario {
     id: string;
     name: string;
     description: string;
+    severity: string;
+    category: string;
     tools: string[];
     mitre_techniques: string[];
+    owasp_llm: string[];
+    test_cases_count: number;
+    prompt_count: number;
+    multi_turn: boolean;
     config: Record<string, unknown>;
     custom?: boolean;
     created_by?: string;
@@ -20,9 +26,32 @@ const EMPTY_SCENARIO: Scenario = {
     id: "",
     name: "",
     description: "",
+    severity: "medium",
+    category: "general",
     tools: [],
     mitre_techniques: [],
+    owasp_llm: [],
+    test_cases_count: 0,
+    prompt_count: 0,
+    multi_turn: false,
     config: {},
+};
+
+const SEVERITY_STYLES: Record<string, string> = {
+    critical: "bg-red-500/20 text-red-300 border-red-500/30",
+    high: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    medium: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    low: "bg-green-500/20 text-green-300 border-green-500/30",
+    info: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+};
+
+const CATEGORY_STYLES: Record<string, string> = {
+    injection: "bg-red-500/10 text-red-400",
+    jailbreak: "bg-purple-500/10 text-purple-400",
+    safety: "bg-amber-500/10 text-amber-400",
+    privacy: "bg-cyan-500/10 text-cyan-400",
+    accuracy: "bg-teal-500/10 text-teal-400",
+    general: "bg-zinc-500/10 text-zinc-400",
 };
 
 export default function ScenariosPage() {
@@ -164,6 +193,9 @@ export default function ScenariosPage() {
         return y;
     };
 
+    const totalPrompts = scenarios.reduce((acc, s) => acc + s.prompt_count, 0);
+    const totalTestCases = scenarios.reduce((acc, s) => acc + s.test_cases_count, 0);
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -176,6 +208,28 @@ export default function ScenariosPage() {
                     <Plus className="h-4 w-4" /> New Scenario
                 </button>
             </div>
+
+            {/* Summary Stats */}
+            {!loading && scenarios.length > 0 && (
+                <div className="grid grid-cols-4 gap-3">
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+                        <div className="text-2xl font-bold text-primary">{scenarios.length}</div>
+                        <div className="text-xs text-zinc-500">Scenarios</div>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+                        <div className="text-2xl font-bold text-blue-400">{totalTestCases}</div>
+                        <div className="text-xs text-zinc-500">Test Cases</div>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+                        <div className="text-2xl font-bold text-emerald-400">{totalPrompts}</div>
+                        <div className="text-xs text-zinc-500">Prompts</div>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+                        <div className="text-2xl font-bold text-purple-400">{scenarios.filter(s => s.multi_turn).length}</div>
+                        <div className="text-xs text-zinc-500">Multi-Turn</div>
+                    </div>
+                </div>
+            )}
 
             {/* Editor Panel */}
             {editing && (
@@ -299,24 +353,56 @@ export default function ScenariosPage() {
                 {!loading && scenarios.map((s) => (
                     <div key={s.id} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-700 transition-colors">
                         <div className="flex items-start justify-between">
-                            <div>
-                                <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="font-semibold">{s.name}</h3>
                                     <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs font-mono text-zinc-400">{s.id}</span>
+                                    <span className={`rounded border px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[s.severity] || SEVERITY_STYLES.medium}`}>
+                                        {s.severity}
+                                    </span>
+                                    <span className={`rounded px-2 py-0.5 text-xs ${CATEGORY_STYLES[s.category] || CATEGORY_STYLES.general}`}>
+                                        {s.category}
+                                    </span>
+                                    {s.multi_turn && (
+                                        <span className="flex items-center gap-1 rounded bg-purple-500/15 text-purple-300 px-2 py-0.5 text-xs">
+                                            <Repeat className="h-3 w-3" /> multi-turn
+                                        </span>
+                                    )}
                                     {s.custom && <span className="rounded bg-purple-500/20 text-purple-300 px-2 py-0.5 text-xs">Custom</span>}
                                 </div>
                                 <p className="mt-1 text-sm text-zinc-400">{s.description}</p>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {s.tools.map((t) => (
-                                        <span key={t} className="rounded bg-blue-500/10 text-blue-400 px-2 py-0.5 text-xs">{t}</span>
-                                    ))}
-                                    {s.mitre_techniques.map((t) => (
-                                        <span key={t} className="rounded bg-orange-500/10 text-orange-400 px-2 py-0.5 text-xs">{t}</span>
-                                    ))}
+                                <div className="mt-3 flex flex-wrap items-center gap-3">
+                                    {/* Stats */}
+                                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                                        <FileText className="h-3.5 w-3.5" />
+                                        <span>{s.test_cases_count} test cases</span>
+                                        <span className="text-zinc-700">|</span>
+                                        <span>{s.prompt_count} prompts</span>
+                                    </div>
+                                    <div className="text-zinc-800">|</div>
+                                    {/* Tools */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {s.tools.map((t) => (
+                                            <span key={t} className="rounded bg-blue-500/10 text-blue-400 px-2 py-0.5 text-xs">{t}</span>
+                                        ))}
+                                    </div>
                                 </div>
+                                {/* MITRE + OWASP tags */}
+                                {(s.mitre_techniques.length > 0 || s.owasp_llm.length > 0) && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {s.mitre_techniques.map((t) => (
+                                            <span key={t} className="rounded bg-orange-500/10 text-orange-400 px-2 py-0.5 text-xs">{t}</span>
+                                        ))}
+                                        {s.owasp_llm.map((t) => (
+                                            <span key={t} className="flex items-center gap-1 rounded bg-rose-500/10 text-rose-400 px-2 py-0.5 text-xs">
+                                                <Shield className="h-3 w-3" /> {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             {s.custom && (
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 ml-3">
                                     <button
                                         onClick={() => startEdit(s)}
                                         className="rounded p-1.5 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300"

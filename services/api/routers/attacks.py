@@ -57,17 +57,27 @@ def _load_scenarios() -> List[dict]:
 async def list_scenarios(user: User = Depends(get_current_user)):
     """List all available attack scenarios."""
     scenarios = _load_scenarios()
-    return [
-        AttackScenario(
-            id=s["id"],
-            name=s["name"],
-            description=s.get("description", ""),
-            tools=s.get("tools", []),
-            mitre_techniques=s.get("mitre_techniques", []),
-            config=s.get("default_config", {}),
+    results = []
+    for s in scenarios:
+        test_cases = s.get("test_cases", [])
+        prompt_count = sum(len(tc.get("prompts", [])) for tc in test_cases)
+        results.append(
+            AttackScenario(
+                id=s["id"],
+                name=s["name"],
+                description=s.get("description", ""),
+                severity=s.get("severity", "medium"),
+                category=s.get("category", "general"),
+                tools=s.get("tools", []),
+                mitre_techniques=s.get("mitre_techniques", []),
+                owasp_llm=s.get("owasp_llm", []),
+                test_cases_count=len(test_cases),
+                prompt_count=prompt_count,
+                multi_turn=s.get("default_config", {}).get("multi_turn", False),
+                config=s.get("default_config", {}),
+            )
         )
-        for s in scenarios
-    ]
+    return results
 
 
 @router.post("/run", response_model=AttackRunResponse)

@@ -35,6 +35,20 @@
 - Create modal with URL input, optional HMAC secret, event checkbox selector
 - Events synced with API's `VALID_WEBHOOK_EVENTS`: `attack.completed`, `attack.failed`, `scan.completed`, `report.generated`, `agent.test.completed`
 
+### Scenario Library Expansion (8 scenarios, 47 test cases, 235 prompts)
+- **Expanded `prompt_injection.yaml`**: 8 test cases, 48 prompts (was 5/11) — added payload splitting, nested/recursive injection, virtualization/simulation attacks
+- **Expanded `jailbreak.yaml`**: 8 test cases, 39 prompts (was 6/2) — added full DAN/STAN/dev_mode prompts, token smuggling/obfuscation, ethical/philosophical override
+- **Expanded `data_leakage.yaml`**: 5 test cases, 30 prompts (was 4/9) — added side-channel extraction techniques
+- **Fixed `toxicity_bias.yaml`**: 4 test cases, 22 prompts (was 0 prompts) — added real inline prompts for all test cases
+- **Fixed `hallucination.yaml`**: 4 test cases, 21 prompts (was 0 prompts) — added real inline prompts for all test cases
+- **New `system_prompt_defense.yaml`**: 6 test cases, 29 prompts across 6 techniques (repeat-above, translation tricks, few-shot priming, formatting exploits, delimiter manipulation, role confusion)
+- **New `multi_turn_social_engineering.yaml`**: 6 multi-turn test cases, 28 prompts with 3 strategies (context_manipulation, role_persistence, authority_impersonation), max 15 turns
+- **New `rag_poisoning.yaml`**: 6 test cases, 18 prompts targeting RAG pipelines (instruction injection, conflicting context, citation fabrication, priority confusion, data exfiltration, recursive manipulation)
+
+### Enriched Scenario API
+- `GET /attacks/scenarios` now returns `severity`, `category`, `owasp_llm`, `test_cases_count`, `prompt_count`, and `multi_turn` fields
+- Dashboard scenarios page shows severity badges, category tags, OWASP mappings, test case/prompt counts, multi-turn indicators, and summary stat cards
+
 ### Tests
 - **138 Python tests** (63 unit + 57 integration + 18 RBAC)
 - **15 Playwright E2E tests** (10 dashboard + 5 auth)

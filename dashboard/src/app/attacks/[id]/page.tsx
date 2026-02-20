@@ -365,7 +365,7 @@ function FindingRow({ finding, onToggleFP }: { finding: Finding; onToggleFP?: (i
                             <span className="text-xs font-semibold text-muted-foreground">
                                 Evidence
                             </span>
-                            <pre className="mt-1 overflow-x-auto rounded-lg bg-background p-2 text-xs text-muted-foreground">
+                            <pre className="mt-1 whitespace-pre-wrap break-words rounded-lg bg-background p-2 text-xs text-muted-foreground">
                                 {JSON.stringify(finding.evidence, null, 2)}
                             </pre>
                         </div>
@@ -399,7 +399,7 @@ function JsonBlock({
     return (
         <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="mb-2 text-sm font-semibold text-foreground">{title}</h3>
-            <pre className="overflow-x-auto rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+            <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
                 {JSON.stringify(data, null, 2)}
             </pre>
         </div>

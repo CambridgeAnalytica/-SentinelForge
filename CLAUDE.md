@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 11 pages, charts, auth flow, error boundaries |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 12 pages, charts, auth flow, error boundaries |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -120,7 +120,7 @@ Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun`, `Finding` (with
 ## YAML-driven configuration
 
 - **Tool registry**: `tools/registry.yaml` — 14+ tools with capabilities, MITRE ATLAS mappings, CLI commands, default configs
-- **Attack scenarios**: `scenarios/*.yaml` — prompt injection, jailbreak, data leakage, hallucination, toxicity/bias
+- **Attack scenarios**: `scenarios/*.yaml` — prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning
 - **IR playbooks**: `playbooks/*.yaml` — automated response steps for detected incidents
 
 ## Docker Compose services
@@ -156,4 +156,4 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.0**: Next.js Dashboard UI (8 pages, SWR, Recharts, JWT auth flow)
 - **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
 - **v2.2**: SSE live progress in dashboard, Alembic migration 005, E2E auth tests, error boundaries, webhook CRUD page
-- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 11 dashboard pages
+- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 12 dashboard pages, 8 attack scenarios (47 test cases, 235 prompts)

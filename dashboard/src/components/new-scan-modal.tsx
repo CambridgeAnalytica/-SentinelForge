@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { api, apiFetch } from "@/lib/api";
 import { mutate } from "swr";
 import { X, Play } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Scenario {
     id: string;
@@ -53,11 +52,12 @@ export function NewScanModal({ onClose }: Props) {
     const router = useRouter();
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
     const [scenarioId, setScenarioId] = useState("");
-    const [targetModel, setTargetModel] = useState("llama3.2:3b");
+    const [target, setTarget] = useState("ollama");
+    const [model, setModel] = useState("llama3.2:3b");
+    const [useCustomModel, setUseCustomModel] = useState(false);
+    const [targetEndpoint, setTargetEndpoint] = useState("");
     const [multiTurn, setMultiTurn] = useState(true);
     const [maxTurns, setMaxTurns] = useState(10);
-    const [provider, setProvider] = useState("ollama");
-    const [useCustomModel, setUseCustomModel] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -79,22 +79,25 @@ export function NewScanModal({ onClose }: Props) {
             setError("Select a scenario");
             return;
         }
-        if (!targetModel.trim()) {
+        if (!model.trim()) {
             setError("Enter a target model");
             return;
         }
         setLoading(true);
         try {
             const config: Record<string, unknown> = {
-                provider: provider === "ollama" ? "ollama" : provider,
+                provider: target === "ollama" ? "ollama" : target,
             };
+            if (targetEndpoint.trim()) {
+                config.base_url = targetEndpoint.trim();
+            }
             if (multiTurn) {
                 config.multi_turn = true;
                 config.max_turns = maxTurns;
             }
             const result = await api.post<{ id: string }>("/attacks/run", {
                 scenario_id: scenarioId,
-                target_model: targetModel.trim(),
+                target_model: model.trim(),
                 config,
             });
             mutate("/attacks/runs");
@@ -155,15 +158,17 @@ export function NewScanModal({ onClose }: Props) {
                         </p>
                     )}
 
-                    <Field label="Provider">
+                    <Field label="Target">
                         <select
-                            value={provider}
+                            value={target}
                             onChange={(e) => {
-                                const p = e.target.value;
-                                setProvider(p);
+                                const t = e.target.value;
+                                setTarget(t);
                                 setUseCustomModel(false);
-                                const models = PROVIDER_MODELS[p];
-                                if (models?.length) setTargetModel(models[0].value);
+                                const models = PROVIDER_MODELS[t];
+                                if (models?.length) {
+                                    setModel(models[0].value);
+                                }
                             }}
                             className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         >
@@ -175,15 +180,15 @@ export function NewScanModal({ onClose }: Props) {
                         </select>
                     </Field>
 
-                    <Field label="Provider Model">
+                    <Field label="Model">
                         {!useCustomModel ? (
                             <div className="space-y-2">
                                 <select
-                                    value={targetModel}
-                                    onChange={(e) => setTargetModel(e.target.value)}
+                                    value={model}
+                                    onChange={(e) => setModel(e.target.value)}
                                     className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
-                                    {(PROVIDER_MODELS[provider] ?? []).map((m) => (
+                                    {(PROVIDER_MODELS[target] ?? []).map((m) => (
                                         <option key={m.value} value={m.value}>
                                             {m.label} ({m.value})
                                         </option>
@@ -200,18 +205,20 @@ export function NewScanModal({ onClose }: Props) {
                         ) : (
                             <div className="space-y-2">
                                 <input
-                                    value={targetModel}
-                                    onChange={(e) => setTargetModel(e.target.value)}
+                                    value={model}
+                                    onChange={(e) => setModel(e.target.value)}
                                     required
-                                    placeholder={PROVIDER_MODELS[provider]?.[0]?.value ?? "model-name"}
+                                    placeholder={PROVIDER_MODELS[target]?.[0]?.value ?? "model-name"}
                                     className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setUseCustomModel(false);
-                                        const models = PROVIDER_MODELS[provider];
-                                        if (models?.length) setTargetModel(models[0].value);
+                                        const models = PROVIDER_MODELS[target];
+                                        if (models?.length) {
+                                            setModel(models[0].value);
+                                        }
                                     }}
                                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                                 >
@@ -219,6 +226,18 @@ export function NewScanModal({ onClose }: Props) {
                                 </button>
                             </div>
                         )}
+                    </Field>
+
+                    <Field label="Target Endpoint (optional)">
+                        <input
+                            value={targetEndpoint}
+                            onChange={(e) => setTargetEndpoint(e.target.value)}
+                            placeholder="https://target.company.com/v1/chat"
+                            className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                            Custom API endpoint URL. Leave blank to use the provider&apos;s default endpoint.
+                        </p>
                     </Field>
 
                     <div className="flex items-center gap-3">

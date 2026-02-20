@@ -35,7 +35,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 8 attack scenarios (47 test cases, 235 prompts), compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
 
 ## Dashboard UI (v2.2)
 
@@ -56,6 +56,7 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **API Key Management** | `/settings/api-keys` | Key table with scopes and expiry, create modal, one-time copy-to-clipboard for new keys |
 | **Scenario Builder** | `/scenarios` | Visual editor for custom attack scenarios with tool selection, MITRE techniques, and JSON config |
 | **Audit Log** | `/audit` | Admin-only event log with action/user filters, expandable detail rows, pagination |
+| **User Management** | `/settings/users` | Admin-only user list with role management (admin/operator/viewer), register new users |
 
 ### Technical Details
 
@@ -177,7 +178,7 @@ sentinelforge/
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper
-├── scenarios/            # Pre-built attack scenarios (YAML)
+├── scenarios/            # 8 attack scenarios (47 test cases, 235 prompts)
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
 │   ├── docker/           # Dockerfiles (API, Worker, Tools, Dashboard)
