@@ -405,3 +405,56 @@ class NotificationTestResponse(BaseModel):
     channel_id: str
     status: str
     error: Optional[str] = None
+
+
+# ---------- Model Comparison ----------
+
+
+class ComparisonRequest(BaseModel):
+    scenario_id: str
+    target_models: List[str]  # 2-5 models
+    config: Dict[str, Any] = {}
+
+
+class ComparisonResponse(BaseModel):
+    id: str
+    scenario_id: str
+    target_models: List[str]
+    run_ids: List[str]
+    status: str
+    created_at: datetime
+
+
+# ---------- Batch Audit ----------
+
+
+class AuditRequest(BaseModel):
+    target_model: str
+    config: Dict[str, Any] = {}
+    scenario_ids: Optional[List[str]] = None  # None = all scenarios
+
+
+class AuditResponse(BaseModel):
+    id: str
+    target_model: str
+    scenario_count: int
+    run_ids: List[str]
+    status: str
+    created_at: datetime
+
+
+# ---------- Scoring Rubrics ----------
+
+
+class ScoringRubricRequest(BaseModel):
+    name: str
+    rules: Dict[str, Any] = {}
+    is_default: bool = False
+
+
+class ScoringRubricResponse(BaseModel):
+    id: str
+    name: str
+    rules: Dict[str, Any]
+    is_default: bool
+    created_at: datetime

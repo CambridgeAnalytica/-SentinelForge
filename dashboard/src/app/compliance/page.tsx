@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useComplianceFrameworks } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { ShieldCheck, Download, Loader2 } from "lucide-react";
+import { ShieldCheck, Download, Loader2, AlertTriangle } from "lucide-react";
 
 export default function CompliancePage() {
-    const { data: frameworks, isLoading } = useComplianceFrameworks();
+    const { data: frameworksRaw, isLoading } = useComplianceFrameworks();
     const [activeFramework, setActiveFramework] = useState(0);
     const [summaryData, setSummaryData] = useState<Record<
         string,
@@ -26,21 +26,39 @@ export default function CompliancePage() {
         );
     }
 
-    const allFrameworks = frameworks ?? [];
+    // API may return either an array or {frameworks: [...]}
+    const allFrameworks = Array.isArray(frameworksRaw)
+        ? frameworksRaw
+        : (frameworksRaw as Record<string, unknown>)?.frameworks
+            ? ((frameworksRaw as Record<string, unknown>).frameworks as typeof frameworksRaw)
+            : frameworksRaw ?? [];
     const current = allFrameworks[activeFramework];
 
     async function loadSummary(frameworkId: string) {
         setSummaryLoading(true);
         try {
-            const resp = await api.post<{
-                coverage_percentage: number;
-                category_coverage: Record<
-                    string,
-                    { covered: boolean; finding_count: number }
-                >;
-            }>("/compliance/summary", { framework_id: frameworkId });
-            setSummaryData(resp.category_coverage);
-            setCoveragePct(resp.coverage_percentage);
+            const resp = await api.get<{
+                coverage_percentage?: number;
+                categories?: {
+                    id: string;
+                    total_findings: number;
+                }[];
+            }>(`/compliance/summary?framework=${frameworkId}`);
+
+            // Build category_coverage map from categories array
+            const catCoverage: Record<string, { covered: boolean; finding_count: number }> = {};
+            let totalCats = 0;
+            let coveredCats = 0;
+            for (const cat of resp.categories ?? []) {
+                const covered = cat.total_findings > 0;
+                catCoverage[cat.id] = { covered, finding_count: cat.total_findings };
+                totalCats++;
+                if (covered) coveredCats++;
+            }
+            setSummaryData(catCoverage);
+            setCoveragePct(
+                resp.coverage_percentage ?? (totalCats > 0 ? (coveredCats / totalCats) * 100 : 0)
+            );
         } catch {
             setSummaryData(null);
             setCoveragePct(0);
@@ -52,16 +70,10 @@ export default function CompliancePage() {
     async function handleDownload() {
         setDownloadLoading(true);
         try {
-            const blob = await api.post<Blob>("/compliance/report", {
-                framework_id: current?.id,
-                format: "pdf",
-            });
-            const url = URL.createObjectURL(blob as Blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `compliance_${current?.id ?? "report"}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
+            const token = localStorage.getItem("sf_token");
+            const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+            const url = `${base}/compliance/report?framework=${current?.id}&format=pdf${token ? `&token=${token}` : ""}`;
+            window.open(url, "_blank");
         } catch {
             // silently fail
         } finally {
@@ -81,6 +93,9 @@ export default function CompliancePage() {
     if (allFrameworks.length > 0 && summaryData === null && !summaryLoading) {
         loadSummary(allFrameworks[0].id);
     }
+
+    // Check if current framework is Arcanum
+    const isArcanum = current?.id === "arcanum_pi";
 
     return (
         <div className="space-y-6">
@@ -214,7 +229,7 @@ export default function CompliancePage() {
                                                 key={cat.id}
                                                 className="flex items-center gap-3"
                                             >
-                                                <span className="w-32 shrink-0 truncate text-xs text-muted-foreground">
+                                                <span className="w-40 shrink-0 truncate text-xs text-muted-foreground">
                                                     {cat.name}
                                                 </span>
                                                 <div className="relative flex-1 h-5">
@@ -243,7 +258,7 @@ export default function CompliancePage() {
                         </div>
                     )}
 
-                    {/* Coverage heatmap */}
+                    {/* Coverage heatmap — enhanced for Arcanum */}
                     <div className="rounded-xl border border-border bg-card p-4">
                         <h3 className="mb-4 text-sm font-semibold text-foreground">
                             Coverage Heatmap — {current?.name}
@@ -258,6 +273,9 @@ export default function CompliancePage() {
                                     const coverage = summaryData?.[cat.id];
                                     const covered = coverage?.covered ?? false;
                                     const count = coverage?.finding_count ?? 0;
+                                    const sevBaseline = (cat as Record<string, unknown>).severity_baseline as string | undefined;
+                                    const subcats = (cat as Record<string, unknown>).subcategories as string[] | undefined;
+                                    const testTypes = (cat as Record<string, unknown>).test_types as string[] | undefined;
 
                                     return (
                                         <div
@@ -273,20 +291,51 @@ export default function CompliancePage() {
                                                 <span className="text-xs font-mono text-muted-foreground">
                                                     {cat.id}
                                                 </span>
-                                                {covered && (
-                                                    <ShieldCheck className="h-3.5 w-3.5 text-low" />
-                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    {isArcanum && sevBaseline && (
+                                                        <SeverityBadge severity={sevBaseline} />
+                                                    )}
+                                                    {covered && (
+                                                        <ShieldCheck className="h-3.5 w-3.5 text-low" />
+                                                    )}
+                                                </div>
                                             </div>
                                             <p className="mt-1 text-sm font-medium text-foreground line-clamp-2">
                                                 {cat.name}
                                             </p>
-                                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
                                                 {cat.description}
                                             </p>
                                             {count > 0 && (
                                                 <p className="mt-1 text-xs text-low">
                                                     {count} finding{count !== 1 ? "s" : ""}
                                                 </p>
+                                            )}
+                                            {/* Arcanum-specific: subcategories and test types */}
+                                            {isArcanum && subcats && subcats.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {subcats.slice(0, 4).map((sc) => (
+                                                        <span
+                                                            key={sc}
+                                                            className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground"
+                                                        >
+                                                            {sc}
+                                                        </span>
+                                                    ))}
+                                                    {subcats.length > 4 && (
+                                                        <span className="text-[9px] text-muted-foreground">
+                                                            +{subcats.length - 4}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {isArcanum && testTypes && testTypes.length > 0 && (
+                                                <div className="mt-1 flex items-center gap-1">
+                                                    <AlertTriangle className="h-2.5 w-2.5 text-muted-foreground" />
+                                                    <span className="text-[9px] text-muted-foreground">
+                                                        {testTypes.length} test type{testTypes.length !== 1 ? "s" : ""}
+                                                    </span>
+                                                </div>
                                             )}
                                         </div>
                                     );
@@ -301,6 +350,25 @@ export default function CompliancePage() {
                 </div>
             )}
         </div>
+    );
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+    const colors: Record<string, string> = {
+        critical: "bg-red-500/20 text-red-400",
+        high: "bg-orange-500/20 text-orange-400",
+        medium: "bg-yellow-500/20 text-yellow-400",
+        low: "bg-green-500/20 text-green-400",
+    };
+    return (
+        <span
+            className={cn(
+                "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                colors[severity] ?? "bg-zinc-500/20 text-zinc-400"
+            )}
+        >
+            {severity}
+        </span>
     );
 }
 

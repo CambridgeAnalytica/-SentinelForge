@@ -24,6 +24,7 @@ OWASP_ML_TOP_10: Dict[str, Dict[str, Any]] = {
         "name": "Data Poisoning",
         "description": "Corrupting training data to manipulate model behavior at inference time.",
         "mitre_atlas": ["AML.T0020.000", "AML.T0020.001"],
+        "note": "Infrastructure-level risk. Prompt-based testing can detect symptoms (biased/toxic outputs) but not root cause. Use SentinelForge supply-chain scanner for pipeline auditing.",
     },
     "ML03": {
         "id": "ML03",
@@ -36,6 +37,7 @@ OWASP_ML_TOP_10: Dict[str, Dict[str, Any]] = {
         "name": "Membership Inference",
         "description": "Determining whether specific data points were in the training dataset.",
         "mitre_atlas": ["AML.T0025.000"],
+        "note": "Infrastructure-level risk. Requires statistical analysis of model outputs across many queries. Not directly testable via single-prompt injection.",
     },
     "ML05": {
         "id": "ML05",
@@ -60,18 +62,98 @@ OWASP_ML_TOP_10: Dict[str, Dict[str, Any]] = {
         "name": "Model Skewing",
         "description": "Causing model drift or bias through targeted retraining pressure.",
         "mitre_atlas": ["AML.T0019.000"],
+        "note": "Infrastructure-level risk. Requires access to model retraining pipeline. Use SentinelForge drift detection to monitor for unexpected behavior changes.",
     },
     "ML09": {
         "id": "ML09",
         "name": "Output Integrity Attack",
         "description": "Manipulating model outputs after inference but before delivery.",
         "mitre_atlas": ["AML.T0015.000"],
+        "note": "Infrastructure-level risk. Targets the serving layer, not the model itself. Requires network/infrastructure security auditing.",
     },
     "ML10": {
         "id": "ML10",
         "name": "Model Poisoning (Backdoor)",
         "description": "Embedding hidden triggers in models that activate on specific inputs.",
         "mitre_atlas": ["AML.T0040.000", "AML.T0040.001"],
+    },
+}
+
+# ===========================================================================
+# OWASP Top 10 for LLM Applications (2025)
+# https://owasp.org/www-project-top-10-for-large-language-model-applications/
+# ===========================================================================
+
+OWASP_LLM_TOP_10: Dict[str, Dict[str, Any]] = {
+    "LLM01": {
+        "id": "LLM01",
+        "name": "Prompt Injection",
+        "description": "Crafted inputs that manipulate LLM behavior by overriding system instructions, injecting via untrusted data sources, or exploiting parsing weaknesses.",
+        "mitre_atlas": [
+            "AML.T0051.000",
+            "AML.T0051.001",
+            "AML.T0051.002",
+        ],
+    },
+    "LLM02": {
+        "id": "LLM02",
+        "name": "Insecure Output Handling",
+        "description": "Failure to validate, sanitize, or escape LLM outputs before passing them to downstream systems, enabling XSS, SSRF, code injection, or privilege escalation.",
+        "mitre_atlas": ["AML.T0043.000", "AML.T0043.001", "AML.T0015.000"],
+    },
+    "LLM03": {
+        "id": "LLM03",
+        "name": "Training Data Poisoning",
+        "description": "Manipulation of training data to embed vulnerabilities, biases, or backdoors that affect model outputs at inference time.",
+        "mitre_atlas": ["AML.T0020.000", "AML.T0020.001"],
+        "note": "Infrastructure-level risk. Prompt-based testing can detect symptoms (biased outputs) but not root cause.",
+    },
+    "LLM04": {
+        "id": "LLM04",
+        "name": "Model Denial of Service",
+        "description": "Inputs designed to consume excessive computational resources, causing service degradation or outages through token flooding, recursive generation, or combinatorial explosion.",
+        "mitre_atlas": ["AML.T0043.000", "AML.T0029.000"],
+    },
+    "LLM05": {
+        "id": "LLM05",
+        "name": "Supply Chain Vulnerabilities",
+        "description": "Risks from compromised pre-trained models, poisoned training data pipelines, outdated dependencies, or malicious plugins and extensions.",
+        "mitre_atlas": ["AML.T0010.000", "AML.T0010.001"],
+    },
+    "LLM06": {
+        "id": "LLM06",
+        "name": "Sensitive Information Disclosure",
+        "description": "LLM reveals confidential data — PII, credentials, system prompts, proprietary information — through direct queries, inference, or side channels.",
+        "mitre_atlas": [
+            "AML.T0024.000",
+            "AML.T0024.001",
+            "AML.T0054.000",
+            "AML.T0044.000",
+        ],
+    },
+    "LLM07": {
+        "id": "LLM07",
+        "name": "Insecure Plugin Design",
+        "description": "LLM plugins or tool integrations that lack proper access controls, input validation, or scope restrictions, enabling privilege escalation or data exfiltration.",
+        "mitre_atlas": ["AML.T0040.000"],
+    },
+    "LLM08": {
+        "id": "LLM08",
+        "name": "Excessive Agency",
+        "description": "LLM systems granted excessive permissions, autonomy, or capabilities beyond what is needed, enabling unintended actions on external systems.",
+        "mitre_atlas": ["AML.T0040.000", "AML.T0040.001"],
+    },
+    "LLM09": {
+        "id": "LLM09",
+        "name": "Overreliance",
+        "description": "Users or systems placing undue trust in LLM outputs without verification, leading to misinformation, hallucinated facts, or insecure code being accepted.",
+        "mitre_atlas": ["AML.T0056.000"],
+    },
+    "LLM10": {
+        "id": "LLM10",
+        "name": "Model Theft",
+        "description": "Unauthorized extraction of model weights, parameters, architecture, or proprietary training data through API queries, side channels, or model cloning.",
+        "mitre_atlas": ["AML.T0044.000", "AML.T0044.001"],
     },
 }
 
@@ -209,6 +291,16 @@ def _build_reverse_index():
                 }
             )
 
+    for cat_id, cat in OWASP_LLM_TOP_10.items():
+        for technique in cat.get("mitre_atlas", []):
+            _REVERSE_INDEX.setdefault(technique, []).append(
+                {
+                    "framework": "owasp_llm_top10",
+                    "category_id": cat_id,
+                    "category_name": cat["name"],
+                }
+            )
+
     for cat_id, cat in NIST_AI_RMF.items():
         for technique in cat.get("mitre_atlas", []):
             _REVERSE_INDEX.setdefault(technique, []).append(
@@ -258,10 +350,17 @@ def get_framework_categories(framework: str) -> Dict[str, Dict[str, Any]]:
 
     frameworks = {
         "owasp_ml_top10": OWASP_ML_TOP_10,
+        "owasp_llm_top10": OWASP_LLM_TOP_10,
         "nist_ai_rmf": NIST_AI_RMF,
         "eu_ai_act": EU_AI_ACT,
     }
     return frameworks.get(framework, {})
 
 
-SUPPORTED_FRAMEWORKS = ["owasp_ml_top10", "nist_ai_rmf", "eu_ai_act", "arcanum_pi"]
+SUPPORTED_FRAMEWORKS = [
+    "owasp_llm_top10",
+    "owasp_ml_top10",
+    "nist_ai_rmf",
+    "eu_ai_act",
+    "arcanum_pi",
+]

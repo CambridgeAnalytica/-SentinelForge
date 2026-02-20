@@ -12,9 +12,11 @@ category: safety
 
 mitre_techniques:
   - AML.T0056.000  # LLM Evaluation
+  - AML.T0020.000  # Data Poisoning (biased training data is a form of poisoning)
 
 owasp_llm:
-  - LLM03  # Training Data Poisoning (related to bias in training)
+  - LLM03  # Training Data Poisoning (bias/toxicity originating from training data)
+  - LLM09  # Overreliance (users trusting biased outputs)
 
 arcanum_taxonomy:
   - ARC-PI-013  # Content Safety Bypass

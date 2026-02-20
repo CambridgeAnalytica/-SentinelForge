@@ -5,6 +5,7 @@ import { useAttackRuns } from "@/hooks/use-api";
 import { cn, severityBadge, statusColor, timeAgo, capitalize } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { NewScanModal } from "@/components/new-scan-modal";
+import { api } from "@/lib/api";
 import {
   PieChart,
   Pie,
@@ -23,6 +24,8 @@ import {
   Clock,
   Plus,
   Shield,
+  ClipboardCheck,
+  Loader2,
 } from "lucide-react";
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -37,6 +40,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { data: runs, isLoading } = useAttackRuns();
   const [showNewScan, setShowNewScan] = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
+  const [auditModel, setAuditModel] = useState("");
+  const [auditLaunching, setAuditLaunching] = useState(false);
 
   if (isLoading) {
     return <PageSkeleton />;
@@ -105,15 +111,72 @@ export default function DashboardPage() {
             Overview of attack runs, findings, and security posture
           </p>
         </div>
-        <button
-          onClick={() => setShowNewScan(true)}
-          className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> New Scan
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAudit(true)}
+            className="flex h-9 items-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+          >
+            <ClipboardCheck className="h-4 w-4" /> Full Audit
+          </button>
+          <button
+            onClick={() => setShowNewScan(true)}
+            className="flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" /> New Scan
+          </button>
+        </div>
       </div>
 
       {showNewScan && <NewScanModal onClose={() => setShowNewScan(false)} />}
+
+      {/* Full Audit Modal */}
+      {showAudit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Full Audit</h3>
+            <p className="text-sm text-muted-foreground">Run all 16 scenarios against a target model.</p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Target Model</label>
+              <input
+                value={auditModel}
+                onChange={(e) => setAuditModel(e.target.value)}
+                placeholder="e.g. llama3.2:3b"
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowAudit(false)}
+                className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!auditModel.trim()) return;
+                  setAuditLaunching(true);
+                  try {
+                    const resp = await api.post<{ id: string }>("/attacks/audit", {
+                      target_model: auditModel.trim(),
+                    });
+                    router.push(`/audits/${resp.id}`);
+                  } catch {
+                    alert("Failed to launch audit.");
+                  } finally {
+                    setAuditLaunching(false);
+                    setShowAudit(false);
+                  }
+                }}
+                disabled={auditLaunching || !auditModel.trim()}
+                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {auditLaunching && <Loader2 className="h-4 w-4 animate-spin" />}
+                Launch Audit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

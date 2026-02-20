@@ -3,19 +3,32 @@ Attack scenario management and execution endpoints.
 """
 
 import asyncio
+import csv
+import io
 import logging
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional, Callable, Awaitable
 
 import yaml
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi.responses import Response
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, AsyncSessionLocal
 from models import AttackRun, RunStatus, Finding, Report, User, AuditLog
-from schemas import AttackScenario, AttackRunRequest, AttackRunResponse, AttackRunDetail
+from schemas import (
+    AttackScenario,
+    AttackRunRequest,
+    AttackRunResponse,
+    AttackRunDetail,
+    ComparisonRequest,
+    ComparisonResponse,
+    AuditRequest,
+    AuditResponse,
+)
 from middleware.auth import get_current_user, require_operator, require_admin
 from services.deduplication import classify_findings
 
@@ -35,7 +48,7 @@ def _load_scenarios() -> List[dict]:
     scenario_dirs = [
         Path("scenarios"),
         Path("/app/scenarios"),
-        Path(__file__).parent.parent.parent.parent.parent / "scenarios",
+        Path(__file__).parent.parent.parent.parent / "scenarios",
     ]
 
     for scenario_dir in scenario_dirs:
@@ -503,6 +516,679 @@ async def toggle_false_positive(
     }
 
 
+# ---------- Feature 5: CSV Export ----------
+
+
+@router.get("/runs/{run_id}/export")
+async def export_findings_csv(
+    run_id: str,
+    format: str = Query("csv", description="Export format (csv)"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export findings for a run as CSV."""
+    result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    findings_result = await db.execute(
+        select(Finding)
+        .where(Finding.run_id == run_id)
+        .order_by(Finding.created_at.asc())
+    )
+    findings = findings_result.scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "id",
+            "severity",
+            "title",
+            "tool_name",
+            "mitre_technique",
+            "description",
+            "remediation",
+            "evidence_hash",
+            "is_new",
+            "false_positive",
+            "created_at",
+        ]
+    )
+    for f in findings:
+        writer.writerow(
+            [
+                f.id,
+                f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                f.title,
+                f.tool_name,
+                f.mitre_technique or "",
+                (f.description or "")[:1000],
+                (f.remediation or "")[:500],
+                f.evidence_hash or "",
+                f.is_new,
+                f.false_positive,
+                f.created_at.isoformat() if f.created_at else "",
+            ]
+        )
+
+    csv_bytes = output.getvalue().encode("utf-8")
+    filename = f"sentinelforge_{run.scenario_id}_{run_id[:8]}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------- Feature 3: Hardening Advisor ----------
+
+
+@router.get("/runs/{run_id}/harden")
+async def hardening_advisor(
+    run_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Analyze completed run findings and generate system prompt hardening advice."""
+    result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
+    run = result.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    if run.status != RunStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Run must be completed first")
+
+    findings_result = await db.execute(select(Finding).where(Finding.run_id == run_id))
+    findings = findings_result.scalars().all()
+
+    from services.hardening_service import generate_hardening_advice
+
+    return generate_hardening_advice(findings, run.scenario_id)
+
+
+# ---------- Feature 6: Historical Trends ----------
+
+
+@router.get("/trends")
+async def get_trends(
+    model: Optional[str] = Query(None, description="Filter by target model"),
+    days: int = Query(30, description="Number of days to look back"),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get historical safety trends per model and scenario."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    query = (
+        select(AttackRun)
+        .where(
+            AttackRun.status == RunStatus.COMPLETED,
+            AttackRun.completed_at >= cutoff,
+        )
+        .order_by(AttackRun.completed_at.asc())
+    )
+    if model:
+        query = query.where(AttackRun.target_model == model)
+
+    result = await db.execute(query)
+    runs = result.scalars().all()
+
+    # Gather distinct models
+    models_query = await db.execute(
+        select(AttackRun.target_model)
+        .where(AttackRun.status == RunStatus.COMPLETED)
+        .distinct()
+    )
+    available_models = [row[0] for row in models_query.all()]
+
+    data_points = []
+    for run in runs:
+        summary = (run.results or {}).get("summary", {})
+        direct = summary.get("direct_tests", {})
+        pass_rate = direct.get("pass_rate", direct.get("overall_pass_rate"))
+
+        # Count findings by severity
+        findings_result = await db.execute(
+            select(Finding).where(Finding.run_id == run.id)
+        )
+        findings = findings_result.scalars().all()
+        critical_count = sum(
+            1
+            for f in findings
+            if (f.severity.value if hasattr(f.severity, "value") else str(f.severity))
+            == "critical"
+        )
+
+        data_points.append(
+            {
+                "date": (
+                    run.completed_at.strftime("%Y-%m-%d") if run.completed_at else None
+                ),
+                "run_id": run.id,
+                "scenario_id": run.scenario_id,
+                "target_model": run.target_model,
+                "pass_rate": pass_rate,
+                "findings_count": len(findings),
+                "critical_count": critical_count,
+            }
+        )
+
+    # Compute summary
+    avg_pass_rate = None
+    trend = "stable"
+    worst_scenario = None
+    if data_points:
+        rates = [d["pass_rate"] for d in data_points if d["pass_rate"] is not None]
+        if rates:
+            avg_pass_rate = sum(rates) / len(rates)
+            if len(rates) >= 2:
+                first_half = rates[: len(rates) // 2]
+                second_half = rates[len(rates) // 2 :]
+                avg_first = sum(first_half) / len(first_half)
+                avg_second = sum(second_half) / len(second_half)
+                if avg_second < avg_first - 0.05:
+                    trend = "degrading"
+                elif avg_second > avg_first + 0.05:
+                    trend = "improving"
+
+        # Worst scenario by lowest pass rate
+        scenario_rates: dict = {}
+        for d in data_points:
+            if d["pass_rate"] is not None:
+                scenario_rates.setdefault(d["scenario_id"], []).append(d["pass_rate"])
+        if scenario_rates:
+            worst_scenario = min(
+                scenario_rates,
+                key=lambda s: sum(scenario_rates[s]) / len(scenario_rates[s]),
+            )
+
+    return {
+        "model": model,
+        "days": days,
+        "available_models": available_models,
+        "data_points": data_points,
+        "summary": {
+            "avg_pass_rate": round(avg_pass_rate, 4) if avg_pass_rate else None,
+            "trend": trend,
+            "worst_scenario": worst_scenario,
+            "total_runs": len(data_points),
+        },
+    }
+
+
+# ---------- Feature 1: Model Comparison ----------
+
+
+@router.post("/compare", response_model=ComparisonResponse)
+async def compare_models(
+    request: ComparisonRequest,
+    user: User = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
+):
+    """Launch the same scenario against multiple models for side-by-side comparison."""
+    if len(request.target_models) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 models required")
+    if len(request.target_models) > 5:
+        raise HTTPException(status_code=400, detail="Maximum 5 models per comparison")
+
+    # Validate scenario
+    scenarios = _load_scenarios()
+    scenario = None
+    for s in scenarios:
+        if s["id"] == request.scenario_id:
+            scenario = s
+            break
+    if not scenario:
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{request.scenario_id}' not found"
+        )
+
+    comparison_id = str(uuid.uuid4())
+    merged_config = {**scenario.get("default_config", {}), **request.config}
+    run_ids = []
+
+    for target_model in request.target_models:
+        run = AttackRun(
+            scenario_id=request.scenario_id,
+            target_model=target_model,
+            status=RunStatus.QUEUED,
+            config=merged_config,
+            user_id=user.id,
+            comparison_id=comparison_id,
+        )
+        db.add(run)
+        run_ids.append(run.id)
+
+        db.add(
+            AuditLog(
+                user_id=user.id,
+                action="comparison.launched",
+                resource_type="attack_run",
+                resource_id=run.id,
+                details={
+                    "comparison_id": comparison_id,
+                    "scenario_id": request.scenario_id,
+                    "target_model": target_model,
+                },
+            )
+        )
+
+    await db.commit()
+
+    # Kick off all runs in parallel
+    for i, target_model in enumerate(request.target_models):
+        asyncio.create_task(
+            _run_attack_async(
+                run_ids[i], scenario, target_model, merged_config, user.id
+            )
+        )
+
+    logger.info(
+        f"Comparison {comparison_id}: {request.scenario_id} → {request.target_models}"
+    )
+
+    return ComparisonResponse(
+        id=comparison_id,
+        scenario_id=request.scenario_id,
+        target_models=request.target_models,
+        run_ids=run_ids,
+        status="running",
+        created_at=datetime.now(timezone.utc),
+    )
+
+
+@router.get("/comparisons")
+async def list_comparisons(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all model comparisons."""
+    result = await db.execute(
+        select(
+            AttackRun.comparison_id,
+            AttackRun.scenario_id,
+            func.count(AttackRun.id).label("run_count"),
+            func.min(AttackRun.created_at).label("created_at"),
+        )
+        .where(AttackRun.comparison_id.isnot(None))
+        .group_by(AttackRun.comparison_id, AttackRun.scenario_id)
+        .order_by(func.min(AttackRun.created_at).desc())
+        .limit(50)
+    )
+    rows = result.all()
+
+    comparisons = []
+    for row in rows:
+        # Get all runs in this comparison
+        runs_result = await db.execute(
+            select(AttackRun).where(AttackRun.comparison_id == row.comparison_id)
+        )
+        runs = runs_result.scalars().all()
+        statuses = [r.status.value for r in runs]
+        overall = (
+            "completed"
+            if all(s == "completed" for s in statuses)
+            else (
+                "running"
+                if any(s in ("running", "queued") for s in statuses)
+                else "failed"
+            )
+        )
+        comparisons.append(
+            {
+                "id": row.comparison_id,
+                "scenario_id": row.scenario_id,
+                "target_models": [r.target_model for r in runs],
+                "run_ids": [r.id for r in runs],
+                "status": overall,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+        )
+    return comparisons
+
+
+@router.get("/comparisons/{comparison_id}")
+async def get_comparison(
+    comparison_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get comparison detail with per-model scorecard."""
+    result = await db.execute(
+        select(AttackRun).where(AttackRun.comparison_id == comparison_id)
+    )
+    runs = result.scalars().all()
+    if not runs:
+        raise HTTPException(status_code=404, detail="Comparison not found")
+
+    scorecard = []
+    for run in runs:
+        findings_result = await db.execute(
+            select(Finding).where(Finding.run_id == run.id)
+        )
+        findings = findings_result.scalars().all()
+
+        severity_counts = {}
+        for f in findings:
+            sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+
+        summary = (run.results or {}).get("summary", {})
+        direct = summary.get("direct_tests", {})
+        pass_rate = direct.get("pass_rate", direct.get("overall_pass_rate"))
+
+        scorecard.append(
+            {
+                "run_id": run.id,
+                "target_model": run.target_model,
+                "status": run.status.value,
+                "progress": run.progress,
+                "pass_rate": pass_rate,
+                "findings_count": len(findings),
+                "severity_breakdown": severity_counts,
+                "completed_at": (
+                    run.completed_at.isoformat() if run.completed_at else None
+                ),
+            }
+        )
+
+    statuses = [r.status.value for r in runs]
+    overall = (
+        "completed"
+        if all(s == "completed" for s in statuses)
+        else (
+            "running" if any(s in ("running", "queued") for s in statuses) else "failed"
+        )
+    )
+
+    return {
+        "id": comparison_id,
+        "scenario_id": runs[0].scenario_id,
+        "status": overall,
+        "scorecard": scorecard,
+        "created_at": (
+            min(r.created_at for r in runs).isoformat() if runs[0].created_at else None
+        ),
+    }
+
+
+# ---------- Feature 2: Batch Audit ----------
+
+
+@router.post("/audit", response_model=AuditResponse)
+async def launch_audit(
+    request: AuditRequest,
+    user: User = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
+):
+    """Launch a full audit — run all (or selected) scenarios against a target model."""
+    scenarios = _load_scenarios()
+
+    if request.scenario_ids:
+        selected = [s for s in scenarios if s["id"] in request.scenario_ids]
+        if not selected:
+            raise HTTPException(status_code=404, detail="No matching scenarios found")
+    else:
+        selected = scenarios
+
+    audit_id = str(uuid.uuid4())
+    run_ids = []
+
+    for scenario in selected:
+        merged_config = {**scenario.get("default_config", {}), **request.config}
+        run = AttackRun(
+            scenario_id=scenario["id"],
+            target_model=request.target_model,
+            status=RunStatus.QUEUED,
+            config=merged_config,
+            user_id=user.id,
+            audit_id=audit_id,
+        )
+        db.add(run)
+        run_ids.append(run.id)
+
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="audit.launched",
+            resource_type="audit",
+            resource_id=audit_id,
+            details={
+                "target_model": request.target_model,
+                "scenario_count": len(selected),
+            },
+        )
+    )
+
+    await db.commit()
+
+    # Kick off all scenario runs
+    for i, scenario in enumerate(selected):
+        merged_config = {**scenario.get("default_config", {}), **request.config}
+        asyncio.create_task(
+            _run_attack_async(
+                run_ids[i], scenario, request.target_model, merged_config, user.id
+            )
+        )
+
+    logger.info(f"Audit {audit_id}: {len(selected)} scenarios → {request.target_model}")
+
+    return AuditResponse(
+        id=audit_id,
+        target_model=request.target_model,
+        scenario_count=len(selected),
+        run_ids=run_ids,
+        status="running",
+        created_at=datetime.now(timezone.utc),
+    )
+
+
+@router.get("/audits")
+async def list_audits(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all audits."""
+    result = await db.execute(
+        select(
+            AttackRun.audit_id,
+            AttackRun.target_model,
+            func.count(AttackRun.id).label("scenario_count"),
+            func.min(AttackRun.created_at).label("created_at"),
+        )
+        .where(AttackRun.audit_id.isnot(None))
+        .group_by(AttackRun.audit_id, AttackRun.target_model)
+        .order_by(func.min(AttackRun.created_at).desc())
+        .limit(50)
+    )
+    rows = result.all()
+
+    audits = []
+    for row in rows:
+        runs_result = await db.execute(
+            select(AttackRun).where(AttackRun.audit_id == row.audit_id)
+        )
+        runs = runs_result.scalars().all()
+        statuses = [r.status.value for r in runs]
+        completed = sum(1 for s in statuses if s == "completed")
+        overall = (
+            "completed"
+            if all(s == "completed" for s in statuses)
+            else (
+                "running"
+                if any(s in ("running", "queued") for s in statuses)
+                else "failed"
+            )
+        )
+        audits.append(
+            {
+                "id": row.audit_id,
+                "target_model": row.target_model,
+                "scenario_count": row.scenario_count,
+                "completed_count": completed,
+                "status": overall,
+                "run_ids": [r.id for r in runs],
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            }
+        )
+    return audits
+
+
+@router.get("/audits/{audit_id}")
+async def get_audit(
+    audit_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get audit detail with per-scenario results and aggregate posture report."""
+    result = await db.execute(select(AttackRun).where(AttackRun.audit_id == audit_id))
+    runs = result.scalars().all()
+    if not runs:
+        raise HTTPException(status_code=404, detail="Audit not found")
+
+    scenario_results = []
+    total_findings = 0
+    total_critical = 0
+    total_high = 0
+    all_pass_rates = []
+
+    for run in runs:
+        findings_result = await db.execute(
+            select(Finding).where(Finding.run_id == run.id)
+        )
+        findings = findings_result.scalars().all()
+
+        severity_counts = {}
+        for f in findings:
+            sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+
+        summary = (run.results or {}).get("summary", {})
+        direct = summary.get("direct_tests", {})
+        pass_rate = direct.get("pass_rate", direct.get("overall_pass_rate"))
+        if pass_rate is not None:
+            all_pass_rates.append(pass_rate)
+
+        total_findings += len(findings)
+        total_critical += severity_counts.get("critical", 0)
+        total_high += severity_counts.get("high", 0)
+
+        scenario_results.append(
+            {
+                "run_id": run.id,
+                "scenario_id": run.scenario_id,
+                "status": run.status.value,
+                "progress": run.progress,
+                "pass_rate": pass_rate,
+                "findings_count": len(findings),
+                "severity_breakdown": severity_counts,
+                "completed_at": (
+                    run.completed_at.isoformat() if run.completed_at else None
+                ),
+            }
+        )
+
+    statuses = [r.status.value for r in runs]
+    completed_count = sum(1 for s in statuses if s == "completed")
+    overall_status = (
+        "completed"
+        if all(s == "completed" for s in statuses)
+        else (
+            "running" if any(s in ("running", "queued") for s in statuses) else "failed"
+        )
+    )
+
+    posture_score = (
+        round(sum(all_pass_rates) / len(all_pass_rates) * 100, 1)
+        if all_pass_rates
+        else None
+    )
+
+    return {
+        "id": audit_id,
+        "target_model": runs[0].target_model,
+        "status": overall_status,
+        "scenario_count": len(runs),
+        "completed_count": completed_count,
+        "posture_score": posture_score,
+        "total_findings": total_findings,
+        "total_critical": total_critical,
+        "total_high": total_high,
+        "scenarios": scenario_results,
+        "created_at": (
+            min(r.created_at for r in runs).isoformat() if runs[0].created_at else None
+        ),
+    }
+
+
+@router.get("/audits/{audit_id}/export")
+async def export_audit_csv(
+    audit_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export all findings from an audit as CSV."""
+    result = await db.execute(select(AttackRun).where(AttackRun.audit_id == audit_id))
+    runs = result.scalars().all()
+    if not runs:
+        raise HTTPException(status_code=404, detail="Audit not found")
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "scenario_id",
+            "target_model",
+            "finding_id",
+            "severity",
+            "title",
+            "tool_name",
+            "mitre_technique",
+            "description",
+            "remediation",
+            "is_new",
+            "false_positive",
+            "created_at",
+        ]
+    )
+
+    for run in runs:
+        findings_result = await db.execute(
+            select(Finding).where(Finding.run_id == run.id)
+        )
+        findings = findings_result.scalars().all()
+        for f in findings:
+            writer.writerow(
+                [
+                    run.scenario_id,
+                    run.target_model,
+                    f.id,
+                    (
+                        f.severity.value
+                        if hasattr(f.severity, "value")
+                        else str(f.severity)
+                    ),
+                    f.title,
+                    f.tool_name,
+                    f.mitre_technique or "",
+                    (f.description or "")[:1000],
+                    (f.remediation or "")[:500],
+                    f.is_new,
+                    f.false_positive,
+                    f.created_at.isoformat() if f.created_at else "",
+                ]
+            )
+
+    csv_bytes = output.getvalue().encode("utf-8")
+    filename = f"sentinelforge_audit_{audit_id[:8]}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 async def _execute_scenario(
     scenario: dict,
     target: str,
@@ -540,8 +1226,8 @@ async def _execute_scenario(
     if config.get("multi_turn"):
         max_turns = config.get("max_turns", 10)
         mt_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
-        if not mt_cases:
-            mt_cases = [{"strategy": "gradual_trust"}]
+        # Only count multi-turn prompts if the scenario defines its own
+        # multi-turn test cases — don't inject generic prompts into unrelated scenarios
         mt_prompt_count = len(mt_cases) * max_turns
 
     total_work = max(direct_prompt_count + mt_prompt_count, 1)
@@ -612,11 +1298,16 @@ async def _execute_scenario(
         max_turns = config.get("max_turns", 10)
         provider = config.get("provider")
 
+        # Only run multi-turn if the scenario explicitly defines multi-turn
+        # test cases. Don't inject generic gradual_trust/hacking prompts
+        # into scenarios that don't define their own — the generic prompts
+        # are unrelated to the scenario's actual attack category.
         multi_turn_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
         if not multi_turn_cases:
-            multi_turn_cases = [
-                {"strategy": "gradual_trust", "name": "Default Multi-Turn"}
-            ]
+            logger.info(
+                f"Scenario '{scenario['id']}' has no multi-turn test cases, "
+                "skipping multi-turn phase"
+            )
 
         for tc in multi_turn_cases:
             strategy = tc.get("strategy", "gradual_trust")

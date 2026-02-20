@@ -148,7 +148,14 @@ export function useSchedules() {
 export interface ComplianceFramework {
     id: string;
     name: string;
-    categories: { id: string; name: string; description: string }[];
+    categories: {
+        id: string;
+        name: string;
+        description: string;
+        severity_baseline?: string;
+        subcategories?: string[];
+        test_types?: string[];
+    }[];
 }
 
 export interface ComplianceSummary {
@@ -249,4 +256,20 @@ export interface ToolInfo {
 
 export function useTools() {
     return useSWR<ToolInfo[]>("/tools", fetcher);
+}
+
+/* ── Scenarios ── */
+
+export interface AttackScenario {
+    id: string;
+    name: string;
+    description: string;
+    severity: string;
+    category: string;
+    prompt_count: number;
+    test_cases_count: number;
+}
+
+export function useScenarios() {
+    return useSWR<AttackScenario[]>("/attacks/scenarios", fetcher);
 }

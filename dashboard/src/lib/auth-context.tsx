@@ -5,6 +5,7 @@ import React, {
     useContext,
     useState,
     useCallback,
+    useEffect,
 } from "react";
 import { getToken, login as apiLogin, logout as apiLogout, clearToken } from "./api";
 
@@ -43,8 +44,14 @@ function getInitialUser(): User | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(getInitialUser);
-    const isLoading = false;
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Resolve auth state client-side only to avoid SSR/client mismatch
+    useEffect(() => {
+        setUser(getInitialUser());
+        setIsLoading(false);
+    }, []);
 
     const login = useCallback(async (username: string, password: string) => {
         await apiLogin(username, password);

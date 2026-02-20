@@ -18,17 +18,43 @@ from services.compliance_service import (
 router = APIRouter()
 
 
+_FRAMEWORK_NAMES = {
+    "owasp_llm_top10": "OWASP Top 10 for LLM Applications",
+    "owasp_ml_top10": "OWASP Machine Learning Top 10",
+    "nist_ai_rmf": "NIST AI Risk Management Framework",
+    "eu_ai_act": "EU Artificial Intelligence Act",
+    "arcanum_pi": "Arcanum Prompt Injection Taxonomy",
+}
+
+
 @router.get("/frameworks")
 async def list_frameworks(user: User = Depends(get_current_user)):
-    """List supported compliance frameworks."""
-    return {
-        "frameworks": [
-            {"id": "owasp_ml_top10", "name": "OWASP Machine Learning Top 10"},
-            {"id": "nist_ai_rmf", "name": "NIST AI Risk Management Framework"},
-            {"id": "eu_ai_act", "name": "EU Artificial Intelligence Act"},
-            {"id": "arcanum_pi", "name": "Arcanum Prompt Injection Taxonomy"},
-        ]
-    }
+    """List supported compliance frameworks with their categories."""
+    from data.compliance_frameworks import get_framework_categories
+
+    results = []
+    for fw_id in SUPPORTED_FRAMEWORKS:
+        cats = get_framework_categories(fw_id)
+        cat_list = []
+        for cid, c in cats.items():
+            entry = {
+                "id": cid,
+                "name": c["name"],
+                "description": c.get("description", ""),
+            }
+            # Include Arcanum-specific fields
+            for extra in ("severity_baseline", "subcategories", "test_types"):
+                if extra in c:
+                    entry[extra] = c[extra]
+            cat_list.append(entry)
+        results.append(
+            {
+                "id": fw_id,
+                "name": _FRAMEWORK_NAMES.get(fw_id, fw_id),
+                "categories": cat_list,
+            }
+        )
+    return {"frameworks": results}
 
 
 @router.get("/summary")

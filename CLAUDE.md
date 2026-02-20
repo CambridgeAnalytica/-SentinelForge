@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 12 pages, charts, auth flow, error boundaries |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 16 pages, charts, auth flow, error boundaries |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -82,7 +82,7 @@ All routers in `services/api/routers/`:
 - `/health`, `/ready`, `/live` — health checks (health.py)
 - `/auth` — JWT login + token management (auth.py)
 - `/tools` — list/execute BlackICE tools (tools.py)
-- `/attacks` — launch attack scenarios with multi-turn support (attacks.py)
+- `/attacks` — launch attack scenarios, model comparison, batch audit, CSV export, hardening advisor, trends (attacks.py)
 - `/reports` — generate HTML/PDF/JSONL reports (reports.py)
 - `/probes` — custom probe modules (probes.py)
 - `/playbooks` — incident response playbook execution (playbooks.py)
@@ -98,6 +98,7 @@ All routers in `services/api/routers/`:
 - `/compliance` — compliance framework mapping and reporting (compliance.py)
 - `/audit` — admin-only audit log with filtering and pagination (audit.py)
 - `/attacks/runs/{id}/stream` — SSE real-time attack progress streaming (sse.py)
+- `/scoring` — custom scoring rubric CRUD (scoring.py)
 
 ### Data flow for attack execution
 
@@ -117,12 +118,12 @@ Settings loaded via pydantic-settings in `services/api/config.py` from `.env`. S
 
 ### Database models (`services/api/models.py`)
 
-Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun`, `Finding` (with MITRE ATLAS + OWASP mapping), `Report`, `ProbeModule`, `AuditLog`, `AgentTest`, `SyntheticDataset`, `WebhookEndpoint`, `Schedule`, `ApiKey`, `NotificationChannel`.
+Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun` (with `comparison_id`/`audit_id` for grouping), `Finding` (with MITRE ATLAS + OWASP mapping), `Report`, `ProbeModule`, `AuditLog`, `AgentTest`, `SyntheticDataset`, `WebhookEndpoint`, `Schedule`, `ApiKey`, `NotificationChannel`, `ScoringRubric`.
 
 ## YAML-driven configuration
 
 - **Tool registry**: `tools/registry.yaml` — 14+ tools with capabilities, MITRE ATLAS mappings, CLI commands, default configs
-- **Attack scenarios**: `scenarios/*.yaml` — 16 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover, multi-agent chain exploitation, goal hijacking
+- **Attack scenarios**: `scenarios/*.yaml` — 18 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover, multi-agent chain exploitation, goal hijacking, model denial of service, model theft
 - **IR playbooks**: `playbooks/*.yaml` — automated response steps for detected incidents
 
 ## Docker Compose services
@@ -140,7 +141,7 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **Webhook dispatch**: `services/api/services/webhook_service.py` sends HMAC-SHA256 signed POST requests to registered webhooks with retry and auto-disable.
 - **Dual auth**: JWT Bearer tokens + API keys (`X-API-Key` header) with SHA-256 hashing and scopes.
 - **Rate limiting**: slowapi middleware with smart key function (API key > JWT > IP fallback).
-- **Compliance mapping**: OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy auto-tagging via MITRE ATLAS reverse index + test_type classification.
+- **Compliance mapping**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy (5 frameworks, 45 categories) auto-tagging via MITRE ATLAS reverse index + test_type classification.
 - **Findings dedup**: SHA-256 fingerprinting with new/recurring classification via `services/deduplication.py`.
 - **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`. Dashboard consumes via `useAttackRunSSE` hook with live progress bar.
 - **Custom scenarios**: In-memory CRUD for user-created attack scenarios via POST/PUT/DELETE `/attacks/scenarios`.
@@ -159,5 +160,7 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
 - **v2.2**: SSE live progress in dashboard, Alembic migration 005, E2E auth tests, error boundaries, webhook CRUD page
 - **v2.3**: Real end-to-end scan execution — non-blocking launch, live per-prompt progress via SSE, asyncio background execution
-- **v2.3.1**: Scenario expansion Phase 3 — 2 new scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, Arcanum PI Taxonomy (4th compliance framework)
-- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 12 dashboard pages, 16 attack scenarios (103 test cases, 496 prompts), 4 compliance frameworks
+- **v2.3.1**: Scenario expansion Phase 3 — 2 new scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, Arcanum PI Taxonomy
+- **v2.4.0**: Model comparison mode, batch "full audit", system prompt hardening advisor, Arcanum dashboard view, CSV export, historical trend tracking, custom scoring rubrics
+- **v2.4.1**: OWASP LLM Top 10 (5th compliance framework), 2 new scenarios (model DoS, model theft), scoring engine improvements (expanded refusal + safe deflection detection), multi-turn fallback fix
+- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 20 routers, 16 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 5 compliance frameworks (45 categories)

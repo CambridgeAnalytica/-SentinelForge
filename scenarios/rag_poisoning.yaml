@@ -16,9 +16,13 @@ mitre_techniques:
   - AML.T0051.002  # Indirect Prompt Injection
   - AML.T0051.000  # LLM Prompt Injection
   - AML.T0043.000  # Craft Adversarial Data
+  - AML.T0020.000  # Data Poisoning (poisoned retrieval documents)
+  - AML.T0010.000  # Supply Chain (compromised knowledge bases)
 
 owasp_llm:
   - LLM01  # Prompt Injection
+  - LLM03  # Training Data Poisoning (poisoned retrieval context)
+  - LLM05  # Supply Chain Vulnerabilities (compromised data sources)
   - LLM08  # Excessive Agency
   - LLM09  # Overreliance
 

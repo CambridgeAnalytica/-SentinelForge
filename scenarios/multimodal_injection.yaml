@@ -17,11 +17,12 @@ mitre_techniques:
   - AML.T0051.000  # LLM Prompt Injection
   - AML.T0051.002  # Indirect Prompt Injection
   - AML.T0043.000  # Craft Adversarial Data
+  - AML.T0010.000  # Supply Chain (compromised multimodal components)
 
 owasp_llm:
   - LLM01  # Prompt Injection
   - LLM02  # Insecure Output Handling
-  - LLM05  # Supply Chain Vulnerabilities
+  - LLM05  # Supply Chain Vulnerabilities (compromised vision/multimodal plugins)
 
 arcanum_taxonomy:
   - ARC-PI-002  # Indirect Prompt Injection

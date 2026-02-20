@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     Search,
     TrendingDown,
+    TrendingUp,
     Calendar,
     ShieldCheck,
     FileText,
@@ -19,6 +20,8 @@ import {
     ClipboardList,
     Swords,
     Users,
+    GitCompareArrows,
+    SlidersHorizontal,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +32,8 @@ type NavItem =
 const navItems: NavItem[] = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/findings", label: "Findings", icon: Search },
+    { href: "/compare", label: "Compare", icon: GitCompareArrows },
+    { href: "/trends", label: "Trends", icon: TrendingUp },
     { href: "/drift", label: "Drift", icon: TrendingDown },
     { href: "/schedules", label: "Schedules", icon: Calendar },
     { href: "/compliance", label: "Compliance", icon: ShieldCheck },
@@ -36,6 +41,7 @@ const navItems: NavItem[] = [
     { href: "/scenarios", label: "Scenarios", icon: Swords },
     { href: "/audit", label: "Audit Log", icon: ClipboardList },
     { type: "divider" },
+    { href: "/settings/scoring", label: "Scoring", icon: SlidersHorizontal },
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     { href: "/settings/api-keys", label: "API Keys", icon: Key },
     { href: "/settings/webhooks", label: "Webhooks", icon: Settings },

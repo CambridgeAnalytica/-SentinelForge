@@ -17,9 +17,11 @@ mitre_techniques:
   - AML.T0051.000  # LLM Prompt Injection
   - AML.T0051.002  # Indirect Prompt Injection
   - AML.T0040.000  # ML Model Inference API Access
+  - AML.T0010.000  # Supply Chain (compromised tool/plugin packages)
 
 owasp_llm:
   - LLM01  # Prompt Injection
+  - LLM05  # Supply Chain Vulnerabilities (compromised tool integrations)
   - LLM07  # Insecure Plugin Design
   - LLM08  # Excessive Agency
 

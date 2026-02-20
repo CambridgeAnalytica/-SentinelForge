@@ -16,11 +16,13 @@ import {
     ChevronDown,
     ChevronUp,
     Shield,
-    Radio,
     FileText,
     Download,
     Loader2,
     Trash2,
+    ShieldCheck,
+    Copy,
+    Table,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -113,10 +115,16 @@ export default function AttackRunDetailPage() {
                         {run.started_at && <> · Started {timeAgo(run.started_at)}</>}
                     </p>
                 </div>
-                {/* Report + delete buttons */}
+                {/* Report + export + harden + delete buttons */}
                 <div className="flex items-center gap-2 shrink-0">
                     {run.status === "completed" && (
-                        <ReportButtons runId={run.id} />
+                        <>
+                            <ReportButtons runId={run.id} />
+                            <CsvExportButton runId={run.id} />
+                            {(run.findings?.length ?? 0) > 0 && (
+                                <HardenButton runId={run.id} />
+                            )}
+                        </>
                     )}
                     {isAdmin && (
                         <DeleteButton runId={run.id} onDeleted={() => router.push("/")} />
@@ -459,6 +467,137 @@ function ReportButtons({ runId }: { runId: string }) {
                 PDF Report
             </button>
         </div>
+    );
+}
+
+function CsvExportButton({ runId }: { runId: string }) {
+    function handleExport() {
+        const token = localStorage.getItem("sf_token");
+        const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+        const url = `${base}/attacks/runs/${runId}/export?format=csv${token ? `&token=${token}` : ""}`;
+        window.open(url, "_blank");
+    }
+
+    return (
+        <button
+            onClick={handleExport}
+            className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+            title="Export findings as CSV"
+        >
+            <Table className="h-3.5 w-3.5" />
+            CSV
+        </button>
+    );
+}
+
+function HardenButton({ runId }: { runId: string }) {
+    const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [advice, setAdvice] = useState<{
+        recommendations: { category: string; priority: string; recommendation: string; system_prompt_snippet: string; test_types_failed: string[] }[];
+        hardened_system_prompt: string;
+        total_failed_tests: number;
+    } | null>(null);
+
+    async function loadAdvice() {
+        if (advice) {
+            setOpen(!open);
+            return;
+        }
+        setLoading(true);
+        try {
+            const resp = await api.get<typeof advice>(`/attacks/runs/${runId}/harden`);
+            setAdvice(resp);
+            setOpen(true);
+        } catch {
+            alert("Failed to load hardening advice.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function copySnippet(text: string) {
+        navigator.clipboard.writeText(text);
+    }
+
+    const priorityColor: Record<string, string> = {
+        critical: "bg-red-500/20 text-red-400",
+        high: "bg-orange-500/20 text-orange-400",
+        medium: "bg-yellow-500/20 text-yellow-400",
+    };
+
+    return (
+        <>
+            <button
+                onClick={loadAdvice}
+                disabled={loading}
+                className="flex h-8 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-card px-3 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                title="System prompt hardening advisor"
+            >
+                {loading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                )}
+                Harden
+            </button>
+            {open && advice && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-16 overflow-y-auto">
+                    <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl">
+                        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                                Hardening Advisor — {advice.total_failed_tests} failed tests
+                            </h3>
+                            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-lg">&times;</button>
+                        </div>
+                        <div className="max-h-[70vh] overflow-y-auto p-4 space-y-3">
+                            {advice.recommendations.map((rec, i) => (
+                                <div key={i} className="rounded-lg border border-border p-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", priorityColor[rec.priority] ?? "bg-zinc-500/20 text-zinc-400")}>
+                                            {rec.priority}
+                                        </span>
+                                        <span className="text-sm font-medium text-foreground">{rec.category}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mb-2">{rec.recommendation}</p>
+                                    <div className="relative">
+                                        <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/50 p-2 text-xs text-foreground/80">{rec.system_prompt_snippet}</pre>
+                                        <button
+                                            onClick={() => copySnippet(rec.system_prompt_snippet)}
+                                            className="absolute top-1 right-1 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                            title="Copy snippet"
+                                        >
+                                            <Copy className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                    {rec.test_types_failed.length > 0 && (
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {rec.test_types_failed.map((t) => (
+                                                <span key={t} className="rounded bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground">{t}</span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {/* Full hardened prompt */}
+                            <div className="rounded-lg border border-emerald-500/20 p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-semibold text-foreground">Complete Hardened System Prompt</span>
+                                    <button
+                                        onClick={() => copySnippet(advice.hardened_system_prompt)}
+                                        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                    >
+                                        <Copy className="h-3 w-3" /> Copy All
+                                    </button>
+                                </div>
+                                <pre className="whitespace-pre-wrap break-words rounded-lg bg-secondary/50 p-3 text-xs text-foreground/80 max-h-64 overflow-y-auto">{advice.hardened_system_prompt}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

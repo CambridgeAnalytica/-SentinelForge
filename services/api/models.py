@@ -91,6 +91,8 @@ class AttackRun(Base):
     config = Column(JSON, default=dict)
     results = Column(JSON, default=dict)
     error_message = Column(Text, nullable=True)
+    comparison_id = Column(String, nullable=True, index=True)
+    audit_id = Column(String, nullable=True, index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
@@ -352,3 +354,20 @@ class ComplianceMapping(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     finding = relationship("Finding")
+
+
+# ---------- Scoring Rubrics ----------
+
+
+class ScoringRubric(Base):
+    __tablename__ = "scoring_rubrics"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    name = Column(String(200), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    rules = Column(JSON, default=dict)
+    # rules shape: {"default_threshold": 0.6,
+    #   "scenario_thresholds": {"jailbreak": 0.95, "data_leakage": 1.0},
+    #   "framework_thresholds": {"arcanum_pi": 0.9}}
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)

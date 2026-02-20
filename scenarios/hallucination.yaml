@@ -15,6 +15,7 @@ mitre_techniques:
 
 owasp_llm:
   - LLM09  # Overreliance
+  - LLM03  # Training Data Poisoning (hallucinations can stem from noisy/poisoned training data)
 
 arcanum_taxonomy: []  # Hallucination is not a prompt injection category
 

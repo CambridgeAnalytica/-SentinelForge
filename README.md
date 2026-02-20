@@ -21,7 +21,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
 - **Enterprise Security**: JWT + API key dual authentication, rate limiting, RBAC, SBOM, signed images
 - **Rich Reporting**: HTML, PDF, and JSONL reports with MITRE ATLAS + OWASP LLM Top 10 mapping
-- **Compliance Mapping**: Auto-tag findings with OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy
+- **Compliance Mapping**: Auto-tag findings with OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy (5 frameworks, 45 categories)
 - **Scheduled Scans**: Cron-based recurring scans with notification channels (Slack, email, Teams)
 - **CI/CD Integration**: GitHub Actions action and GitLab CI template for pipeline security scanning
 - **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, scenario builder, audit log, and settings management (port 3001)
@@ -35,9 +35,9 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 16 attack scenarios (103 test cases, 496 prompts), compliance auto-tagging (4 frameworks incl. Arcanum PI Taxonomy), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (5 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy — 45 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, a full Next.js Dashboard UI with 16 pages (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
 
-## Dashboard UI (v2.2)
+## Dashboard UI (v2.4)
 
 SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
 
@@ -49,7 +49,9 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **Findings Explorer** | `/findings` | Filter by severity, tool, MITRE technique, or free-text search; sortable table; detail slide-over with raw evidence JSON |
 | **Drift Timeline** | `/drift` | Select a baseline, view safety score over time as a line chart, category breakdown bars for 8 safety dimensions |
 | **Schedule Manager** | `/schedules` | CRUD table for cron-based recurring scans, visual cron expression builder, manual trigger button |
-| **Compliance View** | `/compliance` | Framework tabs (OWASP ML Top 10, NIST AI RMF, EU AI Act), coverage heatmap grid, summary stats, PDF download |
+| **Model Comparison** | `/compare` | Run the same scenario against 2-5 models side-by-side, scorecard table with pass rate/findings/severity, BEST label |
+| **Historical Trends** | `/trends` | Per-model safety score trends over time, line chart per scenario, trend direction (improving/stable/degrading) |
+| **Compliance View** | `/compliance` | Framework tabs (OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI), coverage heatmap, severity badges, PDF download |
 | **Report Viewer** | `/reports` | Report list with download links, in-browser preview (iframe), generate dialog with format toggles (HTML/PDF/JSONL) |
 | **Notifications** | `/settings/notifications` | Channel management (Slack, email, Teams) with type icons, test/delete actions, create channel modal |
 | **Webhook Endpoints** | `/settings/webhooks` | Webhook CRUD with URL copy, event checkboxes, test ping, active/disabled status, HMAC secret |
@@ -57,6 +59,7 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **Scenario Builder** | `/scenarios` | Visual editor for custom attack scenarios with tool selection, MITRE techniques, and JSON config |
 | **Audit Log** | `/audit` | Admin-only event log with action/user filters, expandable detail rows, pagination |
 | **User Management** | `/settings/users` | Admin-only user list with role management (admin/operator/viewer), register new users |
+| **Scoring Rubrics** | `/settings/scoring` | Custom pass/fail thresholds per scenario, default threshold slider, per-scenario overrides |
 
 ### Technical Details
 
@@ -178,7 +181,7 @@ sentinelforge/
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper
-├── scenarios/            # 16 attack scenarios (103 test cases, 496 prompts)
+├── scenarios/            # 18 attack scenarios (115 test cases, 555 prompts)
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
 │   ├── docker/           # Dockerfiles (API, Worker, Tools, Dashboard)
@@ -276,7 +279,7 @@ sf compliance report --run-id abc123 --format pdf
 - **Secrets Management**: Environment-based configuration (`.env`)
 - **Evidence Redaction**: Configurable patterns for sensitive data
 - **Evidence Chain**: SHA-256 hash chain for tamper-proof finding integrity
-- **Compliance Frameworks**: OWASP ML Top 10, NIST AI RMF, EU AI Act auto-tagging
+- **Compliance Frameworks**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy auto-tagging (5 frameworks, 45 categories)
 - **Database Migrations**: Alembic-managed schema versioning
 
 ## Documentation

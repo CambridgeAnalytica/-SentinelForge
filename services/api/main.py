@@ -4,10 +4,21 @@ Enterprise-Grade AI Security Testing & Red Teaming Platform
 """
 
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+
+# Push .env values into os.environ so model adapters can read them
+load_dotenv(Path(__file__).parent / ".env", override=False)
+
+# Ensure project root is on sys.path so adapters/ and tools/ are importable
+_project_root = str(Path(__file__).parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 from config import settings
 from database import engine, Base
@@ -26,7 +37,7 @@ from routers import (
     synthetic,
     webhooks,
 )
-from routers import schedules, api_keys, notifications, compliance
+from routers import schedules, api_keys, notifications, compliance, scoring
 from routers import audit as audit_router
 from routers import sse as sse_router
 from middleware.logging_middleware import RequestLoggingMiddleware
@@ -103,7 +114,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.3.1",
+    version="2.4.1",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -141,6 +152,7 @@ app.include_router(
     notifications.router, prefix="/notifications", tags=["Notifications"]
 )
 app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
+app.include_router(scoring.router, prefix="/scoring", tags=["Scoring"])
 app.include_router(audit_router.router, prefix="/audit", tags=["Audit Log"])
 app.include_router(sse_router.router, prefix="/attacks", tags=["SSE"])
 
