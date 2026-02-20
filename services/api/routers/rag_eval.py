@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from database import get_db, AsyncSessionLocal
 from middleware.auth import get_current_user, require_operator
@@ -100,9 +101,9 @@ async def get_rag_eval(
 ):
     """Get detailed RAG evaluation results."""
     result = await db.execute(
-        select(AttackRun).where(
-            AttackRun.id == run_id, AttackRun.run_type == "rag_eval"
-        )
+        select(AttackRun)
+        .where(AttackRun.id == run_id, AttackRun.run_type == "rag_eval")
+        .options(selectinload(AttackRun.findings))
     )
     run = result.scalar_one_or_none()
     if not run:

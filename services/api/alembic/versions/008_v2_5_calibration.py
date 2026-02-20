@@ -48,10 +48,10 @@ def upgrade():
         sa.Column("config", sa.JSON(), server_default="{}"),
         sa.Column("results", sa.JSON(), server_default="{}"),
         sa.Column("recommended_threshold", sa.Float(), nullable=True),
+        sa.Column("user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column(
-            "user_id", sa.String(), sa.ForeignKey("users.id"), nullable=False
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
         ),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
     )
 

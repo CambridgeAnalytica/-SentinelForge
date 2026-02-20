@@ -91,7 +91,9 @@ class AttackRun(Base):
     config = Column(JSON, default=dict)
     results = Column(JSON, default=dict)
     error_message = Column(Text, nullable=True)
-    run_type = Column(String(50), nullable=True, default="attack")  # attack|rag_eval|tool_eval|multimodal_eval
+    run_type = Column(
+        String(50), nullable=True, default="attack"
+    )  # attack|rag_eval|tool_eval|multimodal_eval
     comparison_id = Column(String, nullable=True, index=True)
     audit_id = Column(String, nullable=True, index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
