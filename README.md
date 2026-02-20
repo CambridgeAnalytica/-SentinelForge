@@ -35,7 +35,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 8 attack scenarios (47 test cases, 235 prompts), compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 14 attack scenarios (82 test cases, 394 prompts), compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
 
 ## Dashboard UI (v2.2)
 
@@ -178,7 +178,7 @@ sentinelforge/
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper
-├── scenarios/            # 8 attack scenarios (47 test cases, 235 prompts)
+├── scenarios/            # 14 attack scenarios (82 test cases, 394 prompts)
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
 │   ├── docker/           # Dockerfiles (API, Worker, Tools, Dashboard)

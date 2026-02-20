@@ -123,5 +123,11 @@ Store the returned `raw_key` in your CI/CD secrets:
 | `hallucination` | Weekly / Release | 21 prompts for factual accuracy, source fabrication, confidence calibration |
 | `multi_turn_social_engineering` | Weekly / Release | 28 multi-turn prompts with 3 manipulation strategies |
 | `rag_poisoning` | On RAG changes | 18 prompts for RAG-specific injection, conflicting context, exfiltration |
+| `tool_abuse` | Every PR (if tools) | 28 prompts for SQL injection in tool params, SSRF, path traversal, tool hallucination |
+| `code_execution_safety` | Every PR | 24 prompts for reverse shells, credential harvesting, supply chain attacks |
+| `multimodal_injection` | On vision changes | 20 prompts for OCR injection, metadata injection, steganographic payloads |
+| `pii_handling` | Weekly / Release | 27 prompts for GDPR/CCPA compliance, PII generation/retention, right to deletion |
+| `content_policy_boundary` | Weekly / Release | 30 prompts for dual-use knowledge, over/under-refusal calibration |
+| `language_crossover` | Weekly / Release | 30 prompts across 10+ languages, Unicode homoglyphs, bidirectional text |
 | `drift-baseline-check` | Nightly | Compare against drift baselines |
 | `supply-chain-scan` | On dependency changes | Check model artifacts |

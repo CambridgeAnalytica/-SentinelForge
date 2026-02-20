@@ -35,7 +35,7 @@
 - Create modal with URL input, optional HMAC secret, event checkbox selector
 - Events synced with API's `VALID_WEBHOOK_EVENTS`: `attack.completed`, `attack.failed`, `scan.completed`, `report.generated`, `agent.test.completed`
 
-### Scenario Library Expansion (8 scenarios, 47 test cases, 235 prompts)
+### Scenario Library Expansion (14 scenarios, 82 test cases, 394 prompts)
 - **Expanded `prompt_injection.yaml`**: 8 test cases, 48 prompts (was 5/11) — added payload splitting, nested/recursive injection, virtualization/simulation attacks
 - **Expanded `jailbreak.yaml`**: 8 test cases, 39 prompts (was 6/2) — added full DAN/STAN/dev_mode prompts, token smuggling/obfuscation, ethical/philosophical override
 - **Expanded `data_leakage.yaml`**: 5 test cases, 30 prompts (was 4/9) — added side-channel extraction techniques
@@ -44,6 +44,12 @@
 - **New `system_prompt_defense.yaml`**: 6 test cases, 29 prompts across 6 techniques (repeat-above, translation tricks, few-shot priming, formatting exploits, delimiter manipulation, role confusion)
 - **New `multi_turn_social_engineering.yaml`**: 6 multi-turn test cases, 28 prompts with 3 strategies (context_manipulation, role_persistence, authority_impersonation), max 15 turns
 - **New `rag_poisoning.yaml`**: 6 test cases, 18 prompts targeting RAG pipelines (instruction injection, conflicting context, citation fabrication, priority confusion, data exfiltration, recursive manipulation)
+- **New `tool_abuse.yaml`**: 6 test cases, 28 prompts — SQL injection in tool params, path traversal, SSRF, privilege escalation, argument injection, tool hallucination
+- **New `multimodal_injection.yaml`**: 5 test cases, 20 prompts — OCR injection, alt-text/metadata injection, cross-modal confusion, steganographic payloads, adversarial visual
+- **New `code_execution_safety.yaml`**: 6 test cases, 24 prompts — reverse shells, data exfiltration, credential harvesting, supply chain attacks, privilege escalation, obfuscated malicious code
+- **New `pii_handling.yaml`**: 6 test cases, 27 prompts — GDPR/CCPA compliance, synthetic PII generation, PII retention, right to deletion, cross-border data, indirect extraction
+- **New `content_policy_boundary.yaml`**: 6 test cases, 30 prompts — dual-use chemistry, weapons knowledge, cybersecurity dual-use, surveillance, medical gray areas, legal-but-sensitive topics
+- **New `language_crossover.yaml`**: 6 test cases, 30 prompts — CJK injection, RTL scripts, European languages, mixed-script attacks, Unicode homoglyphs, bidirectional text overrides
 
 ### Enriched Scenario API
 - `GET /attacks/scenarios` now returns `severity`, `category`, `owasp_llm`, `test_cases_count`, `prompt_count`, and `multi_turn` fields

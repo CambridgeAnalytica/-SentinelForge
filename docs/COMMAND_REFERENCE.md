@@ -540,7 +540,7 @@ sf attack list
 
 **Expected Output**:
 ```
-Attack Scenarios (8 scenarios, 47 test cases, 235 prompts)
+Attack Scenarios (14 scenarios, 82 test cases, 394 prompts)
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
 ┃ ID                           ┃ Name                              ┃ Severity    ┃ Tools            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
@@ -552,6 +552,12 @@ Attack Scenarios (8 scenarios, 47 test cases, 235 prompts)
 │ system_prompt_defense        │ System Prompt Defense Testing     │ critical    │ garak,promptfoo  │
 │ multi_turn_social_engineering│ Multi-Turn Social Engineering     │ critical    │ pyrit,garak      │
 │ rag_poisoning                │ RAG Poisoning & Retrieval At..   │ high        │ garak,promptfoo  │
+│ tool_abuse                   │ Tool Abuse & Function Calling..  │ critical    │ garak,promptfoo  │
+│ multimodal_injection         │ Multimodal & Vision Prompt In..  │ high        │ garak,promptfoo  │
+│ code_execution_safety        │ Code Execution Safety Testing    │ critical    │ garak,promptfoo  │
+│ pii_handling                 │ PII Handling & Privacy Compli..  │ high        │ deepeval,guardra │
+│ content_policy_boundary      │ Content Policy Boundary Testing  │ medium      │ deepeval,garak   │
+│ language_crossover           │ Multilingual & Cross-Script A..  │ high        │ garak,promptfoo  │
 └──────────────────────────────┴───────────────────────────────────┴─────────────┴──────────────────┘
 ```
 

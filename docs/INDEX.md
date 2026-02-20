@@ -38,7 +38,7 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 | `docker-compose.yml` | Multi-service orchestration |
 | `Makefile` | Development commands |
 | `tools/registry.yaml` | Tool registry configuration (14 tools, 14 adapters) |
-| `scenarios/*.yaml` | 8 attack scenarios (47 test cases, 235 prompts) |
+| `scenarios/*.yaml` | 14 attack scenarios (82 test cases, 394 prompts) |
 | `playbooks/*.yaml` | Incident response playbooks |
 | `ci/github/action.yml` | GitHub Actions composite action |
 | `ci/gitlab/.gitlab-ci-template.yml` | GitLab CI reusable template |
@@ -142,7 +142,7 @@ sf attack list
 
 1. [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) - All 14 security tools with adapters
 2. [COMMAND_REFERENCE.md](COMMAND_REFERENCE.md#cli-commands) - CLI usage
-3. `scenarios/` - 8 attack scenarios (47 test cases, 235 prompts)
+3. `scenarios/` - 14 attack scenarios (82 test cases, 394 prompts)
 4. `playbooks/` - Incident response playbooks (YAML definitions)
 5. `services/api/data/compliance_frameworks.py` - Compliance framework mappings
 
