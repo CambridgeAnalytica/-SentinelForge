@@ -37,7 +37,13 @@ from routers import (  # noqa: E402
     synthetic,
     webhooks,
 )
-from routers import schedules, api_keys, notifications, compliance, scoring  # noqa: E402
+from routers import (  # noqa: E402
+    schedules,
+    api_keys,
+    notifications,
+    compliance,
+    scoring,
+)
 from routers import audit as audit_router  # noqa: E402
 from routers import sse as sse_router  # noqa: E402
 from middleware.logging_middleware import RequestLoggingMiddleware  # noqa: E402
