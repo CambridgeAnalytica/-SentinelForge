@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useComplianceFrameworks } from "@/hooks/use-api";
+import { useComplianceFrameworks, ComplianceFramework } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ShieldCheck, Download, Loader2, AlertTriangle } from "lucide-react";
@@ -27,11 +27,11 @@ export default function CompliancePage() {
     }
 
     // API may return either an array or {frameworks: [...]}
-    const allFrameworks = Array.isArray(frameworksRaw)
+    const allFrameworks: ComplianceFramework[] = Array.isArray(frameworksRaw)
         ? frameworksRaw
         : frameworksRaw && typeof frameworksRaw === "object" && "frameworks" in (frameworksRaw as Record<string, unknown>)
-            ? ((frameworksRaw as Record<string, unknown>).frameworks as typeof frameworksRaw)
-            : (frameworksRaw ?? []) as typeof frameworksRaw;
+            ? ((frameworksRaw as Record<string, unknown>).frameworks as ComplianceFramework[])
+            : [];
     const current = allFrameworks[activeFramework];
 
     async function loadSummary(frameworkId: string) {
