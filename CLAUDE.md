@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 16 pages, charts, auth flow, error boundaries |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 20 pages, charts, auth flow, error boundaries |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -98,7 +98,10 @@ All routers in `services/api/routers/`:
 - `/compliance` — compliance framework mapping and reporting (compliance.py)
 - `/audit` — admin-only audit log with filtering and pagination (audit.py)
 - `/attacks/runs/{id}/stream` — SSE real-time attack progress streaming (sse.py)
-- `/scoring` — custom scoring rubric CRUD (scoring.py)
+- `/scoring` — custom scoring rubric CRUD + calibration endpoints (scoring.py)
+- `/rag-eval` — RAG evaluation pipeline: document ingestion, TF-IDF retrieval, poison testing (rag_eval.py)
+- `/tool-eval` — tool-use evaluation: forbidden tools, hallucination, arg injection (tool_eval.py)
+- `/multimodal-eval` — multimodal evaluation: adversarial images + vision LLM testing (multimodal_eval.py)
 
 ### Data flow for attack execution
 
@@ -118,7 +121,7 @@ Settings loaded via pydantic-settings in `services/api/config.py` from `.env`. S
 
 ### Database models (`services/api/models.py`)
 
-Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun` (with `comparison_id`/`audit_id` for grouping), `Finding` (with MITRE ATLAS + OWASP mapping), `Report`, `ProbeModule`, `AuditLog`, `AgentTest`, `SyntheticDataset`, `WebhookEndpoint`, `Schedule`, `ApiKey`, `NotificationChannel`, `ScoringRubric`.
+Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun` (with `comparison_id`/`audit_id`/`run_type` for grouping), `Finding` (with MITRE ATLAS + OWASP mapping), `Report`, `ProbeModule`, `AuditLog`, `AgentTest`, `SyntheticDataset`, `WebhookEndpoint`, `Schedule`, `ApiKey`, `NotificationChannel`, `ScoringRubric`, `CalibrationRun`.
 
 ## YAML-driven configuration
 
@@ -163,4 +166,5 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.3.1**: Scenario expansion Phase 3 — 2 new scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, Arcanum PI Taxonomy
 - **v2.4.0**: Model comparison mode, batch "full audit", system prompt hardening advisor, Arcanum dashboard view, CSV export, historical trend tracking, custom scoring rubrics
 - **v2.4.1**: OWASP LLM Top 10 (5th compliance framework), 2 new scenarios (model DoS, model theft), scoring engine improvements (expanded refusal + safe deflection detection), multi-turn fallback fix
-- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 20 routers, 16 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 5 compliance frameworks (45 categories)
+- **v2.5.0**: RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration (ROC curves, confusion matrix, optimal threshold), adapter extensions (images + send_with_tools), 4 new dashboard pages, Alembic migration 008
+- **Current**: 173 Python tests (82 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 5 compliance frameworks (45 categories)

@@ -91,6 +91,7 @@ class AttackRun(Base):
     config = Column(JSON, default=dict)
     results = Column(JSON, default=dict)
     error_message = Column(Text, nullable=True)
+    run_type = Column(String(50), nullable=True, default="attack")  # attack|rag_eval|tool_eval|multimodal_eval
     comparison_id = Column(String, nullable=True, index=True)
     audit_id = Column(String, nullable=True, index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
@@ -371,3 +372,21 @@ class ScoringRubric(Base):
     #   "framework_thresholds": {"arcanum_pi": 0.9}}
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+# ---------- Calibration Runs ----------
+
+
+class CalibrationRun(Base):
+    __tablename__ = "calibration_runs"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    target_model = Column(String(200), nullable=False)
+    status = Column(Enum(RunStatus), default=RunStatus.QUEUED, nullable=False)
+    progress = Column(Float, default=0.0)
+    config = Column(JSON, default=dict)
+    results = Column(JSON, default=dict)
+    recommended_threshold = Column(Float, nullable=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    completed_at = Column(DateTime(timezone=True), nullable=True)

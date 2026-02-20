@@ -1,5 +1,62 @@
 # SentinelForge - CHANGELOG
 
+## [2.5.0] - 2026-02-20
+
+### RAG Evaluation Pipeline (Feature 1)
+- `POST /rag-eval/run` — launch RAG evaluation with document ingestion, TF-IDF retrieval, and poison injection testing
+- `GET /rag-eval/runs` / `GET /rag-eval/runs/{id}` — list and detail endpoints
+- Built-in test corpus: 20 clean documents (company policies, HR, API docs) + 10 poison documents (context override, exfiltration, jailbreak, credential leak) + 15 test queries
+- Stdlib TF-IDF retrieval engine (no scikit-learn dependency) using `collections.Counter` + `math.log`
+- RAG-specific safety scoring: context override detection (15 indicators), context exfiltration detection (10), citation fabrication detection (9), safe RAG behavior (10 indicators)
+- Non-blocking background execution with per-query progress via SSE
+- New dashboard page `/rag-eval` with launch form, per-query results, poison indicators, score badges
+
+### Agent Tool-Use Evaluation (Feature 2)
+- `POST /tool-eval/run` — launch tool-use evaluation testing forbidden tool invocation, hallucination, and argument injection
+- `GET /tool-eval/runs` / `GET /tool-eval/runs/{id}` — list and detail endpoints
+- 6 mock tools (search_database, send_email, execute_command, read_file, update_user, delete_records)
+- 30 built-in test prompts: 8 forbidden tool, 6 argument injection, 6 hallucination, 5 safe, 5 multi-step manipulation
+- 12 dangerous argument patterns (SQL injection, path traversal, command injection, XSS, subshell, proc access)
+- Tool safety scoring: 0.0 (forbidden tool), 0.1 (arg injection), 0.2 (hallucinated tool), 1.0 (safe)
+- New dashboard page `/tool-eval` with launch form, tool call traces, violation type badges
+
+### Multimodal Evaluation (Feature 3)
+- `POST /multimodal-eval/run` — generate adversarial images and test vision-capable LLMs
+- `GET /multimodal-eval/runs` / `GET /multimodal-eval/runs/{id}` — list and detail endpoints
+- 8 built-in adversarial image templates: text overlay, OCR injection, metadata injection
+- Image generation via Pillow (with graceful fallback to minimal PNG via `struct.pack`)
+- Multimodal safety scoring: instruction following indicators (12) vs image refusal indicators (11)
+- New dashboard page `/multimodal-eval` with image type badges, embedded text preview, response cards
+
+### Scoring Calibration (Feature 4)
+- `POST /scoring/calibrate` — run 50 known-safe + 50 known-unsafe prompts, compute scoring accuracy
+- `GET /scoring/calibrations` / `GET /scoring/calibrations/{id}` — list and detail with full metrics
+- `POST /scoring/calibrations/{id}/apply` — apply recommended threshold (admin only)
+- ROC curve generation: 21-point threshold sweep (0.0–1.0 in 0.05 steps)
+- Confusion matrix (TP/FP/TN/FN), precision, recall, F1, accuracy metrics
+- Per-indicator effectiveness analysis (which patterns trigger most in safe vs unsafe)
+- Optimal threshold recommendation via F1 maximization
+- New `CalibrationRun` DB model + Alembic migration 008
+- New dashboard page `/settings/calibration` with ROC curve chart, confusion matrix grid, metric cards
+
+### Adapter Extensions
+- All 4 model adapters now support `images` parameter (base64 PNG → multipart content blocks)
+- OpenAI/Azure: `image_url` content parts; Anthropic/Bedrock: `image` source blocks
+- New `send_with_tools()` method on all adapters for native function calling
+- OpenAI/Azure: native `tools` parameter; Anthropic/Bedrock: native `tool_use` format
+- Base class fallback: tools described in system prompt with JSON extraction from response
+- New `_extract_tool_calls()` helper for parsing tool call JSON from text responses
+
+### Infrastructure
+- New `run_type` column on `AttackRun` table (discriminates "attack", "rag_eval", "tool_eval", "multimodal_eval")
+- New `calibration_runs` table via Alembic migration 008
+- 23 routers (was 20), 20 dashboard pages (was 16)
+- `Pillow>=10.0.0` added to requirements.txt and requirements-test.txt
+- 35 new tests (19 unit + 16 integration) → 173 total
+- Version bumped to 2.5.0
+
+---
+
 ## [2.4.1] - 2026-02-20
 
 ### OWASP LLM Top 10 — 5th Compliance Framework

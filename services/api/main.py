@@ -46,6 +46,7 @@ from routers import (  # noqa: E402
 )
 from routers import audit as audit_router  # noqa: E402
 from routers import sse as sse_router  # noqa: E402
+from routers import rag_eval, tool_eval, multimodal_eval  # noqa: E402
 from middleware.logging_middleware import RequestLoggingMiddleware  # noqa: E402
 
 # Configure logging
@@ -120,7 +121,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.4.1",
+    version="2.5.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -161,6 +162,11 @@ app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
 app.include_router(scoring.router, prefix="/scoring", tags=["Scoring"])
 app.include_router(audit_router.router, prefix="/audit", tags=["Audit Log"])
 app.include_router(sse_router.router, prefix="/attacks", tags=["SSE"])
+app.include_router(rag_eval.router, prefix="/rag-eval", tags=["RAG Evaluation"])
+app.include_router(tool_eval.router, prefix="/tool-eval", tags=["Tool Evaluation"])
+app.include_router(
+    multimodal_eval.router, prefix="/multimodal-eval", tags=["Multimodal Evaluation"]
+)
 
 
 # ── Prometheus metrics endpoint ──

@@ -35,9 +35,9 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (5 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy — 45 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, a full Next.js Dashboard UI with 16 pages (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (5 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy — 45 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration with ROC curves, a full Next.js Dashboard UI with 20 pages (port 3001), 173 Python tests (82 unit + 73 integration + 18 RBAC), and 15 Playwright E2E tests.
 
-## Dashboard UI (v2.4)
+## Dashboard UI (v2.5)
 
 SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
 
@@ -60,6 +60,10 @@ SentinelForge includes a full-featured web dashboard at **http://localhost:3001*
 | **Audit Log** | `/audit` | Admin-only event log with action/user filters, expandable detail rows, pagination |
 | **User Management** | `/settings/users` | Admin-only user list with role management (admin/operator/viewer), register new users |
 | **Scoring Rubrics** | `/settings/scoring` | Custom pass/fail thresholds per scenario, default threshold slider, per-scenario overrides |
+| **RAG Evaluation** | `/rag-eval` | Launch RAG evaluation with document ingestion, TF-IDF retrieval, poison injection testing; per-query results with poison indicators |
+| **Tool Evaluation** | `/tool-eval` | Launch tool-use evaluation testing forbidden tools, hallucination, arg injection; tool call traces with violation badges |
+| **Multimodal Evaluation** | `/multimodal-eval` | Launch multimodal evaluation with adversarial images; image type badges, embedded text preview, response cards |
+| **Scoring Calibration** | `/settings/calibration` | Run calibration against target model; ROC curve chart, confusion matrix grid, metric cards, apply threshold button |
 
 ### Technical Details
 

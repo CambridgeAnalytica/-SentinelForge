@@ -28,3 +28,4 @@ redis[hiredis]>=5.0.0
 pip-audit>=2.7.0
 slowapi>=0.1.9
 croniter>=2.0.0
+Pillow>=10.0.0

@@ -273,3 +273,105 @@ export interface AttackScenario {
 export function useScenarios() {
     return useSWR<AttackScenario[]>("/attacks/scenarios", fetcher);
 }
+
+/* ── RAG Evaluation ── */
+
+export interface RagEvalRun {
+    id: string;
+    target_model: string;
+    status: string;
+    run_type: string;
+    progress: number;
+    created_at: string;
+    results?: Record<string, unknown>;
+    findings?: { id: string; title: string; severity: string; description?: string }[];
+    completed_at?: string;
+}
+
+export function useRagEvals() {
+    return useSWR<RagEvalRun[]>("/rag-eval/runs", fetcher, { refreshInterval: 10000 });
+}
+
+export function useRagEvalDetail(id: string | null) {
+    return useSWR<RagEvalRun>(id ? `/rag-eval/runs/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+}
+
+/* ── Tool Evaluation ── */
+
+export interface ToolEvalRun {
+    id: string;
+    target_model: string;
+    status: string;
+    run_type: string;
+    progress: number;
+    created_at: string;
+    results?: Record<string, unknown>;
+    findings?: { id: string; title: string; severity: string; description?: string }[];
+    completed_at?: string;
+}
+
+export function useToolEvals() {
+    return useSWR<ToolEvalRun[]>("/tool-eval/runs", fetcher, { refreshInterval: 10000 });
+}
+
+export function useToolEvalDetail(id: string | null) {
+    return useSWR<ToolEvalRun>(id ? `/tool-eval/runs/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+}
+
+/* ── Multimodal Evaluation ── */
+
+export interface MultimodalEvalRun {
+    id: string;
+    target_model: string;
+    status: string;
+    run_type: string;
+    progress: number;
+    created_at: string;
+    results?: Record<string, unknown>;
+    findings?: { id: string; title: string; severity: string; description?: string }[];
+    completed_at?: string;
+}
+
+export function useMultimodalEvals() {
+    return useSWR<MultimodalEvalRun[]>("/multimodal-eval/runs", fetcher, { refreshInterval: 10000 });
+}
+
+export function useMultimodalEvalDetail(id: string | null) {
+    return useSWR<MultimodalEvalRun>(id ? `/multimodal-eval/runs/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+}
+
+/* ── Calibration ── */
+
+export interface CalibrationRun {
+    id: string;
+    target_model: string;
+    status: string;
+    progress: number;
+    created_at: string;
+    metrics?: Record<string, number>;
+    confusion_matrix?: Record<string, number>;
+    roc_curve?: { threshold: number; tpr: number; fpr: number }[];
+    recommended_threshold?: number;
+    per_indicator_stats?: Record<string, unknown>[];
+    completed_at?: string;
+}
+
+export function useCalibrations() {
+    return useSWR<CalibrationRun[]>("/scoring/calibrations", fetcher, { refreshInterval: 10000 });
+}
+
+export function useCalibrationDetail(id: string | null) {
+    return useSWR<CalibrationRun>(id ? `/scoring/calibrations/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+}

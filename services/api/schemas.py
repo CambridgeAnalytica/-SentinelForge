@@ -458,3 +458,140 @@ class ScoringRubricResponse(BaseModel):
     rules: Dict[str, Any]
     is_default: bool
     created_at: datetime
+
+
+# ---------- RAG Evaluation ----------
+
+
+class RagDocument(BaseModel):
+    content: str
+    metadata: Dict[str, Any] = {}  # {source, title, ...}
+
+
+class RagEvalRequest(BaseModel):
+    target_model: str
+    documents: List[RagDocument] = []  # Empty = use built-in test corpus
+    poison_documents: List[RagDocument] = []  # Empty = use built-in poisons
+    queries: List[str] = []  # Empty = use built-in queries
+    config: Dict[str, Any] = {}  # {top_k: 3, system_prompt: str?}
+
+
+class RagEvalResponse(BaseModel):
+    id: str
+    target_model: str
+    status: str
+    run_type: str = "rag_eval"
+    progress: float = 0.0
+    created_at: datetime
+
+
+class RagEvalDetail(RagEvalResponse):
+    results: Dict[str, Any] = {}
+    # results shape: {queries: [{query, retrieved_docs, has_poison, response, score}],
+    #   summary: {total, poison_detected, context_leaked, avg_score}}
+    findings: List[Dict[str, Any]] = []
+    completed_at: Optional[datetime] = None
+
+
+# ---------- Tool-Use Evaluation ----------
+
+
+class ToolDefinition(BaseModel):
+    name: str
+    description: str
+    parameters: Dict[str, Any] = {}  # JSON Schema format
+
+
+class ToolEvalPrompt(BaseModel):
+    prompt: str
+    expected_tool: Optional[str] = None
+    forbidden: bool = False
+
+
+class ToolEvalRequest(BaseModel):
+    target_model: str
+    tools: List[ToolDefinition] = []  # Empty = use built-in mock tools
+    forbidden_tools: List[str] = []  # Empty = use defaults
+    test_prompts: List[ToolEvalPrompt] = []  # Empty = use built-in prompts
+    config: Dict[str, Any] = {}  # {max_iterations: 1, system_prompt: str?}
+
+
+class ToolEvalResponse(BaseModel):
+    id: str
+    target_model: str
+    status: str
+    run_type: str = "tool_eval"
+    progress: float = 0.0
+    created_at: datetime
+
+
+class ToolEvalDetail(ToolEvalResponse):
+    results: Dict[str, Any] = {}
+    # results shape: {prompts: [{prompt, tool_calls, mock_results, score, violations}],
+    #   summary: {total, forbidden_blocked, hallucinations, arg_injections, avg_score}}
+    findings: List[Dict[str, Any]] = []
+    completed_at: Optional[datetime] = None
+
+
+# ---------- Multimodal Evaluation ----------
+
+
+class TestImageConfig(BaseModel):
+    type: str  # text_overlay | metadata_injection | ocr_injection | custom
+    text: str  # adversarial text to embed
+    image_base64: Optional[str] = None  # for custom type
+
+
+class MultimodalEvalRequest(BaseModel):
+    target_model: str
+    test_images: List[TestImageConfig] = []  # Empty = use built-in templates
+    queries: List[str] = []  # Empty = use defaults
+    config: Dict[str, Any] = {}  # {system_prompt: str?}
+
+
+class MultimodalEvalResponse(BaseModel):
+    id: str
+    target_model: str
+    status: str
+    run_type: str = "multimodal_eval"
+    progress: float = 0.0
+    created_at: datetime
+
+
+class MultimodalEvalDetail(MultimodalEvalResponse):
+    results: Dict[str, Any] = {}
+    # results shape: {images: [{type, embedded_text, query, response, score, image_preview}],
+    #   summary: {total, injection_successes, avg_score}}
+    findings: List[Dict[str, Any]] = []
+    completed_at: Optional[datetime] = None
+
+
+# ---------- Scoring Calibration ----------
+
+
+class CalibrationRequest(BaseModel):
+    target_model: str
+    config: Dict[str, Any] = {}
+    # config shape: {safe_prompt_count: 50, unsafe_prompt_count: 50,
+    #   custom_safe_prompts: [str]?, custom_unsafe_prompts: [str]?}
+
+
+class CalibrationResponse(BaseModel):
+    id: str
+    target_model: str
+    status: str
+    progress: float = 0.0
+    created_at: datetime
+
+
+class CalibrationDetail(CalibrationResponse):
+    metrics: Dict[str, float] = {}
+    # {precision, recall, f1, accuracy, auc}
+    confusion_matrix: Dict[str, int] = {}
+    # {tp, fp, tn, fn}
+    roc_curve: List[Dict[str, float]] = []
+    # [{threshold, tpr, fpr}]
+    recommended_threshold: Optional[float] = None
+    per_indicator_stats: List[Dict[str, Any]] = []
+    # [{indicator, true_positives, false_positives, effectiveness}]
+    completed_at: Optional[datetime] = None

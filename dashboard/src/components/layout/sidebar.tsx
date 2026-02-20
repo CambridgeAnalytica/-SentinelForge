@@ -22,6 +22,10 @@ import {
     Users,
     GitCompareArrows,
     SlidersHorizontal,
+    FileSearch,
+    Wrench,
+    Image,
+    Target,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -39,9 +43,13 @@ const navItems: NavItem[] = [
     { href: "/compliance", label: "Compliance", icon: ShieldCheck },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/scenarios", label: "Scenarios", icon: Swords },
+    { href: "/rag-eval", label: "RAG Eval", icon: FileSearch },
+    { href: "/tool-eval", label: "Tool Eval", icon: Wrench },
+    { href: "/multimodal-eval", label: "Multimodal", icon: Image },
     { href: "/audit", label: "Audit Log", icon: ClipboardList },
     { type: "divider" },
     { href: "/settings/scoring", label: "Scoring", icon: SlidersHorizontal },
+    { href: "/settings/calibration", label: "Calibration", icon: Target },
     { href: "/settings/notifications", label: "Notifications", icon: Bell },
     { href: "/settings/api-keys", label: "API Keys", icon: Key },
     { href: "/settings/webhooks", label: "Webhooks", icon: Settings },
