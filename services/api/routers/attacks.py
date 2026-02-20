@@ -117,16 +117,18 @@ async def launch_attack(
     )
 
     # Audit log: attack launched
-    db.add(AuditLog(
-        user_id=user.id,
-        action="attack.launched",
-        resource_type="attack_run",
-        resource_id=run.id,
-        details={
-            "scenario_id": request.scenario_id,
-            "target_model": request.target_model,
-        },
-    ))
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="attack.launched",
+            resource_type="attack_run",
+            resource_id=run.id,
+            details={
+                "scenario_id": request.scenario_id,
+                "target_model": request.target_model,
+            },
+        )
+    )
 
     # In a production system, this would be dispatched to the worker pool.
     # For now, we run synchronously in-process.
@@ -184,19 +186,27 @@ async def launch_attack(
         logger.warning(f"Dedup classification failed for run {run.id}: {e}")
 
     # Audit log: attack completed/failed
-    findings_count = len(results.get("findings", [])) if run.status == RunStatus.COMPLETED else 0
-    db.add(AuditLog(
-        user_id=user.id,
-        action="attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed",
-        resource_type="attack_run",
-        resource_id=run.id,
-        details={
-            "scenario_id": run.scenario_id,
-            "target_model": run.target_model,
-            "status": run.status.value,
-            "findings_count": findings_count,
-        },
-    ))
+    findings_count = (
+        len(results.get("findings", [])) if run.status == RunStatus.COMPLETED else 0
+    )
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action=(
+                "attack.completed"
+                if run.status == RunStatus.COMPLETED
+                else "attack.failed"
+            ),
+            resource_type="attack_run",
+            resource_id=run.id,
+            details={
+                "scenario_id": run.scenario_id,
+                "target_model": run.target_model,
+                "status": run.status.value,
+                "findings_count": findings_count,
+            },
+        )
+    )
     await db.flush()
 
     # Dispatch webhook notification
@@ -229,7 +239,11 @@ async def launch_attack(
             {
                 "id": f.id,
                 "tool_name": f.tool_name,
-                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                "severity": (
+                    f.severity.value
+                    if hasattr(f.severity, "value")
+                    else str(f.severity)
+                ),
                 "title": f.title,
                 "description": f.description,
                 "mitre_technique": f.mitre_technique,
@@ -278,7 +292,11 @@ async def list_runs(
                     {
                         "id": f.id,
                         "tool_name": f.tool_name,
-                        "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                        "severity": (
+                            f.severity.value
+                            if hasattr(f.severity, "value")
+                            else str(f.severity)
+                        ),
                         "title": f.title,
                         "description": f.description,
                         "mitre_technique": f.mitre_technique,
@@ -287,7 +305,9 @@ async def list_runs(
                         "evidence_hash": f.evidence_hash,
                         "is_new": f.is_new,
                         "false_positive": f.false_positive,
-                        "created_at": f.created_at.isoformat() if f.created_at else None,
+                        "created_at": (
+                            f.created_at.isoformat() if f.created_at else None
+                        ),
                     }
                     for f in findings
                 ],
@@ -328,7 +348,11 @@ async def get_run(
             {
                 "id": f.id,
                 "tool_name": f.tool_name,
-                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                "severity": (
+                    f.severity.value
+                    if hasattr(f.severity, "value")
+                    else str(f.severity)
+                ),
                 "title": f.title,
                 "description": f.description,
                 "mitre_technique": f.mitre_technique,
@@ -389,16 +413,18 @@ async def delete_run(
     await db.execute(sql_delete(AttackRun).where(AttackRun.id == run_id))
 
     # Audit log
-    db.add(AuditLog(
-        user_id=user.id,
-        action="attack.deleted",
-        resource_type="attack_run",
-        resource_id=run_id,
-        details={
-            "scenario_id": run.scenario_id,
-            "target_model": run.target_model,
-        },
-    ))
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="attack.deleted",
+            resource_type="attack_run",
+            resource_id=run_id,
+            details={
+                "scenario_id": run.scenario_id,
+                "target_model": run.target_model,
+            },
+        )
+    )
     await db.commit()
 
     logger.info(f"Attack run {run_id} deleted by {user.username}")
@@ -417,16 +443,18 @@ async def toggle_false_positive(
         raise HTTPException(status_code=404, detail="Finding not found")
 
     finding.false_positive = not finding.false_positive
-    db.add(AuditLog(
-        user_id=user.id,
-        action="finding.false_positive_toggled",
-        resource_type="finding",
-        resource_id=finding_id,
-        details={
-            "false_positive": finding.false_positive,
-            "title": finding.title,
-        },
-    ))
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="finding.false_positive_toggled",
+            resource_type="finding",
+            resource_id=finding_id,
+            details={
+                "false_positive": finding.false_positive,
+                "title": finding.title,
+            },
+        )
+    )
     await db.commit()
 
     return {
@@ -540,8 +568,7 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
     direct_summary = {}
     if results["direct_test_results"]:
         total_prompts = sum(
-            len(tc.get("prompt_results", []))
-            for tc in results["direct_test_results"]
+            len(tc.get("prompt_results", [])) for tc in results["direct_test_results"]
         )
         failed_prompts = sum(
             1
@@ -571,19 +598,20 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
     return results
 
 
-def _parse_tool_findings(
-    tool_name: str, stdout: str, scenario: dict
-) -> list:
+def _parse_tool_findings(tool_name: str, stdout: str, scenario: dict) -> list:
     """Parse real tool output into findings using the appropriate adapter."""
     try:
         if tool_name == "garak":
             from tools.garak_adapter import parse_garak_output
+
             return parse_garak_output(stdout)
         if tool_name == "promptfoo":
             from tools.promptfoo_adapter import parse_promptfoo_output
+
             return parse_promptfoo_output(stdout)
         if tool_name == "deepeval":
             from tools.deepeval_adapter import parse_deepeval_output
+
             return parse_deepeval_output(stdout)
     except Exception as e:
         logger.warning(f"Failed to parse {tool_name} output: {e}")

@@ -189,15 +189,11 @@ async def create_user(
     # Validate role — only admin and analyst are allowed
     allowed_roles = {"admin", "analyst", "operator", "viewer"}
     if role not in allowed_roles:
-        raise ValueError(
-            f"Invalid role: {role}. Must be one of: admin, analyst"
-        )
+        raise ValueError(f"Invalid role: {role}. Must be one of: admin, analyst")
     try:
         user_role = UserRole(role)
     except ValueError:
-        raise ValueError(
-            f"Invalid role: {role}. Must be one of: admin, analyst"
-        )
+        raise ValueError(f"Invalid role: {role}. Must be one of: admin, analyst")
 
     # Check duplicate username
     existing = await db.execute(select(User).where(User.username == username))

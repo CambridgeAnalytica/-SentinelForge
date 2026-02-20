@@ -33,6 +33,7 @@ async def health_check():
     # Read version from the FastAPI app instance
     try:
         from main import app as _app
+
         version = _app.version
     except Exception:
         version = "unknown"

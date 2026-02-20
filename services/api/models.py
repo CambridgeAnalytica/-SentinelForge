@@ -46,7 +46,7 @@ class UserRole(str, PyEnum):
     ADMIN = "admin"
     ANALYST = "analyst"
     OPERATOR = "operator"  # Legacy — maps to analyst
-    VIEWER = "viewer"      # Legacy — read-only
+    VIEWER = "viewer"  # Legacy — read-only
 
 
 class ReportFormat(str, PyEnum):

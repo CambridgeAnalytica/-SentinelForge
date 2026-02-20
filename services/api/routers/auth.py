@@ -73,11 +73,13 @@ async def login(
     user = await authenticate_user(db, request.username, request.password)
     if not user:
         # Audit failed login
-        db.add(AuditLog(
-            action="auth.login_failed",
-            resource_type="auth",
-            details={"username": request.username, "ip": client_ip},
-        ))
+        db.add(
+            AuditLog(
+                action="auth.login_failed",
+                resource_type="auth",
+                details={"username": request.username, "ip": client_ip},
+            )
+        )
         await db.flush()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,12 +87,14 @@ async def login(
         )
 
     # Audit successful login
-    db.add(AuditLog(
-        user_id=user.id,
-        action="auth.login",
-        resource_type="auth",
-        details={"username": user.username, "ip": client_ip},
-    ))
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="auth.login",
+            resource_type="auth",
+            details={"username": user.username, "ip": client_ip},
+        )
+    )
     await db.flush()
 
     token = create_access_token({"sub": user.id, "role": user.role.value})
@@ -238,13 +242,15 @@ async def delete_user(
     # Delete the user
     await db.execute(sql_delete(User).where(User.id == user_id))
     # Record the deletion in audit log
-    db.add(AuditLog(
-        user_id=admin.id,
-        action="user.deleted",
-        resource_type="user",
-        resource_id=user_id,
-        details={"username": user.username, "role": user.role.value},
-    ))
+    db.add(
+        AuditLog(
+            user_id=admin.id,
+            action="user.deleted",
+            resource_type="user",
+            resource_id=user_id,
+            details={"username": user.username, "role": user.role.value},
+        )
+    )
     await db.commit()
 
     logger.info(f"Admin {admin.username} deleted user {user.username}")

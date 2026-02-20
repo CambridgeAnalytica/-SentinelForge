@@ -16,7 +16,12 @@ depends_on = None
 
 def upgrade():
     # Add false_positive column to findings
-    op.add_column("findings", sa.Column("false_positive", sa.Boolean(), server_default="false", nullable=False))
+    op.add_column(
+        "findings",
+        sa.Column(
+            "false_positive", sa.Boolean(), server_default="false", nullable=False
+        ),
+    )
 
     # Add ANALYST value to userrole enum
     op.execute("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'ANALYST'")

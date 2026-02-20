@@ -125,16 +125,18 @@ async def generate_report(
         )
 
     # Audit log: report generated
-    db.add(AuditLog(
-        user_id=user.id,
-        action="report.generated",
-        resource_type="report",
-        resource_id=request.run_id,
-        details={
-            "formats": request.formats,
-            "report_ids": [r.id for r in reports],
-        },
-    ))
+    db.add(
+        AuditLog(
+            user_id=user.id,
+            action="report.generated",
+            resource_type="report",
+            resource_id=request.run_id,
+            details={
+                "formats": request.formats,
+                "report_ids": [r.id for r in reports],
+            },
+        )
+    )
     await db.commit()
 
     # Dispatch webhook notification
@@ -283,7 +285,11 @@ def _build_report_data(run: AttackRun, findings: list) -> dict:
             {
                 "id": f.id,
                 "tool": f.tool_name,
-                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+                "severity": (
+                    f.severity.value
+                    if hasattr(f.severity, "value")
+                    else str(f.severity)
+                ),
                 "title": f.title,
                 "description": f.description,
                 "mitre_technique": f.mitre_technique,
@@ -357,7 +363,7 @@ def _render_html_inline(data: dict) -> str:
             sev_badges += (
                 f'<span style="background:{color};color:white;padding:0.25rem 0.75rem;'
                 f'border-radius:4px;font-size:0.85rem;font-weight:700;margin-right:0.5rem;">'
-                f'{sev.upper()}: {count}</span>'
+                f"{sev.upper()}: {count}</span>"
             )
 
     # Findings detail sections
@@ -376,49 +382,49 @@ def _render_html_inline(data: dict) -> str:
 
         if prompt_text or response_text:
             evidence_html += '<div class="evidence">'
-            evidence_html += '<h4>Evidence</h4>'
+            evidence_html += "<h4>Evidence</h4>"
             if strategy:
-                evidence_html += (
-                    f'<p class="meta">Strategy: <strong>{html_mod.escape(strategy)}</strong>'
-                )
+                evidence_html += f'<p class="meta">Strategy: <strong>{html_mod.escape(strategy)}</strong>'
                 if turn:
-                    evidence_html += f' | Turn: <strong>{turn}/{total_turns}</strong>'
-                evidence_html += '</p>'
+                    evidence_html += f" | Turn: <strong>{turn}/{total_turns}</strong>"
+                evidence_html += "</p>"
             if safety_score is not None:
-                score_color = "#ef4444" if safety_score < 0.3 else "#eab308" if safety_score < 0.6 else "#22c55e"
+                score_color = (
+                    "#ef4444"
+                    if safety_score < 0.3
+                    else "#eab308" if safety_score < 0.6 else "#22c55e"
+                )
                 evidence_html += (
                     f'<p class="meta">Safety Score: '
                     f'<span style="color:{score_color};font-weight:700;">{safety_score:.2f}</span>'
-                    f' / 1.00</p>'
+                    f" / 1.00</p>"
                 )
             if prompt_text:
                 evidence_html += (
                     f'<div class="evidence-block">'
                     f'<div class="evidence-label">Attacker Prompt</div>'
-                    f'<pre>{html_mod.escape(prompt_text[:500])}</pre>'
-                    f'</div>'
+                    f"<pre>{html_mod.escape(prompt_text[:500])}</pre>"
+                    f"</div>"
                 )
             if response_text:
                 evidence_html += (
                     f'<div class="evidence-block">'
                     f'<div class="evidence-label">Model Response</div>'
-                    f'<pre>{html_mod.escape(response_text[:600])}</pre>'
-                    f'</div>'
+                    f"<pre>{html_mod.escape(response_text[:600])}</pre>"
+                    f"</div>"
                 )
-            evidence_html += '</div>'
+            evidence_html += "</div>"
 
         mitre_html = ""
         if f.get("mitre_technique"):
-            mitre_html = (
-                f'<span class="tag">MITRE ATLAS: {html_mod.escape(f["mitre_technique"])}</span>'
-            )
+            mitre_html = f'<span class="tag">MITRE ATLAS: {html_mod.escape(f["mitre_technique"])}</span>'
 
         remediation_html = ""
         if f.get("remediation"):
             remediation_html = (
                 f'<div class="remediation">'
                 f'<strong>Recommended Action:</strong> {html_mod.escape(f["remediation"])}'
-                f'</div>'
+                f"</div>"
             )
 
         findings_html += f"""
