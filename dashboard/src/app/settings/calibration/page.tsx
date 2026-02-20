@@ -203,7 +203,7 @@ export default function CalibrationPage() {
                                                 />
                                                 <Tooltip
                                                     formatter={(value?: number) => `${((value ?? 0) * 100).toFixed(0)}%`}
-                                                    labelFormatter={(fpr: number) => `FPR: ${(fpr * 100).toFixed(0)}%`}
+                                                    labelFormatter={(fpr) => `FPR: ${(Number(fpr) * 100).toFixed(0)}%`}
                                                 />
                                                 <Line
                                                     type="monotone"
