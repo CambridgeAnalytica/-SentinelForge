@@ -23,7 +23,6 @@ from schemas import ReportRequest, ReportResponse
 from middleware.auth import get_current_user
 from models import AuditLog
 from services.evidence_hashing import verify_evidence_chain
-from services.user_service import decode_token
 
 router = APIRouter()
 logger = logging.getLogger("sentinelforge.reports")
@@ -366,8 +365,6 @@ def _render_html_inline(data: dict) -> str:
     for idx, f in enumerate(data["findings"], 1):
         color = _SEVERITY_COLORS.get(f["severity"], "#6b7280")
         evidence = f.get("evidence", {})
-        desc = html_mod.escape(f.get("description") or "No description")
-
         # Build evidence section if available
         evidence_html = ""
         prompt_text = evidence.get("prompt", "")

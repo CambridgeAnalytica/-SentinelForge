@@ -8,7 +8,7 @@ without requiring external tool installations.
 
 import logging
 import os
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger("sentinelforge.direct_test")
 
