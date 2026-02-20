@@ -190,7 +190,7 @@ export default function TrendsPage() {
                                         borderRadius: "0.5rem",
                                         color: "#fff",
                                     }}
-                                    formatter={(value: number) => `${Math.round(value * 100)}%`}
+                                    formatter={(value?: number) => `${Math.round((value ?? 0) * 100)}%`}
                                 />
                                 <Legend wrapperStyle={{ fontSize: 11 }} />
                                 {scenarios.map((s, i) => (
