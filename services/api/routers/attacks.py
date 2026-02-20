@@ -2,17 +2,18 @@
 Attack scenario management and execution endpoints.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Callable, Awaitable
 
 import yaml
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db
+from database import get_db, AsyncSessionLocal
 from models import AttackRun, RunStatus, Finding, Report, User, AuditLog
 from schemas import AttackScenario, AttackRunRequest, AttackRunResponse, AttackRunDetail
 from middleware.auth import get_current_user, require_operator, require_admin
@@ -87,7 +88,12 @@ async def launch_attack(
     user: User = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
 ):
-    """Launch an attack scenario against a target model."""
+    """Launch an attack scenario against a target model.
+
+    Creates the run immediately and returns. Execution happens
+    asynchronously so the dashboard receives the run ID instantly
+    and can track progress via SSE.
+    """
     # Validate scenario exists
     scenarios = _load_scenarios()
     scenario = None
@@ -101,20 +107,16 @@ async def launch_attack(
             status_code=404, detail=f"Scenario '{request.scenario_id}' not found"
         )
 
-    # Create attack run
+    # Create attack run as QUEUED
+    merged_config = {**scenario.get("default_config", {}), **request.config}
     run = AttackRun(
         scenario_id=request.scenario_id,
         target_model=request.target_model,
         status=RunStatus.QUEUED,
-        config={**scenario.get("default_config", {}), **request.config},
+        config=merged_config,
         user_id=user.id,
     )
     db.add(run)
-    await db.flush()
-
-    logger.info(
-        f"Created attack run {run.id}: {request.scenario_id} → {request.target_model}"
-    )
 
     # Audit log: attack launched
     db.add(
@@ -130,133 +132,159 @@ async def launch_attack(
         )
     )
 
-    # In a production system, this would be dispatched to the worker pool.
-    # For now, we run synchronously in-process.
-    run.status = RunStatus.RUNNING
-    run.started_at = datetime.now(timezone.utc)
+    # Commit immediately so the run is visible to SSE and list queries
+    await db.commit()
 
-    try:
-        results = await _execute_scenario(scenario, request.target_model, run.config)
-        run.results = results
-        run.status = RunStatus.COMPLETED
-        run.progress = 100.0
-
-        # Create findings from results with evidence hashing
-        from services.evidence_hashing import compute_evidence_hash
-
-        previous_hash = None
-
-        for finding_data in results.get("findings", []):
-            evidence = finding_data.get("evidence", {})
-            tool_name = finding_data.get("tool", "unknown")
-            evidence_hash = compute_evidence_hash(
-                evidence=evidence,
-                run_id=run.id,
-                tool_name=tool_name,
-                previous_hash=previous_hash,
-            )
-            finding = Finding(
-                run_id=run.id,
-                tool_name=tool_name,
-                severity=finding_data.get("severity", "info"),
-                title=finding_data.get("title", "Unnamed finding"),
-                description=finding_data.get("description"),
-                mitre_technique=finding_data.get("mitre_technique"),
-                evidence=evidence,
-                remediation=finding_data.get("remediation"),
-                evidence_hash=evidence_hash,
-                previous_hash=previous_hash,
-            )
-            db.add(finding)
-            previous_hash = evidence_hash
-
-    except Exception as e:
-        run.status = RunStatus.FAILED
-        run.error_message = str(e)
-        logger.error(f"Attack run {run.id} failed: {e}")
-
-    run.completed_at = datetime.now(timezone.utc)
-    await db.flush()
-
-    # Classify findings as new vs. recurring
-    try:
-        dedup_stats = await classify_findings(run.id, db)
-        logger.info(f"Dedup stats for run {run.id}: {dedup_stats}")
-    except Exception as e:
-        logger.warning(f"Dedup classification failed for run {run.id}: {e}")
-
-    # Audit log: attack completed/failed
-    findings_count = (
-        len(results.get("findings", [])) if run.status == RunStatus.COMPLETED else 0
+    logger.info(
+        f"Created attack run {run.id}: {request.scenario_id} → {request.target_model}"
     )
-    db.add(
-        AuditLog(
-            user_id=user.id,
-            action=(
-                "attack.completed"
-                if run.status == RunStatus.COMPLETED
-                else "attack.failed"
-            ),
-            resource_type="attack_run",
-            resource_id=run.id,
-            details={
-                "scenario_id": run.scenario_id,
-                "target_model": run.target_model,
-                "status": run.status.value,
-                "findings_count": findings_count,
-            },
+
+    # Kick off async execution (runs in the event loop, not blocking response)
+    asyncio.create_task(
+        _run_attack_async(
+            run.id, scenario, request.target_model, merged_config, user.id
         )
     )
-    await db.flush()
-
-    # Dispatch webhook notification
-    event = "attack.completed" if run.status == RunStatus.COMPLETED else "attack.failed"
-    background_tasks.add_task(
-        _dispatch_webhook,
-        event,
-        {
-            "run_id": run.id,
-            "scenario_id": run.scenario_id,
-            "target_model": run.target_model,
-            "status": run.status.value,
-        },
-    )
-
-    # Load findings for the response
-    findings_result = await db.execute(select(Finding).where(Finding.run_id == run.id))
-    run_findings = findings_result.scalars().all()
 
     return AttackRunResponse(
         id=run.id,
         scenario_id=run.scenario_id,
         target_model=run.target_model,
-        status=run.status.value,
-        progress=run.progress,
+        status="queued",
+        progress=0.0,
         created_at=run.created_at,
-        started_at=run.started_at,
-        completed_at=run.completed_at,
-        findings=[
-            {
-                "id": f.id,
-                "tool_name": f.tool_name,
-                "severity": (
-                    f.severity.value
-                    if hasattr(f.severity, "value")
-                    else str(f.severity)
-                ),
-                "title": f.title,
-                "description": f.description,
-                "mitre_technique": f.mitre_technique,
-                "remediation": f.remediation,
-                "evidence": f.evidence,
-                "evidence_hash": f.evidence_hash,
-                "is_new": f.is_new,
-                "false_positive": f.false_positive,
-                "created_at": f.created_at.isoformat() if f.created_at else None,
-            }
-            for f in run_findings
-        ],
+        started_at=None,
+        completed_at=None,
+        findings=[],
     )
+
+
+async def _run_attack_async(
+    run_id: str,
+    scenario: dict,
+    target_model: str,
+    config: dict,
+    user_id: str,
+):
+    """Background task: execute attack with its own DB session and live progress."""
+    async with AsyncSessionLocal() as db:
+        try:
+            # Mark as RUNNING
+            result = await db.execute(select(AttackRun).where(AttackRun.id == run_id))
+            run = result.scalar_one()
+            run.status = RunStatus.RUNNING
+            run.started_at = datetime.now(timezone.utc)
+            await db.commit()
+
+            # Progress callback — updates DB so SSE can read it
+            async def update_progress(fraction: float):
+                run.progress = min(fraction, 0.99)
+                await db.commit()
+
+            results = await _execute_scenario(
+                scenario, target_model, config, progress_callback=update_progress
+            )
+
+            run.results = results
+            run.status = RunStatus.COMPLETED
+            run.progress = 1.0
+
+            # Create findings with evidence hashing
+            from services.evidence_hashing import compute_evidence_hash
+
+            previous_hash = None
+            for finding_data in results.get("findings", []):
+                evidence = finding_data.get("evidence", {})
+                tool_name = finding_data.get("tool", "unknown")
+                evidence_hash = compute_evidence_hash(
+                    evidence=evidence,
+                    run_id=run.id,
+                    tool_name=tool_name,
+                    previous_hash=previous_hash,
+                )
+                finding = Finding(
+                    run_id=run.id,
+                    tool_name=tool_name,
+                    severity=finding_data.get("severity", "info"),
+                    title=finding_data.get("title", "Unnamed finding"),
+                    description=finding_data.get("description"),
+                    mitre_technique=finding_data.get("mitre_technique"),
+                    evidence=evidence,
+                    remediation=finding_data.get("remediation"),
+                    evidence_hash=evidence_hash,
+                    previous_hash=previous_hash,
+                )
+                db.add(finding)
+                previous_hash = evidence_hash
+
+            run.completed_at = datetime.now(timezone.utc)
+            await db.commit()
+
+            # Classify findings as new vs. recurring
+            try:
+                dedup_stats = await classify_findings(run.id, db)
+                logger.info(f"Dedup stats for run {run.id}: {dedup_stats}")
+            except Exception as e:
+                logger.warning(f"Dedup classification failed for run {run.id}: {e}")
+
+            # Audit log: completed
+            findings_count = len(results.get("findings", []))
+            db.add(
+                AuditLog(
+                    user_id=user_id,
+                    action="attack.completed",
+                    resource_type="attack_run",
+                    resource_id=run.id,
+                    details={
+                        "scenario_id": run.scenario_id,
+                        "target_model": run.target_model,
+                        "status": "completed",
+                        "findings_count": findings_count,
+                    },
+                )
+            )
+            await db.commit()
+
+            # Dispatch webhook
+            await _dispatch_webhook(
+                "attack.completed",
+                {
+                    "run_id": run.id,
+                    "scenario_id": run.scenario_id,
+                    "target_model": run.target_model,
+                    "status": "completed",
+                },
+            )
+
+            logger.info(f"Attack run {run_id} completed: {findings_count} findings")
+
+        except Exception as e:
+            logger.error(f"Attack run {run_id} failed: {e}")
+            try:
+                run.status = RunStatus.FAILED
+                run.error_message = str(e)
+                run.completed_at = datetime.now(timezone.utc)
+                db.add(
+                    AuditLog(
+                        user_id=user_id,
+                        action="attack.failed",
+                        resource_type="attack_run",
+                        resource_id=run_id,
+                        details={"error": str(e)[:500]},
+                    )
+                )
+                await db.commit()
+                await _dispatch_webhook(
+                    "attack.failed",
+                    {
+                        "run_id": run_id,
+                        "scenario_id": scenario.get("id", ""),
+                        "target_model": target_model,
+                        "status": "failed",
+                    },
+                )
+            except Exception as inner:
+                logger.error(f"Failed to update run {run_id} status: {inner}")
 
 
 @router.get("/runs", response_model=List[AttackRunResponse])
@@ -463,13 +491,20 @@ async def toggle_false_positive(
     }
 
 
-async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
+async def _execute_scenario(
+    scenario: dict,
+    target: str,
+    config: dict,
+    progress_callback: Optional[Callable[[float], Awaitable[None]]] = None,
+) -> dict:
     """Execute an attack scenario. Returns results dict.
 
     Execution phases:
     1. Direct LLM testing — sends scenario test-case prompts to the target
     2. External tool execution — runs installed tools (garak, etc.) if available
     3. Multi-turn adversarial — escalation-based conversation attacks
+
+    progress_callback receives a float 0.0–1.0 after each prompt/turn.
     """
     results = {
         "scenario": scenario["id"],
@@ -481,11 +516,39 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
         "summary": {},
     }
 
+    # ── Count total prompts upfront for progress calculation ──
+    test_cases = scenario.get("test_cases", [])
+    direct_prompt_count = sum(
+        len(tc.get("prompts", []))
+        for tc in test_cases
+        if tc.get("type") != "multi_turn" and tc.get("prompts")
+    )
+
+    mt_prompt_count = 0
+    if config.get("multi_turn"):
+        max_turns = config.get("max_turns", 10)
+        mt_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
+        if not mt_cases:
+            mt_cases = [{"strategy": "gradual_trust"}]
+        mt_prompt_count = len(mt_cases) * max_turns
+
+    total_work = max(direct_prompt_count + mt_prompt_count, 1)
+    completed_work = 0
+
+    async def on_prompt_done():
+        """Called after each prompt/turn to update progress."""
+        nonlocal completed_work
+        completed_work += 1
+        if progress_callback:
+            await progress_callback(completed_work / total_work)
+
     # ── Phase 1: Direct LLM testing (always runs) ──
     try:
         from services.direct_test_service import run_direct_tests
 
-        direct_results = await run_direct_tests(scenario, target, config)
+        direct_results = await run_direct_tests(
+            scenario, target, config, on_prompt_done=on_prompt_done
+        )
         results["direct_test_results"] = direct_results.get("test_results", [])
         results["findings"].extend(direct_results.get("findings", []))
         logger.info(
@@ -537,9 +600,7 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
         max_turns = config.get("max_turns", 10)
         provider = config.get("provider")
 
-        test_cases = scenario.get("test_cases", [])
         multi_turn_cases = [tc for tc in test_cases if tc.get("type") == "multi_turn"]
-
         if not multi_turn_cases:
             multi_turn_cases = [
                 {"strategy": "gradual_trust", "name": "Default Multi-Turn"}
@@ -555,6 +616,7 @@ async def _execute_scenario(scenario: dict, target: str, config: dict) -> dict:
                     max_turns=turns,
                     provider=provider,
                     config=config,
+                    on_prompt_done=on_prompt_done,
                 )
                 results["multi_turn_results"].append(mt_result)
                 results["findings"].extend(mt_result.get("findings", []))

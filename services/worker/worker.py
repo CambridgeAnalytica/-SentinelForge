@@ -9,7 +9,6 @@ import json
 import logging
 import os
 import sys
-import time
 from datetime import datetime, timezone
 
 import asyncpg
@@ -38,7 +37,7 @@ try:
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
     _resource = Resource.create(
-        {SERVICE_NAME: "sentinelforge-worker", SERVICE_VERSION: "2.2.0"}
+        {SERVICE_NAME: "sentinelforge-worker", SERVICE_VERSION: "2.3.0"}
     )
     _provider = TracerProvider(resource=_resource)
     _exporter = OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces")
@@ -52,9 +51,14 @@ except Exception as e:
     from contextlib import contextmanager
 
     class _NoOpSpan:
-        def set_attribute(self, *a, **kw): pass
-        def set_status(self, *a, **kw): pass
-        def record_exception(self, *a, **kw): pass
+        def set_attribute(self, *a, **kw):
+            pass
+
+        def set_status(self, *a, **kw):
+            pass
+
+        def record_exception(self, *a, **kw):
+            pass
 
     class _NoOpTracer:
         @contextmanager
@@ -66,7 +70,9 @@ except Exception as e:
 
 async def process_job(pool: asyncpg.Pool, job_id: str):
     """Process a single queued attack run."""
-    with _tracer.start_as_current_span("process_job", attributes={"job.id": job_id}) as span:
+    with _tracer.start_as_current_span(
+        "process_job", attributes={"job.id": job_id}
+    ) as span:
         logger.info(f"Processing job {job_id}")
 
         async with pool.acquire() as conn:
@@ -78,9 +84,7 @@ async def process_job(pool: asyncpg.Pool, job_id: str):
             )
 
             # Get job details
-            row = await conn.fetchrow(
-                "SELECT * FROM attack_runs WHERE id = $1", job_id
-            )
+            row = await conn.fetchrow("SELECT * FROM attack_runs WHERE id = $1", job_id)
             if not row:
                 logger.error(f"Job {job_id} not found")
                 span.set_attribute("job.error", "not_found")
@@ -111,7 +115,10 @@ async def process_job(pool: asyncpg.Pool, job_id: str):
                 for tool_name in tools_to_run:
                     with _tracer.start_as_current_span(
                         f"execute_tool.{tool_name}",
-                        attributes={"tool.name": tool_name, "tool.target": target_model},
+                        attributes={
+                            "tool.name": tool_name,
+                            "tool.target": target_model,
+                        },
                     ):
                         tool_result = executor.execute_tool(
                             tool_name, target=target_model, args=config
@@ -127,7 +134,7 @@ async def process_job(pool: asyncpg.Pool, job_id: str):
                 # Update as completed
                 await conn.execute(
                     """UPDATE attack_runs
-                       SET status = 'completed', progress = 100.0,
+                       SET status = 'completed', progress = 1.0,
                            results = $1, completed_at = $2
                        WHERE id = $3""",
                     json.dumps(results),
@@ -255,7 +262,7 @@ async def main():
             )
             logger.info("✅ Connected to database")
             break
-        except Exception as e:
+        except Exception:
             logger.warning(f"Waiting for database... ({attempt+1}/30)")
             await asyncio.sleep(2)
     else:

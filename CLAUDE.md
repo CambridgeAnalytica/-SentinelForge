@@ -101,13 +101,15 @@ All routers in `services/api/routers/`:
 
 ### Data flow for attack execution
 
-1. CLI/SDK sends `POST /attacks` with scenario ID + target model
-2. API validates, creates `AttackRun` record (status=queued) in Postgres
-3. Worker polls for queued runs, picks up job
-4. Worker invokes `ToolExecutor.execute_tool()` with scenario config
-5. ToolExecutor sanitizes args, runs tool subprocess with timeout
-6. Results (findings) written back to DB; artifacts stored in MinIO
-7. Client polls or gets webhook when complete
+1. Dashboard/CLI/SDK sends `POST /attacks/run` with scenario ID + target model + config
+2. API validates, creates `AttackRun` record (status=queued) in Postgres, **commits immediately**
+3. API returns run ID instantly — no blocking. Execution starts via `asyncio.create_task()`
+4. Background task sets status=running, invokes `_execute_scenario()` with progress callback
+5. `direct_test_service` sends each prompt to the target LLM via model adapter, scores responses
+6. After each prompt, progress fraction is committed to DB (0.0–1.0 scale)
+7. SSE endpoint (`/attacks/runs/{id}/stream`) polls DB every 1s, streams progress to dashboard
+8. On completion: findings written with evidence hashing + dedup, webhook dispatched
+9. Dashboard auto-refreshes when SSE signals completion
 
 ### Configuration
 
@@ -156,4 +158,5 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.0**: Next.js Dashboard UI (8 pages, SWR, Recharts, JWT auth flow)
 - **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
 - **v2.2**: SSE live progress in dashboard, Alembic migration 005, E2E auth tests, error boundaries, webhook CRUD page
+- **v2.3**: Real end-to-end scan execution — non-blocking launch, live per-prompt progress via SSE, asyncio background execution
 - **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 12 dashboard pages, 14 attack scenarios (82 test cases, 394 prompts)

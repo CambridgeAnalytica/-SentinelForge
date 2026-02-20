@@ -216,11 +216,15 @@ async def run_direct_tests(
     scenario: dict,
     target_model: str,
     config: dict,
+    on_prompt_done=None,
 ) -> Dict[str, Any]:
     """Execute scenario test cases directly against the target model.
 
     For each test case defined in the scenario YAML, sends the prompts
     to the target model and evaluates responses for safety failures.
+
+    Args:
+        on_prompt_done: Optional async callback called after each prompt completes.
 
     Returns:
         Dict with test_results, findings, summary
@@ -310,6 +314,10 @@ async def run_direct_tests(
                         "remediation": _get_remediation(tc_type),
                     }
                 )
+
+            # Notify progress tracker
+            if on_prompt_done:
+                await on_prompt_done()
 
         tc_results["pass_rate"] = passed / max(len(prompts), 1)
         results.append(tc_results)

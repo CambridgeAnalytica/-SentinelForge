@@ -219,8 +219,12 @@ async def run_multi_turn_attack(
     max_turns: int = 10,
     provider: Optional[str] = None,
     config: Optional[dict] = None,
+    on_prompt_done=None,
 ) -> Dict[str, Any]:
     """Run a multi-turn adversarial conversation against a model.
+
+    Args:
+        on_prompt_done: Optional async callback called after each turn completes.
 
     Returns:
         Dict with turns, strategy, escalation_detected, findings
@@ -310,6 +314,10 @@ async def run_multi_turn_attack(
                     ),
                 }
             )
+
+        # Notify progress tracker
+        if on_prompt_done:
+            await on_prompt_done()
 
     # Detect escalation: did safety scores decrease over time?
     assistant_scores = [

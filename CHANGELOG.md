@@ -1,5 +1,29 @@
 # SentinelForge - CHANGELOG
 
+## [2.3.0] - 2026-02-20
+
+### Real End-to-End Scan Execution
+- **Non-blocking scan launch**: `POST /attacks/run` now returns immediately with run ID and `queued` status
+- Execution runs asynchronously via `asyncio.create_task()` with its own DB session
+- **Live progress tracking**: Progress updates committed to DB after each prompt, streamed via SSE
+- Progress scale fixed to 0.0–1.0 (was 100.0), matching frontend `liveProgress * 100` display
+- Dashboard progress bar fills smoothly in real-time as each prompt is tested
+- Verified: 48-prompt scan completes in ~30s against Ollama llama3.2:3b with live progress 2%→12%→50%→98%→100%
+
+### Per-Prompt Progress Callbacks
+- `direct_test_service.run_direct_tests()` — new `on_prompt_done` callback fires after each prompt
+- `multi_turn_service.run_multi_turn_attack()` — new `on_prompt_done` callback fires after each turn
+- `_execute_scenario()` — counts total prompts upfront (direct + multi-turn), computes progress fraction
+- Background execution writes intermediate `progress` to DB via `AsyncSessionLocal` (separate transaction)
+
+### Pipeline Architecture
+- Scan flow: Dashboard → POST /attacks/run → DB commit → asyncio.create_task → SSE progress → findings
+- No more HTTP timeout on large scans — response is instant, execution is background
+- Error handling: failed runs get proper status, error_message, audit log, and webhook notification
+- Worker `progress` scale updated from 100.0 to 1.0 for consistency
+
+---
+
 ## [2.2.0] - 2026-02-18
 
 ### SSE Live Progress in Dashboard
