@@ -20,9 +20,9 @@ _project_root = str(Path(__file__).parent.parent.parent)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from config import settings
-from database import engine, Base
-from routers import (
+from config import settings  # noqa: E402
+from database import engine, Base  # noqa: E402
+from routers import (  # noqa: E402
     health,
     auth,
     tools,
@@ -37,10 +37,10 @@ from routers import (
     synthetic,
     webhooks,
 )
-from routers import schedules, api_keys, notifications, compliance, scoring
-from routers import audit as audit_router
-from routers import sse as sse_router
-from middleware.logging_middleware import RequestLoggingMiddleware
+from routers import schedules, api_keys, notifications, compliance, scoring  # noqa: E402
+from routers import audit as audit_router  # noqa: E402
+from routers import sse as sse_router  # noqa: E402
+from middleware.logging_middleware import RequestLoggingMiddleware  # noqa: E402
 
 # Configure logging
 logging.basicConfig(

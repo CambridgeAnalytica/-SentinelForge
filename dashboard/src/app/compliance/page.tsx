@@ -29,9 +29,9 @@ export default function CompliancePage() {
     // API may return either an array or {frameworks: [...]}
     const allFrameworks = Array.isArray(frameworksRaw)
         ? frameworksRaw
-        : (frameworksRaw as Record<string, unknown>)?.frameworks
+        : frameworksRaw && typeof frameworksRaw === "object" && "frameworks" in (frameworksRaw as Record<string, unknown>)
             ? ((frameworksRaw as Record<string, unknown>).frameworks as typeof frameworksRaw)
-            : frameworksRaw ?? [];
+            : (frameworksRaw ?? []) as typeof frameworksRaw;
     const current = allFrameworks[activeFramework];
 
     async function loadSummary(frameworkId: string) {
