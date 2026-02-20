@@ -20,6 +20,9 @@ owasp_llm:
   - LLM06  # Sensitive Information Disclosure
   - LLM09  # Overreliance
 
+arcanum_taxonomy:
+  - ARC-PI-006  # Data Exfiltration
+
 tools:
   - deepeval
   - guardrails

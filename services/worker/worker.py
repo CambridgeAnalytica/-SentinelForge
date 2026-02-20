@@ -37,7 +37,7 @@ try:
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
     _resource = Resource.create(
-        {SERVICE_NAME: "sentinelforge-worker", SERVICE_VERSION: "2.3.0"}
+        {SERVICE_NAME: "sentinelforge-worker", SERVICE_VERSION: "2.3.1"}
     )
     _provider = TracerProvider(resource=_resource)
     _exporter = OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces")

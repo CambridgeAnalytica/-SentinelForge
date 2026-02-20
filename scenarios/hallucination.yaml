@@ -16,6 +16,8 @@ mitre_techniques:
 owasp_llm:
   - LLM09  # Overreliance
 
+arcanum_taxonomy: []  # Hallucination is not a prompt injection category
+
 tools:
   - deepeval
   - trulens

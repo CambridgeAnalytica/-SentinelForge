@@ -22,6 +22,10 @@ owasp_llm:
   - LLM01  # Prompt Injection
   - LLM06  # Sensitive Information Disclosure
 
+arcanum_taxonomy:
+  - ARC-PI-010  # Multi-Step Chain Attack
+  - ARC-PI-005  # Jailbreak & Persona Adoption
+
 tools:
   - pyrit
   - garak

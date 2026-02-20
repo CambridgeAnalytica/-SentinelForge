@@ -77,6 +77,7 @@ class AttackScenario(BaseModel):
     tools: List[str]
     mitre_techniques: List[str] = []
     owasp_llm: List[str] = []
+    arcanum_taxonomy: List[str] = []
     test_cases_count: int = 0
     prompt_count: int = 0
     multi_turn: bool = False

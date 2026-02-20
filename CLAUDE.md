@@ -122,7 +122,7 @@ Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun`, `Finding` (with
 ## YAML-driven configuration
 
 - **Tool registry**: `tools/registry.yaml` — 14+ tools with capabilities, MITRE ATLAS mappings, CLI commands, default configs
-- **Attack scenarios**: `scenarios/*.yaml` — 14 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover
+- **Attack scenarios**: `scenarios/*.yaml` — 16 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover, multi-agent chain exploitation, goal hijacking
 - **IR playbooks**: `playbooks/*.yaml` — automated response steps for detected incidents
 
 ## Docker Compose services
@@ -140,7 +140,7 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **Webhook dispatch**: `services/api/services/webhook_service.py` sends HMAC-SHA256 signed POST requests to registered webhooks with retry and auto-disable.
 - **Dual auth**: JWT Bearer tokens + API keys (`X-API-Key` header) with SHA-256 hashing and scopes.
 - **Rate limiting**: slowapi middleware with smart key function (API key > JWT > IP fallback).
-- **Compliance mapping**: OWASP ML Top 10, NIST AI RMF, EU AI Act auto-tagging via MITRE ATLAS reverse index.
+- **Compliance mapping**: OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy auto-tagging via MITRE ATLAS reverse index + test_type classification.
 - **Findings dedup**: SHA-256 fingerprinting with new/recurring classification via `services/deduplication.py`.
 - **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`. Dashboard consumes via `useAttackRunSSE` hook with live progress bar.
 - **Custom scenarios**: In-memory CRUD for user-created attack scenarios via POST/PUT/DELETE `/attacks/scenarios`.
@@ -159,4 +159,5 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.1**: Admin endpoints, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, Playwright E2E
 - **v2.2**: SSE live progress in dashboard, Alembic migration 005, E2E auth tests, error boundaries, webhook CRUD page
 - **v2.3**: Real end-to-end scan execution — non-blocking launch, live per-prompt progress via SSE, asyncio background execution
-- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 12 dashboard pages, 14 attack scenarios (82 test cases, 394 prompts)
+- **v2.3.1**: Scenario expansion Phase 3 — 2 new scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, Arcanum PI Taxonomy (4th compliance framework)
+- **Current**: 138 Python tests (63 unit + 57 integration + 18 RBAC) + 15 Playwright E2E — 19 routers, 12 dashboard pages, 16 attack scenarios (103 test cases, 496 prompts), 4 compliance frameworks

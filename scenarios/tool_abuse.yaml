@@ -23,6 +23,9 @@ owasp_llm:
   - LLM07  # Insecure Plugin Design
   - LLM08  # Excessive Agency
 
+arcanum_taxonomy:
+  - ARC-PI-007  # Agent & Tool Manipulation
+
 tools:
   - garak
   - promptfoo

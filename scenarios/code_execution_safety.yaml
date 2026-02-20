@@ -22,6 +22,10 @@ owasp_llm:
   - LLM08  # Excessive Agency
   - LLM09  # Overreliance
 
+arcanum_taxonomy:
+  - ARC-PI-013  # Content Safety Bypass
+  - ARC-PI-007  # Agent & Tool Manipulation
+
 tools:
   - garak
   - promptfoo

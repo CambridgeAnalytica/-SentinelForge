@@ -103,7 +103,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.3.0",
+    version="2.3.1",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",

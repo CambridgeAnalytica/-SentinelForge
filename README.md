@@ -21,7 +21,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
 - **Enterprise Security**: JWT + API key dual authentication, rate limiting, RBAC, SBOM, signed images
 - **Rich Reporting**: HTML, PDF, and JSONL reports with MITRE ATLAS + OWASP LLM Top 10 mapping
-- **Compliance Mapping**: Auto-tag findings with OWASP ML Top 10, NIST AI RMF, EU AI Act
+- **Compliance Mapping**: Auto-tag findings with OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy
 - **Scheduled Scans**: Cron-based recurring scans with notification channels (Slack, email, Teams)
 - **CI/CD Integration**: GitHub Actions action and GitLab CI template for pipeline security scanning
 - **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, scenario builder, audit log, and settings management (port 3001)
@@ -35,7 +35,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 14 attack scenarios (82 test cases, 394 prompts), compliance auto-tagging (3 frameworks), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 16 attack scenarios (103 test cases, 496 prompts), compliance auto-tagging (4 frameworks incl. Arcanum PI Taxonomy), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), a full Next.js Dashboard UI (port 3001), 138 Python tests (63 unit + 57 integration + 18 RBAC), and 15 Playwright E2E tests.
 
 ## Dashboard UI (v2.2)
 
@@ -178,7 +178,7 @@ sentinelforge/
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper
-├── scenarios/            # 14 attack scenarios (82 test cases, 394 prompts)
+├── scenarios/            # 16 attack scenarios (103 test cases, 496 prompts)
 ├── playbooks/            # IR playbooks (YAML)
 ├── infra/
 │   ├── docker/           # Dockerfiles (API, Worker, Tools, Dashboard)

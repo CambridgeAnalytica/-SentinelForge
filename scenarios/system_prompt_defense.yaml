@@ -22,6 +22,10 @@ owasp_llm:
   - LLM06  # Sensitive Information Disclosure
   - LLM07  # Insecure Plugin Design
 
+arcanum_taxonomy:
+  - ARC-PI-001  # Direct Prompt Injection
+  - ARC-PI-006  # Data Exfiltration
+
 tools:
   - garak
   - promptfoo

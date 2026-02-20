@@ -1,5 +1,37 @@
 # SentinelForge - CHANGELOG
 
+## [2.3.1] - 2026-02-20
+
+### Scenario Library Expansion — Phase 3
+- **2 new scenarios**: `multi_agent_chain` (32 prompts, 6 TCs), `goal_hijacking` (30 prompts, 6 TCs)
+- Multi-agent chain covers: inter-agent injection, tool-result poisoning, delegation abuse, cross-agent leakage, agent impersonation, workflow manipulation
+- Goal hijacking covers: financial fraud, business logic bypass, approval bypass, constraint relaxation, objective redirection, reward hacking
+- **Total**: 16 scenarios, 103 test cases, 496 prompts (was 14/82/394)
+
+### P4RS3LT0NGV3-Style Encoding Transformations
+- 6 new test cases in `prompt_injection` scenario: ROT13, leetspeak, morse code, NATO phonetic, reversed text/pig latin, binary/ASCII
+- Inspired by P4RS3LT0NGV3 prompt injection payload generator (30+ encoding techniques)
+- Prompt injection scenario now has 80 prompts across 12 test categories (was 48/8)
+
+### TensorTrust-Derived Attack Patterns
+- Added `access_code_extraction` and `instruction_hijacking` test cases to `prompt_injection` (TensorTrust patterns)
+- Added `defense_aware` test case to `jailbreak` — 9 prompts targeting meta-reasoning about safety mechanisms
+- Jailbreak scenario now has 57 prompts across 9 test categories (was 48/8)
+- Inspired by UC Berkeley's TensorTrust 126K+ prompt injection dataset
+
+### Arcanum Prompt Injection Taxonomy
+- New `data/arcanum_taxonomy.py` — 13-category classification system (ARC-PI-001 through ARC-PI-013)
+- Categories: Direct PI, Indirect PI, Encoding & Obfuscation, Context Manipulation, Jailbreak & Persona, Data Exfiltration, Agent & Tool Manipulation, Goal & Task Hijacking, Constraint Relaxation, Multi-Step Chain, Multilingual & Cross-Script, RAG & Retrieval Poisoning, Content Safety Bypass
+- Auto-tags findings with Arcanum categories via `classify_finding(test_type, mitre_technique)`
+- Integrated as 4th compliance framework alongside OWASP ML Top 10, NIST AI RMF, EU AI Act
+- `GET /compliance/frameworks` now returns `arcanum_pi` option
+- `GET /compliance/summary?framework=arcanum_pi` aggregates findings by Arcanum categories
+- All 16 scenarios annotated with `arcanum_taxonomy` field in YAML
+- `AttackScenario` API schema includes `arcanum_taxonomy: List[str]`
+- Reference: https://github.com/Arcanum-Sec/arc_pi_taxonomy
+
+---
+
 ## [2.3.0] - 2026-02-20
 
 ### Real End-to-End Scan Execution

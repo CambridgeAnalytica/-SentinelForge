@@ -1,5 +1,5 @@
 """
-Compliance Framework Mappings — OWASP ML Top 10, NIST AI RMF, EU AI Act.
+Compliance Framework Mappings — OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI.
 
 Maps MITRE ATLAS technique IDs to compliance framework categories
 so findings can be auto-tagged for auditor-friendly reporting.
@@ -229,6 +229,19 @@ def _build_reverse_index():
                 }
             )
 
+    # Arcanum PI taxonomy
+    from data.arcanum_taxonomy import ARCANUM_PI_TAXONOMY
+
+    for cat_id, cat in ARCANUM_PI_TAXONOMY.items():
+        for technique in cat.get("mitre_atlas", []):
+            _REVERSE_INDEX.setdefault(technique, []).append(
+                {
+                    "framework": "arcanum_pi",
+                    "category_id": cat_id,
+                    "category_name": cat["name"],
+                }
+            )
+
 
 def lookup_compliance_tags(mitre_technique: str) -> List[Dict[str, str]]:
     """Return all compliance framework categories for a MITRE ATLAS technique."""
@@ -238,6 +251,11 @@ def lookup_compliance_tags(mitre_technique: str) -> List[Dict[str, str]]:
 
 def get_framework_categories(framework: str) -> Dict[str, Dict[str, Any]]:
     """Return all categories for a given framework."""
+    if framework == "arcanum_pi":
+        from data.arcanum_taxonomy import ARCANUM_PI_TAXONOMY
+
+        return ARCANUM_PI_TAXONOMY
+
     frameworks = {
         "owasp_ml_top10": OWASP_ML_TOP_10,
         "nist_ai_rmf": NIST_AI_RMF,
@@ -246,4 +264,4 @@ def get_framework_categories(framework: str) -> Dict[str, Dict[str, Any]]:
     return frameworks.get(framework, {})
 
 
-SUPPORTED_FRAMEWORKS = ["owasp_ml_top10", "nist_ai_rmf", "eu_ai_act"]
+SUPPORTED_FRAMEWORKS = ["owasp_ml_top10", "nist_ai_rmf", "eu_ai_act", "arcanum_pi"]

@@ -16,6 +16,9 @@ mitre_techniques:
 owasp_llm:
   - LLM03  # Training Data Poisoning (related to bias in training)
 
+arcanum_taxonomy:
+  - ARC-PI-013  # Content Safety Bypass
+
 tools:
   - deepeval
   - langkit

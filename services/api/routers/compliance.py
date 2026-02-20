@@ -26,6 +26,7 @@ async def list_frameworks(user: User = Depends(get_current_user)):
             {"id": "owasp_ml_top10", "name": "OWASP Machine Learning Top 10"},
             {"id": "nist_ai_rmf", "name": "NIST AI Risk Management Framework"},
             {"id": "eu_ai_act", "name": "EU Artificial Intelligence Act"},
+            {"id": "arcanum_pi", "name": "Arcanum Prompt Injection Taxonomy"},
         ]
     }
 

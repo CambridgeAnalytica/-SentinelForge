@@ -20,6 +20,10 @@ mitre_techniques:
 owasp_llm:
   - LLM01  # Prompt Injection
 
+arcanum_taxonomy:
+  - ARC-PI-011  # Multilingual & Cross-Script
+  - ARC-PI-003  # Encoding & Obfuscation
+
 tools:
   - garak
   - promptfoo

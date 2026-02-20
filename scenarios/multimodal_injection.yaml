@@ -23,6 +23,10 @@ owasp_llm:
   - LLM02  # Insecure Output Handling
   - LLM05  # Supply Chain Vulnerabilities
 
+arcanum_taxonomy:
+  - ARC-PI-002  # Indirect Prompt Injection
+  - ARC-PI-003  # Encoding & Obfuscation
+
 tools:
   - garak
   - promptfoo

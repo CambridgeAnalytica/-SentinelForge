@@ -21,6 +21,9 @@ owasp_llm:
   - LLM09  # Overreliance
   - LLM02  # Insecure Output Handling
 
+arcanum_taxonomy:
+  - ARC-PI-013  # Content Safety Bypass
+
 tools:
   - deepeval
   - garak

@@ -22,6 +22,10 @@ owasp_llm:
   - LLM08  # Excessive Agency
   - LLM09  # Overreliance
 
+arcanum_taxonomy:
+  - ARC-PI-012  # RAG & Retrieval Poisoning
+  - ARC-PI-002  # Indirect Prompt Injection
+
 tools:
   - garak
   - promptfoo

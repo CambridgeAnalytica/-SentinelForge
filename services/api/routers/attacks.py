@@ -72,6 +72,7 @@ async def list_scenarios(user: User = Depends(get_current_user)):
                 tools=s.get("tools", []),
                 mitre_techniques=s.get("mitre_techniques", []),
                 owasp_llm=s.get("owasp_llm", []),
+                arcanum_taxonomy=s.get("arcanum_taxonomy", []),
                 test_cases_count=len(test_cases),
                 prompt_count=prompt_count,
                 multi_turn=s.get("default_config", {}).get("multi_turn", False),
@@ -189,8 +190,9 @@ async def _run_attack_async(
             run.status = RunStatus.COMPLETED
             run.progress = 1.0
 
-            # Create findings with evidence hashing
+            # Create findings with evidence hashing + Arcanum taxonomy tags
             from services.evidence_hashing import compute_evidence_hash
+            from data.arcanum_taxonomy import classify_finding as arc_classify
 
             previous_hash = None
             for finding_data in results.get("findings", []):
@@ -202,6 +204,16 @@ async def _run_attack_async(
                     tool_name=tool_name,
                     previous_hash=previous_hash,
                 )
+
+                # Auto-tag with Arcanum taxonomy
+                test_type = evidence.get("test_type") or evidence.get("strategy")
+                mitre_tech = finding_data.get("mitre_technique")
+                arcanum_tags = arc_classify(
+                    test_type=test_type, mitre_technique=mitre_tech
+                )
+                if arcanum_tags:
+                    evidence["arcanum_taxonomy"] = arcanum_tags
+
                 finding = Finding(
                     run_id=run.id,
                     tool_name=tool_name,
