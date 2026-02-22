@@ -1,4 +1,4 @@
-.PHONY: bootstrap build test lint typecheck security-scan clean help up down logs
+.PHONY: bootstrap build test lint typecheck security-scan clean help up down logs seed seed-purge demo
 
 # Variables
 PYTHON := python3.11
@@ -119,6 +119,28 @@ db-reset: ## Reset database (WARNING: destroys data)
 	rm -rf .postgres-data
 	$(COMPOSE) up -d postgres
 	@echo "Waiting for Postgres to be ready..."
-	sleep 5
+	@until $(COMPOSE) exec -T postgres pg_isready -U $${POSTGRES_USER:-sentinelforge_user} 2>/dev/null; do sleep 1; done
 	$(MAKE) db-migrate
 	@echo "✅ Database reset complete!"
+
+seed: ## Seed demo data (idempotent, uses demo- prefix)
+	@echo "🌱 Seeding demo data..."
+	cd services/api && . venv/bin/activate && python ../../scripts/seed_demo_data.py || (. venv/Scripts/activate && python ../../scripts/seed_demo_data.py)
+	@echo "✅ Demo data seeded!"
+
+seed-purge: ## Remove all demo data (demo- prefix)
+	@echo "🗑️  Purging demo data..."
+	cd services/api && . venv/bin/activate && python ../../scripts/seed_demo_data.py --purge || (. venv/Scripts/activate && python ../../scripts/seed_demo_data.py --purge)
+	@echo "✅ Demo data purged!"
+
+demo: up ## Start full stack + seed demo data
+	@echo "⏳ Waiting for API to be ready..."
+	@until curl -sf http://localhost:8000/health >/dev/null 2>&1; do sleep 2; done
+	$(MAKE) seed
+	@echo ""
+	@echo "🚀 SentinelForge is ready!"
+	@echo "   Dashboard: http://localhost:3001"
+	@echo "   API:       http://localhost:8000"
+	@echo "   API Docs:  http://localhost:8000/docs"
+	@echo "   Jaeger:    http://localhost:16686"
+	@echo "   Grafana:   http://localhost:3000"

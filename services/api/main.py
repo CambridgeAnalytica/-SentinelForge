@@ -111,6 +111,27 @@ async def lifespan(app: FastAPI):
     await ensure_admin_user()
     logger.info("✅ Default admin user verified")
 
+    # Auto-seed demo data if DEMO_MODE is enabled
+    if settings.DEMO_MODE:
+        try:
+            import importlib
+            import sys as _sys
+            import os as _os
+
+            _scripts = _os.path.join(
+                _os.path.dirname(
+                    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+                ),
+                "scripts",
+            )
+            if _scripts not in _sys.path:
+                _sys.path.insert(0, _scripts)
+            seed_mod = importlib.import_module("seed_demo_data")
+            await seed_mod.seed()
+            logger.info("✅ Demo data seeded (DEMO_MODE=true)")
+        except Exception as e:
+            logger.warning(f"Demo seed skipped: {e}")
+
     yield
 
     # Shutdown
@@ -121,7 +142,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.5.0",
+    version="2.6.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",

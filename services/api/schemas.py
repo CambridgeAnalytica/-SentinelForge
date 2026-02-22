@@ -131,6 +131,7 @@ class FindingSchema(BaseModel):
 class ReportRequest(BaseModel):
     run_id: str
     formats: List[str] = ["html"]
+    template: str = "standard"  # "standard" or "executive"
 
 
 class ReportResponse(BaseModel):

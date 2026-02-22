@@ -1,5 +1,45 @@
 # SentinelForge - CHANGELOG
 
+## [2.6.0] - 2026-02-22
+
+### Demo-Ready Polish Release
+
+**Docker Compose Fixes**
+- Fixed `NEXT_PUBLIC_API_URL` for dashboard — moved from runtime env to Dockerfile build ARG (Next.js bakes env vars at build time)
+- Added worker health check (`pgrep -f 'python worker.py'`) to docker-compose.yml
+- Fixed CORS default from empty `[]` to `["http://localhost:3001"]` so dashboard→API requests work out of the box
+- Dashboard build args: `NEXT_PUBLIC_API_URL` configurable via `docker compose build --build-arg`
+
+**Seed Data & Demo Mode**
+- New `scripts/seed_demo_data.py` — idempotent seed script with `demo-` ID prefix
+- Creates: 2 users, 10 attack runs (9 completed + 1 running), 50 findings across all severities, 3 reports, 15 audit log entries
+- Findings use real MITRE ATLAS technique IDs that populate all 4 industry compliance frameworks
+- Evidence hash chain computed with `compute_evidence_hash()` for tamper-proof integrity
+- `DEMO_MODE=true` env var auto-seeds on API startup (idempotent)
+- `make seed` / `make seed-purge` / `make demo` Makefile targets
+
+**README Screenshots**
+- Added `docs/images/` directory with 5 screenshots: dashboard, findings, compliance, scenarios, new-scan
+- Hero image after Overview section, 3-column table in Dashboard UI section, new-scan image after Quick Start
+
+**Executive PDF Report**
+- New `templates/report_executive.html.j2` — professional multi-page PDF template
+- Cover page with SentinelForge branding, target model, date, CONFIDENTIAL stamp
+- Executive summary with weighted risk score (0–100, color-coded), severity stats, top 3 priority actions
+- Compliance assessment across 4 industry frameworks (OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act) with per-category pass/fail
+- Detailed findings grouped by severity with evidence excerpts and remediation
+- Hardening recommendations derived from failed test categories
+- Appendix with methodology, scoring description, and platform details
+- Light theme optimized for print (WeasyPrint-compatible CSS: tables, floats, @page rules)
+- `POST /reports/generate {"run_id": "...", "formats": ["pdf"], "template": "executive"}`
+
+**Infrastructure**
+- `config.py`: Added `DEMO_MODE` setting (default: false)
+- `schemas.py`: Added `template` field to `ReportRequest` ("standard" or "executive")
+- `Makefile`: Added `seed`, `seed-purge`, `demo` targets; fixed `db-reset` with pg_isready loop
+- `.env.example`: Fixed duplicate CORS_ORIGINS, added DEMO_MODE section
+- Fixed stale version references in standard report renderer (v2.2.0 → v2.6.0)
+
 ## [2.5.0] - 2026-02-20
 
 ### RAG Evaluation Pipeline (Feature 1)

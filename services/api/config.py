@@ -99,6 +99,7 @@ class Settings(BaseSettings):
 
     # General
     DEBUG: bool = False
+    DEMO_MODE: bool = False  # Auto-seed demo data on startup (idempotent)
     CORS_ORIGINS: List[str] = []
 
     class Config:

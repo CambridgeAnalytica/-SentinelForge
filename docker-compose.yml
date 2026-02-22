@@ -131,7 +131,7 @@ services:
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:?DEFAULT_ADMIN_USERNAME must be set in .env}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:?DEFAULT_ADMIN_PASSWORD must be set in .env}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      CORS_ORIGINS: ${CORS_ORIGINS:-[]}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3001"]}
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       API_LOG_LEVEL: ${API_LOG_LEVEL:-info}
@@ -162,6 +162,11 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python worker.py' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://sentinelforge_user:sentinelforge_password@postgres:5432/sentinelforge}
       S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
@@ -195,9 +200,9 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.dashboard
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: sf-dashboard
-    environment:
-      NEXT_PUBLIC_API_URL: http://api:8000
     ports:
       - "3001:3001"
     depends_on:

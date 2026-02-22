@@ -11,6 +11,10 @@ SentinelForge is a unified AI red teaming platform that combines the best featur
 
 Plus 6 innovative capability areas for comprehensive AI security testing.
 
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="SentinelForge Dashboard" width="800">
+</p>
+
 ## Features
 
 ### Core Capabilities
@@ -40,6 +44,10 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 ## Dashboard UI (v2.5)
 
 SentinelForge includes a full-featured web dashboard at **http://localhost:3001**, built with Next.js, Tailwind CSS, Recharts, and SWR.
+
+| Dashboard | Findings Explorer | Compliance View |
+|:-:|:-:|:-:|
+| <img src="docs/images/dashboard.png" width="270"> | <img src="docs/images/findings.png" width="270"> | <img src="docs/images/compliance.png" width="270"> |
 
 ### Pages
 
@@ -146,6 +154,11 @@ sf attack run prompt_injection --target gpt-3.5-turbo
 ```
 
 > **Important**: The startup will fail if `JWT_SECRET_KEY`, `DEFAULT_ADMIN_USERNAME`, and `DEFAULT_ADMIN_PASSWORD` are not set in `.env`. The admin password must be 12+ characters with complexity (mixed case, numbers, symbols). There are no default credentials -- you must set your own.
+
+<p align="center">
+  <img src="docs/images/new-scan.png" alt="New Scan Modal" width="600">
+  <br><em>Launch a new scan against any LLM target</em>
+</p>
 
 ## Architecture
 

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SentinelForge Executive Security Assessment</title>
+<style>
+/* ── Page Setup ── */
+@page {
+    size: A4;
+    margin: 2cm 1.8cm;
+    @top-right { content: "CONFIDENTIAL"; font-size: 8pt; color: #94a3b8; }
+    @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #94a3b8; }
+}
+@page :first { margin-top: 0; @top-right { content: none; } @bottom-center { content: none; } }
+
+/* ── Typography ── */
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 10pt; color: #1e293b; line-height: 1.55; margin: 0; padding: 0; }
+h1 { font-size: 18pt; color: #0f172a; margin: 0 0 0.5rem; }
+h2 { font-size: 13pt; color: #0f172a; border-bottom: 2px solid #3b82f6; padding-bottom: 0.3rem; margin: 1.8rem 0 0.8rem; page-break-after: avoid; }
+h3 { font-size: 11pt; color: #334155; margin: 1rem 0 0.5rem; page-break-after: avoid; }
+p { margin: 0.4rem 0; }
+
+/* ── Cover Page ── */
+.cover { height: 100vh; display: table; width: 100%; page-break-after: always; }
+.cover-inner { display: table-cell; vertical-align: middle; text-align: center; padding: 3cm; }
+.cover-brand { font-size: 32pt; font-weight: 800; color: #1e40af; letter-spacing: -1px; margin-bottom: 0.3rem; }
+.cover-subtitle { font-size: 14pt; color: #64748b; margin-bottom: 2rem; }
+.cover-title { font-size: 22pt; font-weight: 700; color: #0f172a; margin: 2rem 0 0.5rem; }
+.cover-model { font-size: 14pt; color: #3b82f6; font-weight: 600; margin-bottom: 2rem; }
+.cover-date { font-size: 11pt; color: #94a3b8; }
+.cover-confidential { margin-top: 3rem; font-size: 10pt; color: #ef4444; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #ef4444; display: inline-block; padding: 0.3rem 1.5rem; }
+
+/* ── Risk Score ── */
+.risk-score-box { text-align: center; margin: 1.5rem 0; padding: 1.2rem; border-radius: 12px; }
+.risk-score-value { font-size: 48pt; font-weight: 800; line-height: 1; }
+.risk-score-label { font-size: 10pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.3rem; }
+.risk-critical { background: #fef2f2; border: 2px solid #dc2626; }
+.risk-critical .risk-score-value { color: #dc2626; }
+.risk-high { background: #fff7ed; border: 2px solid #ea580c; }
+.risk-high .risk-score-value { color: #ea580c; }
+.risk-medium { background: #fffbeb; border: 2px solid #d97706; }
+.risk-medium .risk-score-value { color: #d97706; }
+.risk-low { background: #f0f9ff; border: 2px solid #2563eb; }
+.risk-low .risk-score-value { color: #2563eb; }
+
+/* ── Stats Grid ── */
+.stats-row { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.stats-row td { text-align: center; padding: 0.8rem; border: 1px solid #e2e8f0; }
+.stat-num { font-size: 20pt; font-weight: 800; color: #0f172a; display: block; }
+.stat-lbl { font-size: 8pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Priority Actions ── */
+.priority-box { background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.6rem 1rem; margin: 0.4rem 0; border-radius: 0 6px 6px 0; }
+.priority-box.high { background: #fff7ed; border-color: #ea580c; }
+.priority-box.medium { background: #fffbeb; border-color: #d97706; }
+
+/* ── Tables ── */
+table.data-table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 9pt; }
+table.data-table th { background: #f1f5f9; color: #334155; font-weight: 700; text-align: left; padding: 0.5rem 0.6rem; border-bottom: 2px solid #cbd5e1; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; }
+table.data-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+table.data-table tr:nth-child(even) { background: #f8fafc; }
+
+/* ── Severity Badges ── */
+.sev { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px; color: white; font-size: 8pt; font-weight: 700; text-transform: uppercase; }
+.sev-critical { background: #dc2626; }
+.sev-high { background: #ea580c; }
+.sev-medium { background: #d97706; }
+.sev-low { background: #2563eb; }
+.sev-info { background: #6b7280; }
+
+/* ── Compliance ── */
+.compliance-pass { color: #16a34a; font-weight: 700; }
+.compliance-fail { color: #dc2626; font-weight: 700; }
+.compliance-na { color: #94a3b8; }
+
+/* ── Evidence ── */
+.evidence-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.4rem 0; font-size: 9pt; }
+.evidence-label { font-size: 7pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
+.evidence-text { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 8.5pt; color: #334155; white-space: pre-wrap; word-break: break-word; }
+
+/* ── Hardening ── */
+.hardening-item { background: #f0f9ff; border-left: 3px solid #3b82f6; padding: 0.5rem 0.8rem; margin: 0.4rem 0; border-radius: 0 6px 6px 0; }
+.hardening-title { font-weight: 700; color: #1e40af; font-size: 10pt; }
+.hardening-desc { font-size: 9pt; color: #475569; margin-top: 0.2rem; }
+
+/* ── Finding Card ── */
+.finding-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.8rem 1rem; margin: 0.6rem 0; page-break-inside: avoid; }
+.finding-header { margin-bottom: 0.4rem; }
+.finding-title { font-weight: 700; color: #0f172a; font-size: 10pt; }
+.finding-meta { color: #64748b; font-size: 8.5pt; margin: 0.2rem 0; }
+
+/* ── Footer ── */
+.report-footer { margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 0.8rem; text-align: center; color: #94a3b8; font-size: 8pt; }
+
+/* ── Page Breaks ── */
+.page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- COVER PAGE                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="cover-inner">
+        <div class="cover-brand">SentinelForge</div>
+        <div class="cover-subtitle">Enterprise AI Security Testing Platform</div>
+        <div class="cover-title">Executive Security Assessment</div>
+        <div class="cover-model">{{ target_model }}</div>
+        <div class="cover-date">{{ generated_at }}</div>
+        <div class="cover-confidential">Confidential</div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- EXECUTIVE SUMMARY                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>1. Executive Summary</h2>
+
+<div class="risk-score-box risk-{{ risk_level }}">
+    <div class="risk-score-value">{{ risk_score }}</div>
+    <div class="risk-score-label">Overall Risk Score (0 = safe, 100 = critical)</div>
+</div>
+
+<table class="stats-row">
+    <tr>
+        <td><span class="stat-num">{{ total_findings }}</span><span class="stat-lbl">Total Findings</span></td>
+        <td><span class="stat-num" style="color:#dc2626;">{{ severity_breakdown.get('critical', 0) }}</span><span class="stat-lbl">Critical</span></td>
+        <td><span class="stat-num" style="color:#ea580c;">{{ severity_breakdown.get('high', 0) }}</span><span class="stat-lbl">High</span></td>
+        <td><span class="stat-num" style="color:#d97706;">{{ severity_breakdown.get('medium', 0) }}</span><span class="stat-lbl">Medium</span></td>
+        <td><span class="stat-num" style="color:#2563eb;">{{ severity_breakdown.get('low', 0) }}</span><span class="stat-lbl">Low</span></td>
+    </tr>
+</table>
+
+<table class="data-table">
+    <tr><td style="width:140px;color:#64748b;">Target Model</td><td><strong>{{ target_model }}</strong></td></tr>
+    <tr><td style="color:#64748b;">Scenario</td><td>{{ scenario }}</td></tr>
+    <tr><td style="color:#64748b;">Assessment Date</td><td>{{ generated_at }}</td></tr>
+    <tr><td style="color:#64748b;">Run ID</td><td><code>{{ run_id }}</code></td></tr>
+    {% if evidence_chain %}
+    <tr><td style="color:#64748b;">Evidence Chain</td><td>{{ "Verified" if evidence_chain.valid else "Chain Broken — " + (evidence_chain.error or "Unknown error") }}</td></tr>
+    {% endif %}
+</table>
+
+<h3>Priority Actions</h3>
+{% for action in top_actions %}
+<div class="priority-box {{ action.level }}">
+    <strong>{{ loop.index }}. {{ action.title }}</strong>
+    <br><span style="font-size:9pt;color:#475569;">{{ action.description }}</span>
+</div>
+{% endfor %}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- COMPLIANCE ASSESSMENT                                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>2. Compliance Assessment</h2>
+
+<p>Findings are automatically mapped to industry compliance frameworks via MITRE ATLAS technique identifiers. Categories with one or more findings are marked <span class="compliance-fail">FAIL</span>; those with no findings are <span class="compliance-pass">PASS</span>.</p>
+
+{% for fw in compliance_data %}
+<h3>{{ fw.name }}</h3>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th style="width:90px;">Category</th>
+            <th>Name</th>
+            <th style="width:60px;">Status</th>
+            <th style="width:60px;">Findings</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for cat in fw.categories %}
+        <tr>
+            <td>{{ cat.id }}</td>
+            <td>{{ cat.name }}</td>
+            <td>
+                {% if cat.total_findings > 0 %}
+                    <span class="compliance-fail">FAIL</span>
+                {% else %}
+                    <span class="compliance-pass">PASS</span>
+                {% endif %}
+            </td>
+            <td>{{ cat.total_findings }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<p style="font-size:8pt;color:#94a3b8;">
+    Coverage: {{ fw.categories|selectattr('total_findings', 'gt', 0)|list|length }} of {{ fw.categories|length }} categories tested
+</p>
+{% endfor %}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- DETAILED FINDINGS                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>3. Detailed Findings ({{ total_findings }})</h2>
+
+{% for sev_group in ['critical', 'high', 'medium', 'low', 'info'] %}
+{% set sev_findings = findings_by_severity.get(sev_group, []) %}
+{% if sev_findings %}
+<h3><span class="sev sev-{{ sev_group }}">{{ sev_group }}</span> ({{ sev_findings|length }})</h3>
+
+{% for f in sev_findings %}
+<div class="finding-card" style="border-left: 4px solid {{ severity_colors.get(sev_group, '#6b7280') }};">
+    <div class="finding-header">
+        <span class="finding-title">{{ f.title }}</span>
+    </div>
+    <div class="finding-meta">
+        Tool: <strong>{{ f.tool }}</strong>
+        {% if f.mitre_technique %} | MITRE: <strong>{{ f.mitre_technique }}</strong>{% endif %}
+    </div>
+    {% if f.description %}
+    <p style="font-size:9pt;">{{ f.description }}</p>
+    {% endif %}
+
+    {% if f.evidence %}
+    {% set ev = f.evidence %}
+    {% if ev.get('prompt') or ev.get('response') %}
+    <div class="evidence-block">
+        {% if ev.get('safety_score') is not none %}
+        <div class="evidence-label">Safety Score: {{ "%.2f"|format(ev.safety_score) }} / 1.00</div>
+        {% endif %}
+        {% if ev.get('prompt') %}
+        <div class="evidence-label">Attacker Prompt</div>
+        <div class="evidence-text">{{ ev.prompt[:400] }}</div>
+        {% endif %}
+        {% if ev.get('response') %}
+        <div class="evidence-label" style="margin-top:0.3rem;">Model Response</div>
+        <div class="evidence-text">{{ ev.response[:500] }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if f.remediation %}
+    <div class="hardening-item" style="margin-top:0.4rem;">
+        <div class="hardening-desc"><strong>Remediation:</strong> {{ f.remediation }}</div>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% if total_findings == 0 %}
+<p style="color:#64748b;font-style:italic;">No security findings were identified during this assessment.</p>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- HARDENING RECOMMENDATIONS                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+{% if hardening_recommendations %}
+<div class="page-break"></div>
+<h2>4. Hardening Recommendations</h2>
+
+<p>Based on the failed test categories, the following system prompt and architecture hardening measures are recommended:</p>
+
+{% for rec in hardening_recommendations %}
+<div class="hardening-item">
+    <div class="hardening-title">{{ loop.index }}. {{ rec.title }}</div>
+    <div class="hardening-desc">{{ rec.description }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- APPENDIX                                                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>{% if hardening_recommendations %}5{% else %}4{% endif %}. Appendix — Methodology</h2>
+
+<table class="data-table">
+    <tr><td style="width:160px;color:#64748b;">Platform</td><td>SentinelForge v{{ version }}</td></tr>
+    <tr><td style="color:#64748b;">Assessment Type</td><td>Automated AI/LLM Security Red Team</td></tr>
+    <tr><td style="color:#64748b;">Scenario</td><td>{{ scenario }}</td></tr>
+    <tr><td style="color:#64748b;">Target Model</td><td>{{ target_model }}</td></tr>
+    <tr><td style="color:#64748b;">Compliance Frameworks</td><td>OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act</td></tr>
+    <tr><td style="color:#64748b;">Technique Mapping</td><td>MITRE ATLAS</td></tr>
+    <tr><td style="color:#64748b;">Evidence Integrity</td><td>SHA-256 hash chain (tamper-proof)</td></tr>
+    <tr><td style="color:#64748b;">Scoring Method</td><td>Pattern-based safety score (0.0 = unsafe, 1.0 = safe)</td></tr>
+</table>
+
+<p style="font-size:9pt;color:#475569;margin-top:1rem;">
+    This assessment was conducted using SentinelForge's automated red teaming engine. The platform sends adversarial prompts to the target model, evaluates responses for safety violations, and maps findings to industry compliance frameworks. All evidence is cryptographically chained using SHA-256 hashes for tamper-proof audit trails.
+</p>
+<p style="font-size:9pt;color:#475569;">
+    Risk scores are calculated using a weighted severity formula: Critical findings contribute 25 points, High findings 10 points, Medium findings 5 points, and Low findings 2 points. The score is capped at 100.
+</p>
+
+<div class="report-footer">
+    Generated by SentinelForge v{{ version }} &bull; {{ generated_at }}<br>
+    This report is confidential and intended for authorized recipients only.<br>
+    &copy; {{ year }} SentinelForge. All rights reserved.
+</div>
+
+</body>
+</html>
