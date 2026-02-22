@@ -4,9 +4,11 @@ This guide walks you through setting up SentinelForge on your local machine,
 from zero to running your first AI security test. Every step includes an
 explanation of **what** the command does and **why** you need it.
 
-> **SentinelForge v2.2** — includes compliance mapping, 14 tool adapters,
-> scheduled scans, API key auth, notifications, CI/CD integration, and
-> a full Next.js Dashboard UI (port 3001) with SSE live progress, error boundaries, and audit log.
+> **SentinelForge v2.6** — includes compliance mapping (5 frameworks), 14 tool adapters,
+> scheduled scans, API key auth, notifications, CI/CD integration, model comparison,
+> batch audit, RAG/tool-use/multimodal evaluation pipelines, scoring calibration,
+> executive PDF reports, demo mode with seed data, and a full Next.js Dashboard UI
+> (20 pages, port 3001) with SSE live progress, error boundaries, and audit log.
 
 ---
 
@@ -209,7 +211,7 @@ sf version
 
 Expected output:
 ```
-SentinelForge CLI v2.2.0
+SentinelForge CLI v2.6.0
 Enterprise AI Security Testing Platform
 ```
 
@@ -291,7 +293,7 @@ Expected output:
 ```json
 {
   "status": "healthy",
-  "version": "2.2.0",
+  "version": "2.6.0",
   "services": {
     "database": "healthy"
   },
@@ -323,6 +325,98 @@ Grafana (Port 3000)   - Metrics visualization and alerting
 - **Test an AI Agent**: `sf agent test <endpoint>`
 - **Generate Synthetic Attack Data**: `sf synthetic generate --seed prompts.txt`
 - **Monitor Model Drift**: `sf drift baseline --model gpt-4`
+- **Try Demo Mode**: See below to populate the dashboard with realistic sample data
+
+---
+
+## Demo Mode (v2.6)
+
+Demo mode populates SentinelForge with realistic seed data so every dashboard page
+has content. This is useful for evaluations, presentations, and exploring the UI
+without needing to run real scans first.
+
+### Option A: One-Command Demo (recommended)
+
+```bash
+make demo
+```
+
+This runs `docker compose up -d`, waits for the API health check to pass, then seeds
+demo data. When it finishes you can open:
+
+- **Dashboard**: http://localhost:3001
+- **API docs**: http://localhost:8000/docs
+
+### Option B: Auto-Seed on Startup
+
+Set `DEMO_MODE=true` in your `.env` file:
+
+```env
+DEMO_MODE=true
+```
+
+Every time the API starts it will automatically seed demo data. The seed is
+**idempotent** — running it multiple times is safe and won't create duplicates.
+
+### Option C: Manual Seed / Purge
+
+If the stack is already running, seed or remove demo data on demand:
+
+```bash
+# Seed demo data
+make seed
+
+# Remove all demo data (all records use a "demo-" ID prefix)
+make seed-purge
+```
+
+### What Gets Created
+
+| Data | Count | Details |
+|------|-------|---------|
+| **Users** | 2 | `demo_admin` (Admin) and `demo_analyst` (Operator) |
+| **Attack Runs** | 10 | 9 completed + 1 running, across 10 scenarios and 5 models, spread over 14 days |
+| **Findings** | 50 | All severity levels (critical/high/medium/low/info), MITRE ATLAS technique IDs, evidence hash chain |
+| **Reports** | 3 | 2 PDF + 1 HTML |
+| **Audit Logs** | 15 | Login, attack.launched, report.generated events |
+
+### Demo Credentials
+
+| Username | Password | Role |
+|----------|----------|------|
+| `demo_admin` | `DemoAdmin123!` | Admin |
+| `demo_analyst` | `DemoAnalyst456!` | Operator |
+
+> **Note**: These accounts are for demo purposes only. In production, set your own
+> credentials via `DEFAULT_ADMIN_USERNAME` and `DEFAULT_ADMIN_PASSWORD` in `.env`.
+
+### Executive PDF Report
+
+With demo data seeded, you can generate a polished multi-page executive report:
+
+**curl:**
+```bash
+curl -X POST http://localhost:8000/reports/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"run_id": "demo-run-001", "formats": ["pdf"], "template": "executive"}'
+```
+
+**PowerShell:**
+```powershell
+$headers = @{ "Authorization" = "Bearer $TOKEN"; "Content-Type" = "application/json" }
+$body = '{"run_id": "demo-run-001", "formats": ["pdf"], "template": "executive"}'
+Invoke-RestMethod -Uri http://localhost:8000/reports/generate -Method POST -Headers $headers -Body $body
+```
+
+The executive template includes:
+- **Cover page** with target model, date, and CONFIDENTIAL marking
+- **Executive summary** with risk score (0–100, color-coded) and top 3 priority actions
+- **Compliance assessment** across 4 industry frameworks (OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act)
+- **Detailed findings** grouped by severity with evidence excerpts and remediation guidance
+- **Hardening recommendations** derived from failed test categories
+
+> To generate a standard report instead, omit the `template` field or set it to `"standard"`.
 
 ---
 
@@ -431,10 +525,12 @@ sf compliance summary --run-id <run_id>
 sf compliance report --run-id <run_id> --format pdf
 ```
 
-Supported frameworks:
+Supported frameworks (5 total, 45 categories):
+- **OWASP Top 10 for LLM Applications** — LLM-specific vulnerability taxonomy (LLM01–LLM10)
 - **OWASP ML Top 10** — Machine learning vulnerability taxonomy
 - **NIST AI RMF** — AI Risk Management Framework
 - **EU AI Act** — European Union AI regulation requirements
+- **Arcanum PI Taxonomy** — 13-category prompt injection classification
 
 ---
 

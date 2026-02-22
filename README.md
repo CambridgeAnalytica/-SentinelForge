@@ -160,6 +160,48 @@ sf attack run prompt_injection --target gpt-3.5-turbo
   <br><em>Launch a new scan against any LLM target</em>
 </p>
 
+### Demo Mode (v2.6)
+
+Want to see SentinelForge with a fully populated dashboard right away? Demo mode seeds realistic data so every page has content — perfect for evaluations, demos, and screenshots.
+
+**One command:**
+
+```bash
+make demo
+```
+
+This starts the full Docker stack, waits for the API to become healthy, and seeds demo data automatically.
+
+**What gets created:**
+- 2 users (`demo_admin` / `DemoAdmin123!` and `demo_analyst` / `DemoAnalyst456!`)
+- 10 completed attack runs across different scenarios and models (spread over 14 days)
+- 50 findings across all severity levels with MITRE ATLAS mappings
+- 3 reports (PDF + HTML)
+- 15 audit log entries
+
+**Manual control:**
+
+```bash
+# Seed demo data into an already-running stack
+make seed
+
+# Remove all demo data (all records use a demo- prefix)
+make seed-purge
+```
+
+**Auto-seed on startup:** Set `DEMO_MODE=true` in your `.env` file and the API will seed demo data automatically every time it starts (idempotent — safe to run repeatedly).
+
+**Executive PDF report:** Once demo data is seeded, generate a polished multi-page PDF:
+
+```bash
+curl -X POST http://localhost:8000/reports/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"run_id": "demo-run-001", "formats": ["pdf"], "template": "executive"}'
+```
+
+The executive template includes a cover page, risk score, compliance assessment (OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act), detailed findings, and hardening recommendations.
+
 ## Architecture
 
 ```
