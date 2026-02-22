@@ -24,9 +24,10 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
   - Configuration options
   - Expected outputs
 
-## Version History
+## Version History & Roadmap
 
 - **[CHANGELOG.md](../CHANGELOG.md)** - Version history and features
+- **[ROADMAP.md](ROADMAP.md)** - Planned features and next steps (v2.7 — v3.0)
 
 ## Configuration & Deployment
 
@@ -38,7 +39,7 @@ Welcome to the SentinelForge documentation! This index will help you find the ri
 | `docker-compose.yml` | Multi-service orchestration |
 | `Makefile` | Development commands |
 | `tools/registry.yaml` | Tool registry configuration (14 tools, 14 adapters) |
-| `scenarios/*.yaml` | 14 attack scenarios (82 test cases, 394 prompts) |
+| `scenarios/*.yaml` | 18 attack scenarios (115 test cases, 555 prompts) |
 | `playbooks/*.yaml` | Incident response playbooks |
 | `ci/github/action.yml` | GitHub Actions composite action |
 | `ci/gitlab/.gitlab-ci-template.yml` | GitLab CI reusable template |
@@ -112,6 +113,8 @@ sf attack list
 | Create schedule | `sf schedule create --scenario <id> --cron "..."` |
 | Create API key | `sf api-key create --name <name>` |
 | Compliance summary | `sf compliance summary --run-id <id>` |
+| Seed demo data | `make demo` or `make seed` |
+| Remove demo data | `make seed-purge` |
 
 ### Service URLs (Local)
 
@@ -142,7 +145,7 @@ sf attack list
 
 1. [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) - All 14 security tools with adapters
 2. [COMMAND_REFERENCE.md](COMMAND_REFERENCE.md#cli-commands) - CLI usage
-3. `scenarios/` - 14 attack scenarios (82 test cases, 394 prompts)
+3. `scenarios/` - 18 attack scenarios (115 test cases, 555 prompts)
 4. `playbooks/` - Incident response playbooks (YAML definitions)
 5. `services/api/data/compliance_frameworks.py` - Compliance framework mappings
 
@@ -218,6 +221,6 @@ To extend SentinelForge:
 
 ## Version
 
-Current version: **2.2.0**
+Current version: **2.6.0**
 
 See [CHANGELOG.md](../CHANGELOG.md) for release notes.
