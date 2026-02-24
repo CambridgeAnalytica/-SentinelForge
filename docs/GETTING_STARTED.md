@@ -143,6 +143,20 @@ OPENAI_API_KEY=sk-proj-...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+**Custom Gateway / Internal AI Gateway**: If your company uses an internal AI
+gateway or a non-standard LLM API, you can use the Custom Gateway adapter
+instead of a specific provider key:
+
+```env
+CUSTOM_GATEWAY_API_KEY=your-gateway-token    # Optional: some gateways use no auth
+CUSTOM_GATEWAY_URL=https://ai-gateway.company.com/v1  # Default base URL
+```
+
+Then in the Dashboard's **New Scan** modal, select "Custom Gateway" as the
+Target and choose the API format that matches your gateway (OpenAI-compatible,
+Anthropic-compatible, Cohere, Google Gemini, or Raw JSON). The adapter supports
+5 preset request/response formats and configurable auth headers.
+
 Leave the rest of the `.env` defaults as-is for local development. The database
 and MinIO (object storage) settings work out of the box with Docker Compose.
 

@@ -8,8 +8,8 @@ SentinelForge v2.6.0 is feature-complete and demo-ready:
 
 - **23 API routers**, **20 dashboard pages**, **18 attack scenarios** (115 test cases, 555 prompts)
 - **6 compliance frameworks** (58 categories): OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI, MITRE ATLAS
-- **14 tool adapters**, **4 model adapters** (OpenAI, Anthropic, Azure, Bedrock)
-- **173 Python tests** (82 unit + 73 integration + 18 RBAC) + **15 Playwright E2E**
+- **14 tool adapters**, **5 model adapters** (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway)
+- **201 Python tests** (82 unit + 73 integration + 18 RBAC) + **15 Playwright E2E**
 - Demo mode with seed data, executive PDF reports, Docker Compose full-stack deployment
 
 ---

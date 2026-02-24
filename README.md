@@ -20,7 +20,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 ### Core Capabilities
 - **Multi-Service Architecture**: FastAPI orchestration + Python async worker pool (asyncio + asyncpg)
 - **14 Integrated Tools**: All with dedicated adapters, running in isolated virtual environments
-- **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure OpenAI, and AWS Bedrock (4 built-in adapters)
+- **Provider-Agnostic**: Supports OpenAI, Anthropic, Azure OpenAI, AWS Bedrock, and Custom Gateway with 5 preset API formats (5 built-in adapters)
 - **Modular Probe System**: Extensible SDK for custom evaluations
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
 - **Enterprise Security**: JWT + API key dual authentication, rate limiting, RBAC, SBOM, signed images
@@ -39,7 +39,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (6 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS — 58 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration with ROC curves, a full Next.js Dashboard UI with 20 pages (port 3001), 173 Python tests (82 unit + 73 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (6 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS — 58 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration with ROC curves, a full Next.js Dashboard UI with 20 pages (port 3001), 201 Python tests (110 unit + 73 integration + 18 RBAC), and 15 Playwright E2E tests.
 
 ## Dashboard UI (v2.5)
 
@@ -236,7 +236,7 @@ sentinelforge/
 ├── sdk/python/           # Python SDK for probe authoring
 ├── cli/                  # Typer-based CLI ('sf' command)
 ├── adapters/
-│   └── models/           # LLM provider adapters (OpenAI, Anthropic, Azure, Bedrock)
+│   └── models/           # LLM provider adapters (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway)
 ├── tools/
 │   ├── registry.yaml     # BlackICE tool registry (14 tools)
 │   └── executor.py       # Tool execution wrapper

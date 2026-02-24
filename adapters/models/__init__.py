@@ -561,6 +561,241 @@ class BedrockAdapter(BaseModelAdapter):
         return await asyncio.to_thread(_invoke)
 
 
+class CustomGatewayAdapter(BaseModelAdapter):
+    """Universal adapter for custom LLM gateways and non-standard APIs.
+
+    Supports preset request templates (openai, anthropic, cohere, google, raw)
+    and configurable response extraction via dot-notation paths.
+    """
+
+    provider = "custom"
+
+    # Preset URL suffixes per template
+    _URL_SUFFIXES = {
+        "openai": "/chat/completions",
+        "anthropic": "/messages",
+        "cohere": "/chat",
+        "google": "",
+        "raw": "",
+    }
+
+    # Default dot-notation paths to extract response text
+    _DEFAULT_RESPONSE_PATHS = {
+        "openai": "choices.0.message.content",
+        "anthropic": "content.0.text",
+        "cohere": "text",
+        "google": "candidates.0.content.parts.0.text",
+        "raw": "",  # tries multiple fallbacks
+    }
+
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str = "",
+        model: str = "",
+        auth_header: str = "Authorization",
+        auth_prefix: str = "Bearer",
+        request_template: str = "openai",
+        response_path: str = "",
+        extra_headers: Optional[Dict[str, str]] = None,
+        extra_body: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.model = model
+        self.auth_header = auth_header
+        self.auth_prefix = auth_prefix
+        self.request_template = (
+            request_template if request_template in self._URL_SUFFIXES else "openai"
+        )
+        self.response_path = response_path or self._DEFAULT_RESPONSE_PATHS.get(
+            self.request_template, ""
+        )
+        self.extra_headers = extra_headers or {}
+        self.extra_body = extra_body or {}
+
+    def _build_headers(self) -> Dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            if self.auth_prefix:
+                headers[self.auth_header] = f"{self.auth_prefix} {self.api_key}"
+            else:
+                headers[self.auth_header] = self.api_key
+        if self.request_template == "anthropic":
+            headers.setdefault("anthropic-version", "2023-06-01")
+        headers.update(self.extra_headers)
+        return headers
+
+    def _build_url(self) -> str:
+        suffix = self._URL_SUFFIXES.get(self.request_template, "")
+        if suffix and not self.base_url.endswith(suffix):
+            return self.base_url + suffix
+        return self.base_url
+
+    def _build_request_body(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        t = self.request_template
+
+        if t == "openai":
+            msgs = messages if messages else []
+            if not msgs:
+                if system_prompt:
+                    msgs.append({"role": "system", "content": system_prompt})
+                msgs.append({"role": "user", "content": prompt})
+            body: Dict[str, Any] = {"model": self.model, "messages": msgs}
+
+        elif t == "anthropic":
+            msgs = messages if messages else [{"role": "user", "content": prompt}]
+            body = {"model": self.model, "messages": msgs, "max_tokens": 4096}
+            if system_prompt:
+                body["system"] = system_prompt
+
+        elif t == "cohere":
+            body = {"model": self.model, "message": prompt}
+            if system_prompt:
+                body["preamble"] = system_prompt
+
+        elif t == "google":
+            parts: List[Dict[str, str]] = []
+            if system_prompt:
+                parts.append({"text": f"System: {system_prompt}\n\n{prompt}"})
+            else:
+                parts.append({"text": prompt})
+            body = {"contents": [{"parts": parts}]}
+            if self.model:
+                body["model"] = self.model
+
+        else:  # raw
+            body = {"prompt": prompt, "model": self.model}
+            if system_prompt:
+                body["system"] = system_prompt
+
+        body.update(self.extra_body)
+        return body
+
+    def _extract_response(self, data: Any) -> str:
+        if self.response_path:
+            return self._walk_path(data, self.response_path)
+
+        # raw template: try common response field names
+        for key in (
+            "response",
+            "text",
+            "output",
+            "generated_text",
+            "content",
+            "result",
+        ):
+            if isinstance(data, dict) and key in data:
+                val = data[key]
+                if isinstance(val, str):
+                    return val
+                if isinstance(val, list) and val:
+                    first = val[0]
+                    if isinstance(first, str):
+                        return first
+                    if isinstance(first, dict):
+                        return first.get("text", str(first))
+
+        return str(data)
+
+    @staticmethod
+    def _walk_path(data: Any, path: str) -> str:
+        for segment in path.split("."):
+            if isinstance(data, dict):
+                data = data.get(segment)
+            elif isinstance(data, list):
+                try:
+                    data = data[int(segment)]
+                except (ValueError, IndexError):
+                    return ""
+            else:
+                return ""
+            if data is None:
+                return ""
+        return str(data) if data is not None else ""
+
+    async def send_prompt(
+        self,
+        prompt: str,
+        system_prompt: str = None,
+        images: Optional[List[str]] = None,
+        **kwargs,
+    ) -> str:
+        import httpx
+
+        safe_prompt = redact_text(prompt)
+        safe_system = redact_text(system_prompt) if system_prompt else None
+
+        body = self._build_request_body(safe_prompt, safe_system)
+        url = self._build_url()
+        headers = self._build_headers()
+
+        logger.info(f"Custom gateway request: {self.request_template} template → {url}")
+
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.post(url, headers=headers, json=body)
+            response.raise_for_status()
+            data = response.json()
+
+        return self._extract_response(data)
+
+    async def send_messages(self, messages: List[Dict[str, Any]], **kwargs) -> str:
+        import httpx
+
+        safe_messages = redact_messages(messages)
+
+        system_prompt = kwargs.get("system_prompt")
+        if not system_prompt:
+            # Extract system message from messages list if present
+            non_system = []
+            for m in safe_messages:
+                if m.get("role") == "system":
+                    system_prompt = m.get("content", "")
+                else:
+                    non_system.append(m)
+            if system_prompt:
+                safe_messages = non_system
+
+        safe_system = redact_text(system_prompt) if system_prompt else None
+
+        # For templates that support multi-message, pass messages directly
+        if self.request_template in ("openai", "anthropic"):
+            body = self._build_request_body("", safe_system, messages=safe_messages)
+        else:
+            # Flatten messages to single prompt for simple templates
+            parts = []
+            for m in safe_messages:
+                role = m.get("role", "user")
+                content = m.get("content", "")
+                if isinstance(content, list):
+                    content = " ".join(
+                        c.get("text", "") for c in content if isinstance(c, dict)
+                    )
+                parts.append(f"{role}: {content}")
+            flat_prompt = "\n".join(parts)
+            body = self._build_request_body(flat_prompt, safe_system)
+
+        url = self._build_url()
+        headers = self._build_headers()
+
+        logger.info(
+            f"Custom gateway messages: {self.request_template} template, {len(safe_messages)} msgs → {url}"
+        )
+
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.post(url, headers=headers, json=body)
+            response.raise_for_status()
+            data = response.json()
+
+        return self._extract_response(data)
+
+
 def get_adapter(provider: str, **kwargs) -> BaseModelAdapter:
     """Factory function to get the right adapter by provider name."""
     adapters = {
@@ -568,6 +803,7 @@ def get_adapter(provider: str, **kwargs) -> BaseModelAdapter:
         "anthropic": AnthropicAdapter,
         "azure_openai": AzureOpenAIAdapter,
         "bedrock": BedrockAdapter,
+        "custom": CustomGatewayAdapter,
     }
     adapter_class = adapters.get(provider)
     if not adapter_class:

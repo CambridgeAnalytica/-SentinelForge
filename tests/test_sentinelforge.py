@@ -189,6 +189,205 @@ class TestModelAdapters:
         with pytest.raises(ValueError):
             get_adapter("unknown_provider")
 
+    def test_get_custom_gateway_adapter(self):
+        from adapters.models import get_adapter
+
+        adapter = get_adapter(
+            "custom",
+            base_url="https://gateway.example.com",
+            api_key="test-key",
+            model="my-model",
+        )
+        assert adapter.provider == "custom"
+        assert adapter.base_url == "https://gateway.example.com"
+
+    def test_custom_adapter_template_fallback(self):
+        from adapters.models import get_adapter
+
+        adapter = get_adapter(
+            "custom",
+            base_url="https://gw.example.com",
+            request_template="invalid_template",
+        )
+        # Invalid template should fall back to openai
+        assert adapter.request_template == "openai"
+
+
+class TestCustomGatewayAdapter:
+    """Test CustomGatewayAdapter request building and response extraction."""
+
+    def _make_adapter(self, **kwargs):
+        from adapters.models import CustomGatewayAdapter
+
+        defaults = {"base_url": "https://gw.example.com", "model": "test-model"}
+        defaults.update(kwargs)
+        return CustomGatewayAdapter(**defaults)
+
+    # ── Request body building ──
+
+    def test_openai_template_body(self):
+        adapter = self._make_adapter(request_template="openai")
+        body = adapter._build_request_body("Hello")
+        assert body["model"] == "test-model"
+        assert body["messages"][-1] == {"role": "user", "content": "Hello"}
+
+    def test_openai_template_with_system(self):
+        adapter = self._make_adapter(request_template="openai")
+        body = adapter._build_request_body("Hello", system_prompt="Be helpful")
+        assert body["messages"][0] == {"role": "system", "content": "Be helpful"}
+        assert body["messages"][1] == {"role": "user", "content": "Hello"}
+
+    def test_anthropic_template_body(self):
+        adapter = self._make_adapter(request_template="anthropic")
+        body = adapter._build_request_body("Hello", system_prompt="System")
+        assert body["model"] == "test-model"
+        assert body["max_tokens"] == 4096
+        assert body["system"] == "System"
+        assert body["messages"] == [{"role": "user", "content": "Hello"}]
+
+    def test_cohere_template_body(self):
+        adapter = self._make_adapter(request_template="cohere")
+        body = adapter._build_request_body("Hello", system_prompt="Preamble")
+        assert body["message"] == "Hello"
+        assert body["preamble"] == "Preamble"
+        assert body["model"] == "test-model"
+
+    def test_google_template_body(self):
+        adapter = self._make_adapter(request_template="google")
+        body = adapter._build_request_body("Hello")
+        assert "contents" in body
+        assert body["contents"][0]["parts"][0]["text"] == "Hello"
+
+    def test_raw_template_body(self):
+        adapter = self._make_adapter(request_template="raw")
+        body = adapter._build_request_body("Hello", system_prompt="Sys")
+        assert body["prompt"] == "Hello"
+        assert body["system"] == "Sys"
+        assert body["model"] == "test-model"
+
+    def test_extra_body_merged(self):
+        adapter = self._make_adapter(
+            request_template="openai", extra_body={"temperature": 0.5}
+        )
+        body = adapter._build_request_body("Hello")
+        assert body["temperature"] == 0.5
+        assert body["model"] == "test-model"
+
+    # ── URL building ──
+
+    def test_openai_url_suffix(self):
+        adapter = self._make_adapter(request_template="openai")
+        assert adapter._build_url() == "https://gw.example.com/chat/completions"
+
+    def test_anthropic_url_suffix(self):
+        adapter = self._make_adapter(request_template="anthropic")
+        assert adapter._build_url() == "https://gw.example.com/messages"
+
+    def test_cohere_url_suffix(self):
+        adapter = self._make_adapter(request_template="cohere")
+        assert adapter._build_url() == "https://gw.example.com/chat"
+
+    def test_raw_url_no_suffix(self):
+        adapter = self._make_adapter(request_template="raw")
+        assert adapter._build_url() == "https://gw.example.com"
+
+    def test_url_no_double_suffix(self):
+        adapter = self._make_adapter(
+            base_url="https://gw.example.com/chat/completions",
+            request_template="openai",
+        )
+        assert adapter._build_url() == "https://gw.example.com/chat/completions"
+
+    # ── Headers ──
+
+    def test_headers_with_api_key(self):
+        adapter = self._make_adapter(api_key="my-key", auth_prefix="Bearer")
+        headers = adapter._build_headers()
+        assert headers["Authorization"] == "Bearer my-key"
+
+    def test_headers_no_prefix(self):
+        adapter = self._make_adapter(
+            api_key="my-key", auth_header="X-Api-Key", auth_prefix=""
+        )
+        headers = adapter._build_headers()
+        assert headers["X-Api-Key"] == "my-key"
+
+    def test_headers_no_api_key(self):
+        adapter = self._make_adapter(api_key="")
+        headers = adapter._build_headers()
+        assert "Authorization" not in headers
+
+    def test_anthropic_version_header(self):
+        adapter = self._make_adapter(request_template="anthropic", api_key="key")
+        headers = adapter._build_headers()
+        assert headers["anthropic-version"] == "2023-06-01"
+
+    def test_extra_headers(self):
+        adapter = self._make_adapter(extra_headers={"X-Custom": "value"})
+        headers = adapter._build_headers()
+        assert headers["X-Custom"] == "value"
+
+    # ── Response extraction ──
+
+    def test_walk_path_openai(self):
+        from adapters.models import CustomGatewayAdapter
+
+        data = {"choices": [{"message": {"content": "Hello!"}}]}
+        assert (
+            CustomGatewayAdapter._walk_path(data, "choices.0.message.content")
+            == "Hello!"
+        )
+
+    def test_walk_path_anthropic(self):
+        from adapters.models import CustomGatewayAdapter
+
+        data = {"content": [{"text": "Response"}]}
+        assert CustomGatewayAdapter._walk_path(data, "content.0.text") == "Response"
+
+    def test_walk_path_missing_key(self):
+        from adapters.models import CustomGatewayAdapter
+
+        data = {"foo": "bar"}
+        assert CustomGatewayAdapter._walk_path(data, "missing.path") == ""
+
+    def test_extract_response_with_path(self):
+        adapter = self._make_adapter(response_path="data.text")
+        result = adapter._extract_response({"data": {"text": "Extracted!"}})
+        assert result == "Extracted!"
+
+    def test_extract_response_raw_fallback(self):
+        adapter = self._make_adapter(request_template="raw", response_path="")
+        result = adapter._extract_response({"response": "From raw"})
+        assert result == "From raw"
+
+    def test_extract_response_raw_text_key(self):
+        adapter = self._make_adapter(request_template="raw", response_path="")
+        result = adapter._extract_response({"text": "From text"})
+        assert result == "From text"
+
+    def test_extract_response_raw_output_key(self):
+        adapter = self._make_adapter(request_template="raw", response_path="")
+        result = adapter._extract_response({"output": "From output"})
+        assert result == "From output"
+
+    # ── Messages passthrough ──
+
+    def test_openai_messages_passthrough(self):
+        adapter = self._make_adapter(request_template="openai")
+        msgs = [
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": "Hello"},
+            {"role": "user", "content": "How are you?"},
+        ]
+        body = adapter._build_request_body("", messages=msgs)
+        assert body["messages"] == msgs
+
+    def test_anthropic_messages_passthrough(self):
+        adapter = self._make_adapter(request_template="anthropic")
+        msgs = [{"role": "user", "content": "Hi"}]
+        body = adapter._build_request_body("", messages=msgs)
+        assert body["messages"] == msgs
+
 
 class TestEvidenceHashing:
     """Test evidence hashing and chain verification."""

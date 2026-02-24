@@ -417,7 +417,27 @@ def _get_adapter(
             "anthropic": "ANTHROPIC_API_KEY",
             "azure_openai": "AZURE_OPENAI_API_KEY",
             "bedrock": "AWS_ACCESS_KEY_ID",
+            "custom": "CUSTOM_GATEWAY_API_KEY",
         }
+
+        # Custom gateway doesn't require an API key (may use mTLS or no auth)
+        if p == "custom":
+            kwargs = {
+                "base_url": config.get("base_url")
+                or os.environ.get("CUSTOM_GATEWAY_URL", ""),
+                "api_key": os.environ.get(
+                    "CUSTOM_GATEWAY_API_KEY", config.get("api_key", "")
+                ),
+                "model": target_model,
+                "auth_header": config.get("auth_header", "Authorization"),
+                "auth_prefix": config.get("auth_prefix", "Bearer"),
+                "request_template": config.get("request_template", "openai"),
+                "response_path": config.get("response_path", ""),
+                "extra_headers": config.get("extra_headers", {}),
+                "extra_body": config.get("extra_body", {}),
+            }
+            return get_adapter(p, **kwargs)
+
         env_key = key_map.get(p, "")
         if not os.environ.get(env_key):
             return None

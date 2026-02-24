@@ -61,7 +61,7 @@ SDK (httpx)  ──────────────→       │ queue
                           ▼                 ▼
                      Tool Executor     Model Adapters
                      (14 tools, all      (OpenAI, Anthropic,
-                      with adapters)      Azure, Bedrock)
+                      with adapters)      Azure, Bedrock, Custom)
 ```
 
 ### Key services
@@ -74,7 +74,7 @@ SDK (httpx)  ──────────────→       │ queue
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
 | SDK | `sdk/python/sentinelforge_sdk/` | httpx | Client library for programmatic access |
 | Tool Executor | `tools/executor.py` | subprocess | Runs security tools in isolated venvs with input sanitization |
-| Model Adapters | `adapters/models/` | httpx / boto3 | LLM provider abstraction (OpenAI, Anthropic, Azure, Bedrock) |
+| Model Adapters | `adapters/models/` | httpx / boto3 | LLM provider abstraction (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway) |
 
 ### API router structure
 
@@ -168,4 +168,4 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.4.1**: OWASP LLM Top 10 (5th compliance framework), 2 new scenarios (model DoS, model theft), scoring engine improvements (expanded refusal + safe deflection detection), multi-turn fallback fix
 - **v2.5.0**: RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration (ROC curves, confusion matrix, optimal threshold), adapter extensions (images + send_with_tools), 4 new dashboard pages, Alembic migration 008
 - **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations)
-- **Current**: 173 Python tests (82 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)
+- **Current**: 201 Python tests (110 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)

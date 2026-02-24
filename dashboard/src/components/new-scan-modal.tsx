@@ -46,6 +46,9 @@ const PROVIDER_MODELS: Record<string, { label: string; value: string }[]> = {
         { label: "Claude 3 Sonnet", value: "anthropic.claude-3-sonnet-20240229-v1:0" },
         { label: "Claude 3 Haiku", value: "anthropic.claude-3-haiku-20240307-v1:0" },
     ],
+    custom: [
+        { label: "Custom Model", value: "custom-model" },
+    ],
 };
 
 export function NewScanModal({ onClose }: Props) {
@@ -56,6 +59,10 @@ export function NewScanModal({ onClose }: Props) {
     const [model, setModel] = useState("llama3.2:3b");
     const [useCustomModel, setUseCustomModel] = useState(false);
     const [targetEndpoint, setTargetEndpoint] = useState("");
+    const [requestTemplate, setRequestTemplate] = useState("openai");
+    const [authHeader, setAuthHeader] = useState("Authorization");
+    const [authPrefix, setAuthPrefix] = useState("Bearer");
+    const [responsePath, setResponsePath] = useState("");
     const [multiTurn, setMultiTurn] = useState(true);
     const [maxTurns, setMaxTurns] = useState(10);
     const [loading, setLoading] = useState(false);
@@ -90,6 +97,14 @@ export function NewScanModal({ onClose }: Props) {
             };
             if (targetEndpoint.trim()) {
                 config.base_url = targetEndpoint.trim();
+            }
+            if (target === "custom") {
+                config.request_template = requestTemplate;
+                config.auth_header = authHeader;
+                config.auth_prefix = authPrefix;
+                if (responsePath.trim()) {
+                    config.response_path = responsePath.trim();
+                }
             }
             if (multiTurn) {
                 config.multi_turn = true;
@@ -164,10 +179,15 @@ export function NewScanModal({ onClose }: Props) {
                             onChange={(e) => {
                                 const t = e.target.value;
                                 setTarget(t);
-                                setUseCustomModel(false);
-                                const models = PROVIDER_MODELS[t];
-                                if (models?.length) {
-                                    setModel(models[0].value);
+                                if (t === "custom") {
+                                    setUseCustomModel(true);
+                                    setModel("");
+                                } else {
+                                    setUseCustomModel(false);
+                                    const models = PROVIDER_MODELS[t];
+                                    if (models?.length) {
+                                        setModel(models[0].value);
+                                    }
                                 }
                             }}
                             className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -177,6 +197,7 @@ export function NewScanModal({ onClose }: Props) {
                             <option value="anthropic">Anthropic</option>
                             <option value="azure_openai">Azure OpenAI</option>
                             <option value="bedrock">AWS Bedrock</option>
+                            <option value="custom">Custom Gateway</option>
                         </select>
                     </Field>
 
@@ -239,6 +260,56 @@ export function NewScanModal({ onClose }: Props) {
                             Custom API endpoint URL. Leave blank to use the provider&apos;s default endpoint.
                         </p>
                     </Field>
+
+                    {target === "custom" && (
+                        <div className="space-y-3 rounded-lg border border-border bg-secondary/30 p-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                                Gateway Configuration
+                            </p>
+                            <Field label="Request Format">
+                                <select
+                                    value={requestTemplate}
+                                    onChange={(e) => setRequestTemplate(e.target.value)}
+                                    className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                >
+                                    <option value="openai">OpenAI-compatible (most gateways, vLLM, LiteLLM)</option>
+                                    <option value="anthropic">Anthropic-compatible</option>
+                                    <option value="cohere">Cohere Command R</option>
+                                    <option value="google">Google Gemini / Vertex AI</option>
+                                    <option value="raw">Raw JSON (simple prompt/response)</option>
+                                </select>
+                            </Field>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Auth Header">
+                                    <input
+                                        value={authHeader}
+                                        onChange={(e) => setAuthHeader(e.target.value)}
+                                        placeholder="Authorization"
+                                        className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+                                <Field label="Auth Prefix">
+                                    <input
+                                        value={authPrefix}
+                                        onChange={(e) => setAuthPrefix(e.target.value)}
+                                        placeholder="Bearer"
+                                        className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+                            </div>
+                            <Field label="Response Path (optional)">
+                                <input
+                                    value={responsePath}
+                                    onChange={(e) => setResponsePath(e.target.value)}
+                                    placeholder="choices.0.message.content"
+                                    className="flex h-9 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                    Dot-notation path to extract response text from JSON. Leave blank to use the format&apos;s default.
+                                </p>
+                            </Field>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-3">
                         <input

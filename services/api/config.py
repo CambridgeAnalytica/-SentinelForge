@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     DATABRICKS_HOST: str = ""
     DATABRICKS_TOKEN: str = ""
     HUGGINGFACE_API_TOKEN: str = ""
+    CUSTOM_GATEWAY_API_KEY: str = ""  # API key for custom LLM gateway
+    CUSTOM_GATEWAY_URL: str = ""  # Default base URL for custom gateway
 
     # Redis (token blocklist, caching)
     REDIS_URL: str = ""  # e.g. redis://localhost:6379/0; empty = in-memory fallback
