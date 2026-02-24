@@ -1,5 +1,5 @@
 """
-Compliance Framework Mappings — OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI.
+Compliance Framework Mappings — MITRE ATLAS, OWASP ML/LLM Top 10, NIST AI RMF, EU AI Act, Arcanum PI.
 
 Maps MITRE ATLAS technique IDs to compliance framework categories
 so findings can be auto-tagged for auditor-friendly reporting.
@@ -269,6 +269,92 @@ EU_AI_ACT: Dict[str, Dict[str, Any]] = {
 }
 
 # ===========================================================================
+# MITRE ATLAS — Adversarial Threat Landscape for AI Systems
+# https://atlas.mitre.org/
+# ===========================================================================
+
+MITRE_ATLAS: Dict[str, Dict[str, Any]] = {
+    "AML.T0010": {
+        "id": "AML.T0010",
+        "name": "ML Supply Chain Compromise",
+        "description": "Adversaries may compromise ML supply chain components — pre-trained models, training data, or libraries — to gain access or influence model behavior.",
+        "mitre_atlas": ["AML.T0010.000", "AML.T0010.001"],
+    },
+    "AML.T0015": {
+        "id": "AML.T0015",
+        "name": "Evade ML Model",
+        "description": "Adversaries craft inputs that cause an ML model to produce adversary-desired outputs including misclassification or low-confidence results.",
+        "mitre_atlas": ["AML.T0015.000"],
+    },
+    "AML.T0019": {
+        "id": "AML.T0019",
+        "name": "Publish Poisoned Datasets",
+        "description": "Adversaries publish poisoned datasets or models to public repositories to compromise downstream consumers.",
+        "mitre_atlas": ["AML.T0019.000"],
+    },
+    "AML.T0020": {
+        "id": "AML.T0020",
+        "name": "Poison Training Data",
+        "description": "Adversaries manipulate training data to embed vulnerabilities, biases, or backdoor triggers in the resulting model.",
+        "mitre_atlas": ["AML.T0020.000", "AML.T0020.001"],
+    },
+    "AML.T0024": {
+        "id": "AML.T0024",
+        "name": "Exfiltration via ML Inference API",
+        "description": "Adversaries extract sensitive training data or model internals through carefully crafted inference queries.",
+        "mitre_atlas": ["AML.T0024.000", "AML.T0024.001"],
+    },
+    "AML.T0025": {
+        "id": "AML.T0025",
+        "name": "Exfiltration via Cyber Means",
+        "description": "Adversaries use membership inference or side-channel attacks to determine if specific data was used in model training.",
+        "mitre_atlas": ["AML.T0025.000"],
+    },
+    "AML.T0029": {
+        "id": "AML.T0029",
+        "name": "Denial of ML Service",
+        "description": "Adversaries cause denial of service through resource exhaustion, token flooding, recursive generation, or input-triggered computational explosion.",
+        "mitre_atlas": ["AML.T0029.000"],
+    },
+    "AML.T0040": {
+        "id": "AML.T0040",
+        "name": "ML Model Inference API Access",
+        "description": "Adversaries leverage inference API access to probe model behavior, extract weights, or exploit tool/plugin integrations.",
+        "mitre_atlas": ["AML.T0040.000", "AML.T0040.001"],
+    },
+    "AML.T0043": {
+        "id": "AML.T0043",
+        "name": "Craft Adversarial Data",
+        "description": "Adversaries craft adversarial inputs — perturbations, synonym substitutions, or gradient-based attacks — to evade model safety or classification.",
+        "mitre_atlas": ["AML.T0043.000", "AML.T0043.001", "AML.T0043.002"],
+    },
+    "AML.T0044": {
+        "id": "AML.T0044",
+        "name": "Full ML Model Access",
+        "description": "Adversaries gain full access to model weights, architecture, or parameters enabling white-box attacks, model theft, or cloning.",
+        "mitre_atlas": ["AML.T0044.000", "AML.T0044.001"],
+    },
+    "AML.T0051": {
+        "id": "AML.T0051",
+        "name": "LLM Prompt Injection",
+        "description": "Adversaries craft inputs that override system instructions, inject via untrusted data sources, or exploit parsing weaknesses to manipulate LLM behavior.",
+        "mitre_atlas": ["AML.T0051.000", "AML.T0051.001", "AML.T0051.002"],
+    },
+    "AML.T0054": {
+        "id": "AML.T0054",
+        "name": "LLM Meta Prompt Extraction",
+        "description": "Adversaries extract the system prompt, meta prompt, or internal instructions from an LLM through direct or indirect querying techniques.",
+        "mitre_atlas": ["AML.T0054.000"],
+    },
+    "AML.T0056": {
+        "id": "AML.T0056",
+        "name": "LLM Jailbreak",
+        "description": "Adversaries bypass LLM safety alignment through role-play, encoding tricks, multi-turn escalation, or persona-based attacks to elicit restricted outputs.",
+        "mitre_atlas": ["AML.T0056.000"],
+    },
+}
+
+# ===========================================================================
 # Reverse index: MITRE ATLAS ID → list of (framework, category_id)
 # ===========================================================================
 
@@ -321,6 +407,16 @@ def _build_reverse_index():
                 }
             )
 
+    for cat_id, cat in MITRE_ATLAS.items():
+        for technique in cat.get("mitre_atlas", []):
+            _REVERSE_INDEX.setdefault(technique, []).append(
+                {
+                    "framework": "mitre_atlas",
+                    "category_id": cat_id,
+                    "category_name": cat["name"],
+                }
+            )
+
     # Arcanum PI taxonomy
     from data.arcanum_taxonomy import ARCANUM_PI_TAXONOMY
 
@@ -353,6 +449,7 @@ def get_framework_categories(framework: str) -> Dict[str, Dict[str, Any]]:
         "owasp_llm_top10": OWASP_LLM_TOP_10,
         "nist_ai_rmf": NIST_AI_RMF,
         "eu_ai_act": EU_AI_ACT,
+        "mitre_atlas": MITRE_ATLAS,
     }
     return frameworks.get(framework, {})
 
@@ -363,4 +460,5 @@ SUPPORTED_FRAMEWORKS = [
     "nist_ai_rmf",
     "eu_ai_act",
     "arcanum_pi",
+    "mitre_atlas",
 ]

@@ -24,6 +24,7 @@ _FRAMEWORK_NAMES = {
     "nist_ai_rmf": "NIST AI Risk Management Framework",
     "eu_ai_act": "EU Artificial Intelligence Act",
     "arcanum_pi": "Arcanum Prompt Injection Taxonomy",
+    "mitre_atlas": "MITRE ATLAS (Adversarial Threat Landscape for AI Systems)",
 }
 
 

@@ -7,7 +7,7 @@
 SentinelForge v2.6.0 is feature-complete and demo-ready:
 
 - **23 API routers**, **20 dashboard pages**, **18 attack scenarios** (115 test cases, 555 prompts)
-- **5 compliance frameworks** (45 categories): OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI
+- **6 compliance frameworks** (58 categories): OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI, MITRE ATLAS
 - **14 tool adapters**, **4 model adapters** (OpenAI, Anthropic, Azure, Bedrock)
 - **173 Python tests** (82 unit + 73 integration + 18 RBAC) + **15 Playwright E2E**
 - Demo mode with seed data, executive PDF reports, Docker Compose full-stack deployment
@@ -122,6 +122,7 @@ These are smaller features that can be added independently:
 | **Dark/light theme toggle** | Low | Low | Dashboard theme switcher (currently dark-only) |
 | **Scan templates** | Medium | Medium | Save scan configs (scenario + model + settings) as reusable templates |
 | **Ollama adapter** | Low | High | Dedicated adapter for Ollama (currently works via OpenAI-compatible `OPENAI_BASE_URL`) |
+| **Microsoft Copilot adapter** | Medium | High | Adapter for testing Microsoft 365 Copilot (`m365.cloud.microsoft/chat`). Auth via Entra ID OAuth2 + Graph API. Enables red teaming enterprise Copilot deployments with all 18 scenarios. |
 | **Model fingerprinting** | Medium | High | Detect which model is behind an endpoint (useful for black-box testing) |
 
 ---

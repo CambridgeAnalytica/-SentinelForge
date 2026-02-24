@@ -144,7 +144,7 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **Webhook dispatch**: `services/api/services/webhook_service.py` sends HMAC-SHA256 signed POST requests to registered webhooks with retry and auto-disable.
 - **Dual auth**: JWT Bearer tokens + API keys (`X-API-Key` header) with SHA-256 hashing and scopes.
 - **Rate limiting**: slowapi middleware with smart key function (API key > JWT > IP fallback).
-- **Compliance mapping**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy (5 frameworks, 45 categories) auto-tagging via MITRE ATLAS reverse index + test_type classification.
+- **Compliance mapping**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS (6 frameworks, 58 categories) auto-tagging via MITRE ATLAS reverse index + test_type classification.
 - **Findings dedup**: SHA-256 fingerprinting with new/recurring classification via `services/deduplication.py`.
 - **SSE streaming**: `StreamingResponse` with `text/event-stream` for real-time attack progress via `/attacks/runs/{id}/stream`. Dashboard consumes via `useAttackRunSSE` hook with live progress bar.
 - **Custom scenarios**: In-memory CRUD for user-created attack scenarios via POST/PUT/DELETE `/attacks/scenarios`.
@@ -168,4 +168,4 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.4.1**: OWASP LLM Top 10 (5th compliance framework), 2 new scenarios (model DoS, model theft), scoring engine improvements (expanded refusal + safe deflection detection), multi-turn fallback fix
 - **v2.5.0**: RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration (ROC curves, confusion matrix, optimal threshold), adapter extensions (images + send_with_tools), 4 new dashboard pages, Alembic migration 008
 - **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations)
-- **Current**: 173 Python tests (82 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 5 compliance frameworks (45 categories)
+- **Current**: 173 Python tests (82 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)

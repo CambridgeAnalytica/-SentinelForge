@@ -4,7 +4,7 @@ This guide walks you through setting up SentinelForge on your local machine,
 from zero to running your first AI security test. Every step includes an
 explanation of **what** the command does and **why** you need it.
 
-> **SentinelForge v2.6** — includes compliance mapping (5 frameworks), 14 tool adapters,
+> **SentinelForge v2.6** — includes compliance mapping (6 frameworks), 14 tool adapters,
 > scheduled scans, API key auth, notifications, CI/CD integration, model comparison,
 > batch audit, RAG/tool-use/multimodal evaluation pipelines, scoring calibration,
 > executive PDF reports, demo mode with seed data, and a full Next.js Dashboard UI
@@ -525,12 +525,13 @@ sf compliance summary --run-id <run_id>
 sf compliance report --run-id <run_id> --format pdf
 ```
 
-Supported frameworks (5 total, 45 categories):
+Supported frameworks (6 total, 58 categories):
 - **OWASP Top 10 for LLM Applications** — LLM-specific vulnerability taxonomy (LLM01–LLM10)
 - **OWASP ML Top 10** — Machine learning vulnerability taxonomy
 - **NIST AI RMF** — AI Risk Management Framework
 - **EU AI Act** — European Union AI regulation requirements
 - **Arcanum PI Taxonomy** — 13-category prompt injection classification
+- **MITRE ATLAS** — Adversarial Threat Landscape for AI Systems (13 technique categories)
 
 ---
 

@@ -25,7 +25,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 - **Complete Observability**: OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
 - **Enterprise Security**: JWT + API key dual authentication, rate limiting, RBAC, SBOM, signed images
 - **Rich Reporting**: HTML, PDF, and JSONL reports with MITRE ATLAS + OWASP LLM Top 10 mapping
-- **Compliance Mapping**: Auto-tag findings with OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy (5 frameworks, 45 categories)
+- **Compliance Mapping**: Auto-tag findings with OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS (6 frameworks, 58 categories)
 - **Scheduled Scans**: Cron-based recurring scans with notification channels (Slack, email, Teams)
 - **CI/CD Integration**: GitHub Actions action and GitLab CI template for pipeline security scanning
 - **Dashboard UI**: Next.js web dashboard with scan overview, findings explorer, drift timeline, compliance heatmaps, scenario builder, audit log, and settings management (port 3001)
@@ -39,7 +39,7 @@ Plus 6 innovative capability areas for comprehensive AI security testing.
 5. **Adversarial Fine-Tuning Detection**: Identify backdoored or poisoned models via behavioral triggers, pickle scanning, and weight analysis
 6. **Supply Chain Security Scanner**: Scan model dependencies, licenses, model cards, data provenance, and file signatures
 
-> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (5 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy — 45 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration with ROC curves, a full Next.js Dashboard UI with 20 pages (port 3001), 173 Python tests (82 unit + 73 integration + 18 RBAC), and 15 Playwright E2E tests.
+> **All 6 capabilities are fully implemented** with API endpoints, DB models, CLI commands, and service layers. Capabilities 4-6 make real model provider calls (OpenAI, Anthropic, Azure, Bedrock). The platform includes 14/14 tool adapters, 18 attack scenarios (115 test cases, 555 prompts), compliance auto-tagging (6 frameworks: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS — 58 categories), scheduled scans with cron, API key auth, rate limiting, notification channels (Slack/email/Teams), CI/CD integration (GitHub Actions + GitLab CI), model comparison mode, batch full-audit, system prompt hardening advisor, historical trend tracking, custom scoring rubrics, CSV export, RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration with ROC curves, a full Next.js Dashboard UI with 20 pages (port 3001), 173 Python tests (82 unit + 73 integration + 18 RBAC), and 15 Playwright E2E tests.
 
 ## Dashboard UI (v2.5)
 
@@ -338,7 +338,7 @@ sf compliance report --run-id abc123 --format pdf
 - **Secrets Management**: Environment-based configuration (`.env`)
 - **Evidence Redaction**: Configurable patterns for sensitive data
 - **Evidence Chain**: SHA-256 hash chain for tamper-proof finding integrity
-- **Compliance Frameworks**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy auto-tagging (5 frameworks, 45 categories)
+- **Compliance Frameworks**: OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI Taxonomy, MITRE ATLAS auto-tagging (6 frameworks, 58 categories)
 - **Database Migrations**: Alembic-managed schema versioning
 
 ## Documentation
