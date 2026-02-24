@@ -118,12 +118,15 @@ async def lifespan(app: FastAPI):
             import sys as _sys
             import os as _os
 
-            _scripts = _os.path.join(
-                _os.path.dirname(
-                    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-                ),
-                "scripts",
-            )
+            _app_dir = _os.path.dirname(_os.path.abspath(__file__))
+            # Docker layout: scripts/ is a sibling of main.py in /app/
+            _scripts = _os.path.join(_app_dir, "scripts")
+            if not _os.path.isdir(_scripts):
+                # Source tree layout: scripts/ is at project root (3 levels up)
+                _scripts = _os.path.join(
+                    _os.path.dirname(_os.path.dirname(_app_dir)),
+                    "scripts",
+                )
             if _scripts not in _sys.path:
                 _sys.path.insert(0, _scripts)
             seed_mod = importlib.import_module("seed_demo_data")

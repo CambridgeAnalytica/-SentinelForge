@@ -50,6 +50,7 @@ COPY adapters/ /app/adapters/
 COPY scenarios/ /app/scenarios/
 COPY playbooks/ /app/playbooks/
 COPY templates/ /app/templates/
+COPY scripts/ /app/scripts/
 
 # Set ownership
 RUN chown -R appuser:appuser /app
