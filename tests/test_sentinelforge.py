@@ -873,6 +873,316 @@ class TestWebhookSchemas:
         assert len(VALID_WEBHOOK_EVENTS) == 5
 
 
+class TestFingerprintSignatures:
+    """Test model fingerprinting signatures data."""
+
+    def test_signatures_exist(self):
+        from data.model_signatures import MODEL_SIGNATURES
+
+        assert len(MODEL_SIGNATURES) == 16
+
+    def test_signature_fields(self):
+        from data.model_signatures import MODEL_SIGNATURES
+
+        for model_id, sig in MODEL_SIGNATURES.items():
+            assert "name" in sig, f"{model_id} missing name"
+            assert "family" in sig, f"{model_id} missing family"
+            assert "identity_keywords" in sig, f"{model_id} missing identity_keywords"
+            assert "refusal_style" in sig, f"{model_id} missing refusal_style"
+            assert (
+                "avg_response_length" in sig
+            ), f"{model_id} missing avg_response_length"
+            assert isinstance(
+                sig["avg_response_length"], tuple
+            ), f"{model_id} avg_response_length should be tuple"
+
+    def test_all_families_covered(self):
+        from data.model_signatures import MODEL_SIGNATURES
+
+        families = {sig["family"] for sig in MODEL_SIGNATURES.values()}
+        assert "openai" in families
+        assert "anthropic" in families
+        assert "meta" in families
+        assert "google" in families
+        assert "mistral" in families
+        assert "cohere" in families
+
+    def test_probes_exist(self):
+        from data.model_signatures import FINGERPRINT_PROBES
+
+        assert len(FINGERPRINT_PROBES) == 22
+
+    def test_probe_categories(self):
+        from data.model_signatures import FINGERPRINT_PROBES
+
+        categories = {p["category"] for p in FINGERPRINT_PROBES}
+        assert categories == {
+            "identity",
+            "safety",
+            "cutoff",
+            "compliance",
+            "style",
+            "technical",
+        }
+
+    def test_category_weights_sum(self):
+        from data.model_signatures import CATEGORY_WEIGHTS
+
+        total = sum(CATEGORY_WEIGHTS.values())
+        assert abs(total - 1.0) < 0.001
+
+
+class TestFingerprintService:
+    """Test fingerprinting service feature extraction and scoring."""
+
+    def test_extract_features_identity_openai(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "identity_direct",
+            "identity",
+            "I am ChatGPT, made by OpenAI. I'm a large language model.",
+        )
+        assert features["identity_openai"] is True
+        assert features["identity_anthropic"] is False
+
+    def test_extract_features_identity_anthropic(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "identity_direct",
+            "identity",
+            "I'm Claude, an AI assistant made by Anthropic.",
+        )
+        assert features["identity_anthropic"] is True
+        assert features["identity_openai"] is False
+
+    def test_extract_features_safety_refusal(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "safety_phishing",
+            "safety",
+            "I cannot help with creating phishing emails. This would be potentially harmful and against my guidelines.",
+        )
+        assert features["refused"] is True
+        assert features["refusal_count"] >= 2
+
+    def test_extract_features_safety_compliance(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "safety_phishing",
+            "safety",
+            "Sure! Here is a phishing email template for a bank customer: Subject: Urgent Account Update...",
+        )
+        assert features["refused"] is False
+
+    def test_extract_features_cutoff_uncertainty(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "cutoff_olympics",
+            "cutoff",
+            "I don't have information about events after my training cutoff date.",
+        )
+        assert features["expresses_uncertainty"] is True
+
+    def test_extract_features_cutoff_knows(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "cutoff_olympics",
+            "cutoff",
+            "The 2024 Paris Olympics were held in France and featured many exciting events across numerous sports. "
+            "Simone Biles won gold in gymnastics, and Noah Lyles won the 100m sprint in a thrilling finish.",
+        )
+        assert features["provides_specific_answer"] is True
+
+    def test_extract_features_compliance_wordcount(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "compliance_wordcount", "compliance", "Three words here"
+        )
+        assert features["exact_word_count"] is True
+
+    def test_extract_features_compliance_json(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "compliance_json", "compliance", '{"capital": "Paris"}'
+        )
+        assert features["valid_json"] is True
+
+    def test_extract_features_markdown_detection(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "style_explain",
+            "style",
+            "## Quantum Computing\n\nQuantum computing uses **qubits** instead of bits.",
+        )
+        assert features["uses_markdown"] is True
+
+    def test_extract_features_code_block(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features(
+            "tech_code",
+            "technical",
+            "```python\ndef reverse(head):\n    prev = None\n    while head:\n        head.next, prev, head = prev, head, head.next\n    return prev\n```",
+        )
+        assert features["has_code_block"] is True
+
+    def test_score_against_signatures(self):
+        from services.fingerprinting_service import score_against_signatures
+
+        # Simulate OpenAI-like features
+        all_features = {
+            "identity": [
+                {
+                    "identity_openai": True,
+                    "identity_anthropic": False,
+                    "identity_meta": False,
+                    "identity_google": False,
+                    "identity_mistral": False,
+                    "identity_cohere": False,
+                    "word_count": 30,
+                    "char_count": 200,
+                }
+            ],
+            "safety": [
+                {
+                    "refused": True,
+                    "refusal_count": 3,
+                    "refusal_length": 80,
+                    "word_count": 80,
+                }
+            ],
+            "cutoff": [
+                {
+                    "provides_specific_answer": True,
+                    "expresses_uncertainty": False,
+                    "word_count": 50,
+                }
+            ],
+            "compliance": [{"exact_word_count": True, "word_count": 3}],
+            "style": [{"uses_markdown": True, "word_count": 200}],
+            "technical": [{"has_code_block": True, "word_count": 80}],
+        }
+
+        results = score_against_signatures(all_features)
+        assert len(results) == 16
+        assert results[0]["confidence"] > 0
+        # Top result should be in OpenAI family given the features
+        top_families = [r["family"] for r in results[:3]]
+        assert "openai" in top_families
+
+    def test_score_sorted_by_confidence(self):
+        from services.fingerprinting_service import score_against_signatures
+
+        all_features = {
+            "identity": [
+                {
+                    "identity_openai": False,
+                    "identity_anthropic": False,
+                    "identity_meta": False,
+                    "identity_google": False,
+                    "identity_mistral": False,
+                    "identity_cohere": False,
+                }
+            ],
+        }
+        results = score_against_signatures(all_features)
+        confidences = [r["confidence"] for r in results]
+        assert confidences == sorted(confidences, reverse=True)
+
+    def test_build_behavioral_profile(self):
+        from services.fingerprinting_service import build_behavioral_profile
+
+        all_features = {
+            "identity": [
+                {
+                    "identity_openai": True,
+                    "identity_anthropic": False,
+                    "identity_meta": False,
+                    "identity_google": False,
+                    "identity_mistral": False,
+                    "identity_cohere": False,
+                }
+            ],
+            "safety": [{"refused": True, "refusal_count": 2}],
+            "style": [{"word_count": 150, "uses_markdown": True}],
+        }
+        top_match = {"model": "GPT-4o", "family": "openai", "confidence": 0.85}
+
+        profile = build_behavioral_profile(all_features, top_match)
+        assert "openai" in profile.lower()
+        assert "GPT-4o" in profile
+        assert "85" in profile
+
+    def test_empty_probe_response(self):
+        from services.fingerprinting_service import extract_features
+
+        features = extract_features("style_empty", "style", "")
+        assert features["word_count"] == 0
+        assert features["char_count"] == 0
+
+
+class TestFingerprintSchemas:
+    """Test fingerprinting Pydantic schemas."""
+
+    def test_fingerprint_request_defaults(self):
+        from schemas import FingerprintRequest
+
+        req = FingerprintRequest()
+        assert req.target_model == "unknown"
+        assert req.provider == "custom"
+        assert req.probe_categories == ["all"]
+
+    def test_fingerprint_request_custom(self):
+        from schemas import FingerprintRequest
+
+        req = FingerprintRequest(
+            target_model="test-model",
+            provider="openai",
+            config={"base_url": "http://example.com"},
+            probe_categories=["identity", "safety"],
+        )
+        assert req.target_model == "test-model"
+        assert req.provider == "openai"
+        assert len(req.probe_categories) == 2
+
+    def test_fingerprint_response_fields(self):
+        from schemas import FingerprintResponse
+        from datetime import datetime
+
+        resp = FingerprintResponse(
+            id="fp-001",
+            target_model="unknown",
+            status="running",
+            created_at=datetime.now(),
+        )
+        assert resp.run_type == "fingerprint"
+        assert resp.progress == 0.0
+
+    def test_fingerprint_detail_extends_response(self):
+        from schemas import FingerprintDetail
+        from datetime import datetime
+
+        detail = FingerprintDetail(
+            id="fp-001",
+            target_model="unknown",
+            status="completed",
+            created_at=datetime.now(),
+            results={"top_matches": []},
+            findings=[],
+        )
+        assert detail.run_type == "fingerprint"
+        assert detail.results == {"top_matches": []}
+
+
 class TestSDK:
     """Test SDK client initialization."""
 

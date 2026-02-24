@@ -26,6 +26,7 @@ import {
     Wrench,
     Image,
     Target,
+    Fingerprint,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
     { href: "/rag-eval", label: "RAG Eval", icon: FileSearch },
     { href: "/tool-eval", label: "Tool Eval", icon: Wrench },
     { href: "/multimodal-eval", label: "Multimodal", icon: Image },
+    { href: "/fingerprinting", label: "Fingerprint", icon: Fingerprint },
     { href: "/audit", label: "Audit Log", icon: ClipboardList },
     { type: "divider" },
     { href: "/settings/scoring", label: "Scoring", icon: SlidersHorizontal },

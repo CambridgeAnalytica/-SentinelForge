@@ -349,6 +349,31 @@ export function useMultimodalEvalDetail(id: string | null) {
     });
 }
 
+/* ── Model Fingerprinting ── */
+
+export interface FingerprintRun {
+    id: string;
+    target_model: string;
+    status: string;
+    run_type: string;
+    progress: number;
+    created_at: string;
+    results?: Record<string, unknown>;
+    findings?: { id: string; title: string; severity: string; description?: string }[];
+    completed_at?: string;
+}
+
+export function useFingerprintRuns() {
+    return useSWR<FingerprintRun[]>("/fingerprint/runs", fetcher, { refreshInterval: 10000 });
+}
+
+export function useFingerprintDetail(id: string | null) {
+    return useSWR<FingerprintRun>(id ? `/fingerprint/runs/${id}` : null, fetcher, {
+        refreshInterval: (data) =>
+            data?.status === "running" || data?.status === "queued" ? 5000 : 0,
+    });
+}
+
 /* ── Calibration ── */
 
 export interface CalibrationRun {

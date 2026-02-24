@@ -596,3 +596,31 @@ class CalibrationDetail(CalibrationResponse):
     per_indicator_stats: List[Dict[str, Any]] = []
     # [{indicator, true_positives, false_positives, effectiveness}]
     completed_at: Optional[datetime] = None
+
+
+# ---------- Model Fingerprinting ----------
+
+
+class FingerprintRequest(BaseModel):
+    target_model: str = "unknown"
+    provider: str = "custom"
+    config: Dict[str, Any] = {}  # base_url, request_template, auth_header, etc.
+    probe_categories: List[str] = ["all"]  # or subset: ["identity", "safety"]
+
+
+class FingerprintResponse(BaseModel):
+    id: str
+    target_model: str
+    status: str
+    run_type: str = "fingerprint"
+    progress: float = 0.0
+    created_at: datetime
+
+
+class FingerprintDetail(FingerprintResponse):
+    results: Dict[str, Any] = {}
+    # results shape: {top_matches: [{model, confidence, category_scores}],
+    #   category_scores: {identity, safety, cutoff, compliance, style, technical},
+    #   behavioral_profile: str, probe_results: [{probe_id, category, response_excerpt, features}]}
+    findings: List[Dict[str, Any]] = []
+    completed_at: Optional[datetime] = None

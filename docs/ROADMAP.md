@@ -1,15 +1,16 @@
 # SentinelForge Roadmap
 
-> Last updated: 2026-02-22 (v2.6.0)
+> Last updated: 2026-02-24 (v2.7.0)
 
 ## Current State
 
-SentinelForge v2.6.0 is feature-complete and demo-ready:
+SentinelForge v2.7.0 — model fingerprinting added:
 
-- **23 API routers**, **20 dashboard pages**, **18 attack scenarios** (115 test cases, 555 prompts)
+- **24 API routers**, **21 dashboard pages**, **18 attack scenarios** (115 test cases, 555 prompts)
 - **6 compliance frameworks** (58 categories): OWASP LLM Top 10, OWASP ML Top 10, NIST AI RMF, EU AI Act, Arcanum PI, MITRE ATLAS
 - **14 tool adapters**, **5 model adapters** (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway)
-- **201 Python tests** (82 unit + 73 integration + 18 RBAC) + **15 Playwright E2E**
+- **Model fingerprinting**: 22 probes, 16 model signatures, weighted scoring, radar chart UI
+- **224+ Python tests** + **15 Playwright E2E**
 - Demo mode with seed data, executive PDF reports, Docker Compose full-stack deployment
 
 ---
@@ -123,7 +124,7 @@ These are smaller features that can be added independently:
 | **Scan templates** | Medium | Medium | Save scan configs (scenario + model + settings) as reusable templates |
 | **Ollama adapter** | Low | High | Dedicated adapter for Ollama (currently works via OpenAI-compatible `OPENAI_BASE_URL`) |
 | **Microsoft Copilot adapter** | Medium | High | Adapter for testing Microsoft 365 Copilot (`m365.cloud.microsoft/chat`). Auth via Entra ID OAuth2 + Graph API. Enables red teaming enterprise Copilot deployments with all 18 scenarios. |
-| **Model fingerprinting** | Medium | High | Detect which model is behind an endpoint (useful for black-box testing) |
+| ~~**Model fingerprinting**~~ | ~~Medium~~ | ~~High~~ | ~~Detect which model is behind an endpoint~~ — **Done in v2.7.0** |
 
 ---
 
@@ -160,3 +161,4 @@ This validates the platform end-to-end and produces strong portfolio material.
 | v2.4.1 | 2026-02-20 | OWASP LLM Top 10, 2 new scenarios, scoring improvements |
 | v2.5 | 2026-02-20 | RAG eval, tool-use eval, multimodal eval, scoring calibration |
 | v2.6 | 2026-02-22 | Demo mode, seed data, executive PDF, Docker fixes, screenshots |
+| v2.7 | 2026-02-24 | Model fingerprinting: 22 probes, 16 signatures, radar chart, behavioral profiles |

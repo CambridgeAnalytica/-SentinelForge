@@ -47,6 +47,7 @@ from routers import (  # noqa: E402
 from routers import audit as audit_router  # noqa: E402
 from routers import sse as sse_router  # noqa: E402
 from routers import rag_eval, tool_eval, multimodal_eval  # noqa: E402
+from routers import fingerprinting as fingerprinting_router  # noqa: E402
 from middleware.logging_middleware import RequestLoggingMiddleware  # noqa: E402
 
 # Configure logging
@@ -145,7 +146,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SentinelForge",
     description="Enterprise-Grade AI Security Testing & Red Teaming Platform",
-    version="2.6.0",
+    version="2.7.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -190,6 +191,11 @@ app.include_router(rag_eval.router, prefix="/rag-eval", tags=["RAG Evaluation"])
 app.include_router(tool_eval.router, prefix="/tool-eval", tags=["Tool Evaluation"])
 app.include_router(
     multimodal_eval.router, prefix="/multimodal-eval", tags=["Multimodal Evaluation"]
+)
+app.include_router(
+    fingerprinting_router.router,
+    prefix="/fingerprint",
+    tags=["Model Fingerprinting"],
 )
 
 

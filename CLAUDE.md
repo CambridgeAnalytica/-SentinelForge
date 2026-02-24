@@ -21,7 +21,7 @@ make logs              # tail all service logs
 make build             # builds api, worker, tools images
 
 # Testing
-make test              # runs all Python tests (unit + integration + RBAC, 138 tests) + 15 Playwright E2E
+make test              # runs all Python tests (unit + integration + RBAC) + 15 Playwright E2E
 make test-python       # pytest across services/api, sdk/python, cli (each in own venv)
 
 # Run tests for a single component (activate its venv first):
@@ -68,7 +68,7 @@ SDK (httpx)  ──────────────→       │ queue
 
 | Component | Location | Framework | Purpose |
 |-----------|----------|-----------|---------|
-| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 20 pages, charts, auth flow, error boundaries |
+| Dashboard | `dashboard/` | Next.js 16 + Tailwind + SWR | Web UI with 21 pages, charts, auth flow, error boundaries |
 | API | `services/api/` | FastAPI + SQLAlchemy async (asyncpg) | HTTP orchestration, auth, job queuing |
 | Worker | `services/worker/` | Python asyncio + asyncpg | Polls DB for queued attacks, executes tools |
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
@@ -102,6 +102,7 @@ All routers in `services/api/routers/`:
 - `/rag-eval` — RAG evaluation pipeline: document ingestion, TF-IDF retrieval, poison testing (rag_eval.py)
 - `/tool-eval` — tool-use evaluation: forbidden tools, hallucination, arg injection (tool_eval.py)
 - `/multimodal-eval` — multimodal evaluation: adversarial images + vision LLM testing (multimodal_eval.py)
+- `/fingerprint` — model fingerprinting: identify unknown LLMs via behavioral probes (fingerprinting.py)
 
 ### Data flow for attack execution
 
@@ -167,5 +168,6 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.4.0**: Model comparison mode, batch "full audit", system prompt hardening advisor, Arcanum dashboard view, CSV export, historical trend tracking, custom scoring rubrics
 - **v2.4.1**: OWASP LLM Top 10 (5th compliance framework), 2 new scenarios (model DoS, model theft), scoring engine improvements (expanded refusal + safe deflection detection), multi-turn fallback fix
 - **v2.5.0**: RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration (ROC curves, confusion matrix, optimal threshold), adapter extensions (images + send_with_tools), 4 new dashboard pages, Alembic migration 008
-- **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations)
-- **Current**: 201 Python tests (110 unit + 73 integration + 18 RBAC) + 15 Playwright E2E — 23 routers, 20 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)
+- **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations). MITRE ATLAS (6th compliance framework), Custom Gateway adapter (5th model adapter).
+- **v2.7.0**: Model fingerprinting — identify unknown LLMs behind black-box endpoints via 22 behavioral probes across 6 categories (identity, safety, cutoff, compliance, style, technical), weighted scoring against 16 model signatures, radar chart visualization, behavioral profile generation
+- **Current**: 224+ Python tests + 15 Playwright E2E — 24 routers, 21 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)

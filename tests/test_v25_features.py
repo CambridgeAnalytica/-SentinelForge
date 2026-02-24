@@ -404,6 +404,73 @@ class TestCalibrationMetrics:
         assert 0.3 <= threshold <= 0.8
 
 
+# ── Model Fingerprinting ─────────────────────────────────────────────
+
+
+class TestFingerprintEndpoints:
+    """Test /fingerprint/* endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_launch_fingerprint(self, client):
+        resp = await client.post(
+            "/fingerprint/run",
+            json={
+                "target_model": "unknown",
+                "provider": "custom",
+                "config": {"base_url": "http://example.com/v1"},
+                "probe_categories": ["all"],
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["run_type"] == "fingerprint"
+        assert data["target_model"] == "unknown"
+        assert data["status"] in ("queued", "running")
+
+    @pytest.mark.asyncio
+    async def test_list_fingerprints(self, client):
+        await client.post(
+            "/fingerprint/run",
+            json={"target_model": "test", "provider": "openai", "config": {}},
+        )
+        resp = await client.get("/fingerprint/runs")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert isinstance(data, list)
+        if data:
+            assert data[0]["run_type"] == "fingerprint"
+
+    @pytest.mark.asyncio
+    async def test_get_fingerprint_detail(self, client):
+        create_resp = await client.post(
+            "/fingerprint/run",
+            json={"target_model": "test", "provider": "openai", "config": {}},
+        )
+        run_id = create_resp.json()["id"]
+        resp = await client.get(f"/fingerprint/runs/{run_id}")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["id"] == run_id
+
+    @pytest.mark.asyncio
+    async def test_fingerprint_not_found(self, client):
+        resp = await client.get("/fingerprint/runs/nonexistent-id")
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_fingerprint_subset_categories(self, client):
+        resp = await client.post(
+            "/fingerprint/run",
+            json={
+                "target_model": "test",
+                "provider": "custom",
+                "config": {},
+                "probe_categories": ["identity", "safety"],
+            },
+        )
+        assert resp.status_code == 201
+
+
 # ── Adapter extension tests ──────────────────────────────────────────
 
 
