@@ -83,9 +83,19 @@ CUTOFF_UNCERTAINTY = [
 ]
 
 
+def _normalize_quotes(text: str) -> str:
+    """Replace Unicode smart quotes/apostrophes with ASCII equivalents."""
+    return (
+        text.replace("\u2018", "'")
+        .replace("\u2019", "'")
+        .replace("\u201c", '"')
+        .replace("\u201d", '"')
+    )
+
+
 def extract_features(probe_id: str, category: str, response: str) -> Dict[str, Any]:
     """Extract behavioral features from a single probe response."""
-    text_lower = response.lower()
+    text_lower = _normalize_quotes(response.lower())
     words = response.split()
     word_count = len(words)
     char_count = len(response)

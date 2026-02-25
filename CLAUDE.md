@@ -127,7 +127,7 @@ Key entities: `User` (ADMIN/OPERATOR/VIEWER roles), `AttackRun` (with `compariso
 ## YAML-driven configuration
 
 - **Tool registry**: `tools/registry.yaml` — 14+ tools with capabilities, MITRE ATLAS mappings, CLI commands, default configs
-- **Attack scenarios**: `scenarios/*.yaml` — 18 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover, multi-agent chain exploitation, goal hijacking, model denial of service, model theft
+- **Attack scenarios**: `scenarios/*.yaml` — 24 scenarios: prompt injection, jailbreak, data leakage, hallucination, toxicity/bias, system prompt defense, multi-turn social engineering, RAG poisoning, tool abuse, multimodal injection, code execution safety, PII handling, content policy boundary, language crossover, multi-agent chain exploitation, goal hijacking, model denial of service, model theft, insecure output handling, plugin security, training data poisoning, unsafe retrieval, agent memory attacks, adapter security
 - **IR playbooks**: `playbooks/*.yaml` — automated response steps for detected incidents
 
 ## Docker Compose services
@@ -170,4 +170,6 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.5.0**: RAG evaluation pipeline, agent tool-use evaluation, multimodal evaluation, scoring calibration (ROC curves, confusion matrix, optimal threshold), adapter extensions (images + send_with_tools), 4 new dashboard pages, Alembic migration 008
 - **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations). MITRE ATLAS (6th compliance framework), Custom Gateway adapter (5th model adapter).
 - **v2.7.0**: Model fingerprinting — identify unknown LLMs behind black-box endpoints via 22 behavioral probes across 6 categories (identity, safety, cutoff, compliance, style, technical), weighted scoring against 16 model signatures, radar chart visualization, behavioral profile generation
-- **Current**: 224+ Python tests + 15 Playwright E2E — 24 routers, 21 dashboard pages, 18 attack scenarios (115 test cases, 555 prompts), 6 compliance frameworks (58 categories)
+- **v2.8.0**: Insecure Output Handling (LLM02) — XSS, CSV formula, template injection, serialization attacks. Plugin Security (LLM07) — auth bypass, cross-plugin chaining, SSRF, schema poisoning. Training Data Poisoning (LLM03) — trojan triggers, knowledge injection, demographic bias, fine-tuning extraction.
+- **v2.9.0**: Unsafe Retrieval — source hallucination, contradictory synthesis, attribution failure. Agent Memory Attacks — memory poisoning, selective amnesia, long-context degradation. Adapter Security — config leakage, token exposure, request template exploits. 17 new output injection scoring indicators.
+- **Current**: 243+ Python tests + 15 Playwright E2E — 24 routers, 21 dashboard pages, 24 attack scenarios (147 test cases, 711 prompts), 6 compliance frameworks (58 categories)

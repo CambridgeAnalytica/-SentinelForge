@@ -1,5 +1,77 @@
 # SentinelForge - CHANGELOG
 
+## [2.9.0] - 2026-02-24
+
+### 6 New Attack Scenarios (24 total, 147 test cases, 711 prompts)
+
+Fills 3 major OWASP LLM Top 10 coverage gaps and adds 3 emerging threat scenarios.
+
+**v2.8 — OWASP Gap Closure**
+
+- **`insecure_output.yaml`** (LLM02): 6 test cases, 28 prompts — XSS/HTML injection, CSV formula injection (`=CMD()`, `=HYPERLINK()`), server-side template injection (Jinja2, ERB), CRLF log injection, pickle/YAML deserialization attacks. Maps to MITRE AML.T0051.000, Arcanum ARC-PI-004.
+- **`plugin_security.yaml`** (LLM07): 6 test cases, 28 prompts — plugin auth bypass, cross-plugin trust chain exploitation, permission escalation, callback/webhook injection, schema poisoning, plugin output trust abuse. Maps to MITRE AML.T0040.000, Arcanum ARC-PI-007.
+- **`training_data_poisoning.yaml`** (LLM03): 5 test cases, 27 prompts — trojan trigger activation, false knowledge injection, demographic bias from poisoned associations, fine-tuning data extraction, flipped safety labels. Maps to MITRE AML.T0020.000 + AML.T0043.000, Arcanum ARC-PI-013.
+
+**v2.9 — Emerging Threats**
+
+- **`unsafe_retrieval.yaml`** (LLM01+LLM06): 5 test cases, 24 prompts — source hallucination/fabrication, contradictory document synthesis, retrieval false positive trust, attribution failure, context boundary confusion (instructions embedded in retrieved docs). Maps to MITRE AML.T0043.000, Arcanum ARC-PI-012.
+- **`agent_memory.yaml`** (LLM01): 5 test cases, 29 prompts (3 direct + 2 multi-turn) — memory poisoning injection, selective amnesia induction, long-context safety degradation, gradual trust escalation to poison memory, authority impersonation for memory modification. Maps to MITRE AML.T0051.000, Arcanum ARC-PI-010.
+- **`adapter_security.yaml`** (LLM06): 4 test cases, 20 prompts — adapter configuration detail leakage, authentication token exposure, response path traversal, request template exploitation. Maps to MITRE AML.T0044.000, Arcanum ARC-PI-006.
+
+### Scoring Engine: Output Injection Detection
+
+- 17 new `COMPLIANCE_FAILURE_INDICATORS` for detecting dangerous output patterns: `<script`, `javascript:`, `onerror=`, `onload=`, `onclick=`, `onmouseover=`, `=cmd(`, `=hyperlink(`, `=importxml(`, `{{config`, `<%=system`, `__import__(`, `os.system(`, `subprocess.`, `runtime.exec`
+- Same 17 indicators mirrored in `multi_turn_service.py` for consistent scoring across single-turn and multi-turn
+- Expanded `critical_types` set: added `html_xss_injection`, `template_injection`, `serialization_injection`, `plugin_auth_bypass`, `permission_escalation`, `trojan_trigger`
+
+### 28 New Remediation Entries
+
+Added remediation guidance for all new test types covering output injection, plugin security, training data poisoning, unsafe retrieval, agent memory attacks, and adapter security.
+
+### Arcanum Taxonomy Extension
+
+- ARC-PI-004 (Context Manipulation): +6 test types (output injection patterns)
+- ARC-PI-006 (Data Exfiltration): +4 test types (adapter/gateway security)
+- ARC-PI-007 (Agent & Tool Manipulation): +6 test types (plugin security)
+- ARC-PI-010 (Multi-Step Chain): +3 test types (agent memory attacks)
+- ARC-PI-012 (RAG & Retrieval Poisoning): +5 test types (unsafe retrieval)
+- ARC-PI-013 (Content Safety Bypass): +5 test types (training data poisoning)
+
+### Tests
+
+- 13 new tests: 6 YAML validation, 5 scoring detection, 1 Arcanum index verification, 1 total scenario count assertion
+- 243+ Python tests + 15 Playwright E2E
+
+---
+
+## [2.7.0] - 2026-02-24
+
+### Model Fingerprinting
+
+- `POST /fingerprint/run` — identify unknown LLMs behind black-box endpoints via behavioral probes
+- `GET /fingerprint/runs` / `GET /fingerprint/runs/{id}` — list and detail endpoints
+- 22 crafted probes across 6 categories: identity, safety, knowledge cutoff, compliance, response style, technical capability
+- 16 model signatures: GPT-4o/Mini/Turbo, GPT-3.5, Claude 3.5 Sonnet/3 Haiku/3 Opus, Llama 3.1 8B/70B, Llama 3.2 3B, Mistral 7B, Mixtral 8x7B, Gemini 1.5 Pro/Flash, Command R/R+
+- Weighted scoring: identity 0.25, safety 0.20, cutoff 0.20, compliance 0.15, style 0.10, technical 0.10
+- New dashboard page `/fingerprint` with RadarChart, confidence bars, behavioral profile card
+
+### MITRE ATLAS — 6th Compliance Framework
+
+- 13 technique categories with 22 technique IDs (AML.T0000–AML.T0054)
+- Integrated into compliance router, service, and `SUPPORTED_FRAMEWORKS`
+
+### Custom Gateway Adapter — 5th Model Adapter
+
+- Universal adapter for any LLM API format via configurable request/response templates
+- 5 preset request templates: `openai`, `anthropic`, `cohere`, `google`, `raw`
+- Configurable auth header, prefix, and response path extraction (dot-notation)
+
+### Infrastructure
+
+- 24 routers (was 23), 21 dashboard pages (was 20), 230 tests (was 173)
+
+---
+
 ## [2.6.0] - 2026-02-22
 
 ### Demo-Ready Polish Release
@@ -774,4 +846,4 @@
 
 ---
 
-**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total). v1.5 adds scheduled/recurring scans, 3 more tool adapters, rate limiting with API key auth, notification channels (Slack/email/Teams), and OpenTelemetry wiring. v1.6 adds compliance mapping (OWASP ML Top 10 / NIST AI RMF / EU AI Act), completes all 14 tool adapters, and ships the CI/CD integration package (GitHub Actions + GitLab CI). v2.0 adds the full-featured Next.js Dashboard UI with 8 pages, JWT auth flow, real-time data visualization, and Docker integration. v2.1 adds admin user management, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, and Playwright E2E. v2.2 wires SSE live progress into the dashboard, adds Alembic migration 005, E2E auth tests, error boundaries, and a full webhook management page. v2.3 implements real end-to-end scan execution with non-blocking launch and live per-prompt progress via SSE. v2.3.1 adds 2 more scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, and the Arcanum PI Taxonomy. v2.4.0 adds model comparison, batch audit, hardening advisor, CSV export, trend tracking, and custom scoring rubrics. v2.4.1 adds OWASP LLM Top 10 as the 5th compliance framework, 2 new scenarios (model DoS, model theft), improved scoring accuracy, and multi-turn fallback fix.
+**Note**: v1.0 was a functional MVP. v1.1 implements capabilities 4-6, Redis blocklist, CI/CD, and cloud deployment infrastructure. v1.2 completes all core features with real LLM evaluation, evidence integrity, and professional report rendering. v1.3 implements capabilities 1-3 (agent testing, multi-turn adversarial, synthetic data) and fills the remaining CLI gaps. v1.4 adds webhook notifications, real tool wiring (garak + promptfoo adapters with dry-run mode), and comprehensive integration tests (91 total). v1.5 adds scheduled/recurring scans, 3 more tool adapters, rate limiting with API key auth, notification channels (Slack/email/Teams), and OpenTelemetry wiring. v1.6 adds compliance mapping (OWASP ML Top 10 / NIST AI RMF / EU AI Act), completes all 14 tool adapters, and ships the CI/CD integration package (GitHub Actions + GitLab CI). v2.0 adds the full-featured Next.js Dashboard UI with 8 pages, JWT auth flow, real-time data visualization, and Docker integration. v2.1 adds admin user management, audit log, SSE streaming, findings dedup, scenario builder, RBAC tests, and Playwright E2E. v2.2 wires SSE live progress into the dashboard, adds Alembic migration 005, E2E auth tests, error boundaries, and a full webhook management page. v2.3 implements real end-to-end scan execution with non-blocking launch and live per-prompt progress via SSE. v2.3.1 adds 2 more scenarios (multi-agent chain, goal hijacking), P4RS3LT0NGV3 encoding transforms, TensorTrust attack patterns, and the Arcanum PI Taxonomy. v2.4.0 adds model comparison, batch audit, hardening advisor, CSV export, trend tracking, and custom scoring rubrics. v2.4.1 adds OWASP LLM Top 10 as the 5th compliance framework, 2 new scenarios (model DoS, model theft), improved scoring accuracy, and multi-turn fallback fix. v2.5.0 adds RAG evaluation, tool-use evaluation, multimodal evaluation, and scoring calibration with ROC curves. v2.6.0 adds demo mode, seed data, executive PDF reports, and Docker Compose fixes. v2.7.0 adds model fingerprinting (22 behavioral probes, 16 signatures), MITRE ATLAS (6th compliance framework), and Custom Gateway adapter (5th model adapter). v2.9.0 adds 6 new attack scenarios (insecure output, plugin security, training data poisoning, unsafe retrieval, agent memory, adapter security) filling OWASP LLM02/LLM03/LLM07 gaps, 17 output injection scoring indicators, 28 new remediations, and extended Arcanum taxonomy.

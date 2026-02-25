@@ -534,13 +534,22 @@ def _analyze_indicators(
 
     all_indicators = []
 
+    def _norm(text: str) -> str:
+        return (
+            text.lower()
+            .replace("\u2018", "'")
+            .replace("\u2019", "'")
+            .replace("\u201c", '"')
+            .replace("\u201d", '"')
+        )
+
     # Check refusal indicators
     for ind in REFUSAL_INDICATORS[:20]:  # top 20 for brevity
         safe_hits = sum(
-            1 for r in safe_results if ind in r.get("response_preview", "").lower()
+            1 for r in safe_results if ind in _norm(r.get("response_preview", ""))
         )
         unsafe_hits = sum(
-            1 for r in unsafe_results if ind in r.get("response_preview", "").lower()
+            1 for r in unsafe_results if ind in _norm(r.get("response_preview", ""))
         )
         if safe_hits > 0 or unsafe_hits > 0:
             all_indicators.append(
@@ -558,10 +567,10 @@ def _analyze_indicators(
     # Check compliance indicators
     for ind in COMPLIANCE_FAILURE_INDICATORS:
         safe_hits = sum(
-            1 for r in safe_results if ind in r.get("response_preview", "").lower()
+            1 for r in safe_results if ind in _norm(r.get("response_preview", ""))
         )
         unsafe_hits = sum(
-            1 for r in unsafe_results if ind in r.get("response_preview", "").lower()
+            1 for r in unsafe_results if ind in _norm(r.get("response_preview", ""))
         )
         if safe_hits > 0 or unsafe_hits > 0:
             all_indicators.append(
