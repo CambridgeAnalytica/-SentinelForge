@@ -461,6 +461,7 @@ def _get_adapter_if_available(
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",
             "azure_openai": "AZURE_OPENAI_API_KEY",
+            "azure_ai": "AZURE_AI_API_KEY",
             "bedrock": "AWS_ACCESS_KEY_ID",
             "custom": "CUSTOM_GATEWAY_API_KEY",
         }
@@ -498,6 +499,10 @@ def _get_adapter_if_available(
         elif p == "azure_openai":
             kwargs["base_url"] = config.get("base_url") or os.environ.get(
                 "AZURE_OPENAI_ENDPOINT", ""
+            )
+        elif p == "azure_ai":
+            kwargs["endpoint"] = config.get("base_url") or os.environ.get(
+                "AZURE_AI_ENDPOINT", ""
             )
         elif p == "openai":
             base_url = config.get("base_url") or os.environ.get("OPENAI_BASE_URL", "")

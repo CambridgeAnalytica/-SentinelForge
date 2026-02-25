@@ -180,6 +180,10 @@ def _get_adapter_for_model(model_name: str, provider: str = None):
     if provider:
         from adapters.models import get_adapter
 
+        # Ollama uses OpenAI-compatible API
+        if provider == "ollama":
+            provider = "openai"
+
         kwargs = {}
         if provider == "openai":
             kwargs = {"api_key": settings.OPENAI_API_KEY, "model": model_name}
@@ -198,6 +202,12 @@ def _get_adapter_for_model(model_name: str, provider: str = None):
                 "access_key_id": settings.AWS_ACCESS_KEY_ID,
                 "secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
                 "region": settings.AWS_REGION,
+                "model": model_name,
+            }
+        elif provider == "azure_ai":
+            kwargs = {
+                "api_key": settings.AZURE_AI_API_KEY,
+                "endpoint": settings.AZURE_AI_ENDPOINT,
                 "model": model_name,
             }
         return get_adapter(provider, **kwargs)

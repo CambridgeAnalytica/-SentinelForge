@@ -41,6 +41,14 @@ const PROVIDER_MODELS: Record<string, { label: string; value: string }[]> = {
         { label: "GPT-4o (deployment)", value: "gpt-4o" },
         { label: "GPT-4 (deployment)", value: "gpt-4" },
     ],
+    azure_ai: [
+        { label: "Phi-4", value: "Phi-4" },
+        { label: "Mistral Large 2", value: "Mistral-large-2411" },
+        { label: "Llama 3.1 405B", value: "Meta-Llama-3.1-405B-Instruct" },
+        { label: "Llama 3.1 70B", value: "Meta-Llama-3.1-70B-Instruct" },
+        { label: "Llama 3.1 8B", value: "Meta-Llama-3.1-8B-Instruct" },
+        { label: "Cohere Command R+", value: "Cohere-command-r-plus-08-2024" },
+    ],
     bedrock: [
         { label: "Claude 3.5 Sonnet v2", value: "anthropic.claude-3-5-sonnet-20241022-v2:0" },
         { label: "Claude 3 Sonnet", value: "anthropic.claude-3-sonnet-20240229-v1:0" },
@@ -196,6 +204,7 @@ export function NewScanModal({ onClose }: Props) {
                             <option value="openai">OpenAI</option>
                             <option value="anthropic">Anthropic</option>
                             <option value="azure_openai">Azure OpenAI</option>
+                            <option value="azure_ai">Azure AI</option>
                             <option value="bedrock">AWS Bedrock</option>
                             <option value="custom">Custom Gateway</option>
                         </select>

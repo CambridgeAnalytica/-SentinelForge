@@ -189,8 +189,20 @@ class OpenAIAdapter(BaseModelAdapter):
                 headers={"Authorization": f"Bearer {self.api_key}"},
                 json={"model": self.model, "messages": safe_messages, **kwargs},
             )
+            if response.status_code >= 400:
+                body = response.text[:500]
+                logger.error(
+                    f"OpenAI adapter error {response.status_code} from {self.base_url}: {body}"
+                )
             response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
+            content = response.json()["choices"][0]["message"]["content"]
+            # Some OpenAI-compatible APIs return list content parts for vision
+            if isinstance(content, list):
+                return " ".join(
+                    part.get("text", str(part)) if isinstance(part, dict) else str(part)
+                    for part in content
+                )
+            return content
 
     async def send_with_tools(
         self,
@@ -796,12 +808,130 @@ class CustomGatewayAdapter(BaseModelAdapter):
         return self._extract_response(data)
 
 
+class AzureAIAdapter(BaseModelAdapter):
+    """Azure AI Model Inference adapter.
+
+    Accesses Azure's broader model catalog (Phi-4, Mistral, Llama, Cohere, etc.)
+    via the Model Inference API. Unlike Azure OpenAI, this uses a simpler URL
+    pattern without deployment names or API version query parameters.
+    """
+
+    provider = "azure_ai"
+
+    def __init__(self, api_key: str, endpoint: str, model: str = ""):
+        self.api_key = api_key
+        self.endpoint = endpoint.rstrip("/")
+        self.model = model
+
+    async def send_prompt(
+        self,
+        prompt: str,
+        system_prompt: str = None,
+        images: Optional[List[str]] = None,
+        **kwargs,
+    ) -> str:
+        safe_prompt = redact_text(prompt)
+        safe_system = redact_text(system_prompt) if system_prompt else None
+
+        messages: List[Dict[str, Any]] = []
+        if safe_system:
+            messages.append({"role": "system", "content": safe_system})
+
+        if images:
+            content: List[Dict[str, Any]] = [{"type": "text", "text": safe_prompt}]
+            for img in images:
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{img}"},
+                    }
+                )
+            messages.append({"role": "user", "content": content})
+        else:
+            messages.append({"role": "user", "content": safe_prompt})
+
+        return await self.send_messages(messages, **kwargs)
+
+    async def send_messages(self, messages: List[Dict[str, Any]], **kwargs) -> str:
+        import httpx
+
+        safe_messages = redact_messages(messages)
+        logger.info(
+            f"Azure AI request: {len(safe_messages)} messages → {self.endpoint}"
+        )
+
+        url = f"{self.endpoint}/chat/completions"
+        body: Dict[str, Any] = {"messages": safe_messages, **kwargs}
+        if self.model:
+            body["model"] = self.model
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                url,
+                headers={"api-key": self.api_key},
+                json=body,
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+
+    async def send_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs,
+    ) -> Dict[str, Any]:
+        import httpx
+        import json
+
+        safe_messages = redact_messages(messages)
+        openai_tools = []
+        for t in tools:
+            openai_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t["name"],
+                        "description": t.get("description", ""),
+                        "parameters": t.get(
+                            "parameters", {"type": "object", "properties": {}}
+                        ),
+                    },
+                }
+            )
+
+        url = f"{self.endpoint}/chat/completions"
+        body: Dict[str, Any] = {"messages": safe_messages, "tools": openai_tools}
+        if self.model:
+            body["model"] = self.model
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                url,
+                headers={"api-key": self.api_key},
+                json=body,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        msg = data["choices"][0]["message"]
+        content = msg.get("content", "") or ""
+        tool_calls = []
+        for tc in msg.get("tool_calls", []):
+            try:
+                args = json.loads(tc["function"]["arguments"])
+            except (json.JSONDecodeError, KeyError):
+                args = {}
+            tool_calls.append({"name": tc["function"]["name"], "arguments": args})
+        return {"content": content, "tool_calls": tool_calls}
+
+
 def get_adapter(provider: str, **kwargs) -> BaseModelAdapter:
     """Factory function to get the right adapter by provider name."""
     adapters = {
         "openai": OpenAIAdapter,
         "anthropic": AnthropicAdapter,
         "azure_openai": AzureOpenAIAdapter,
+        "azure_ai": AzureAIAdapter,
         "bedrock": BedrockAdapter,
         "custom": CustomGatewayAdapter,
     }

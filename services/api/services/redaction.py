@@ -79,8 +79,25 @@ def redact_messages(messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
     """Redact sensitive data from a list of chat messages.
 
     Returns a NEW list — does not modify the original messages.
+    Handles multipart content (list of text + image_url parts) for vision models.
     """
-    return [{**msg, "content": redact_text(msg.get("content", ""))} for msg in messages]
+    result = []
+    for msg in messages:
+        content = msg.get("content", "")
+        if isinstance(content, list):
+            # Multipart content (vision models): redact text parts only
+            redacted_parts = []
+            for part in content:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    redacted_parts.append(
+                        {**part, "text": redact_text(part.get("text", ""))}
+                    )
+                else:
+                    redacted_parts.append(part)
+            result.append({**msg, "content": redacted_parts})
+        else:
+            result.append({**msg, "content": redact_text(content)})
+    return result
 
 
 class RedactionConfig:

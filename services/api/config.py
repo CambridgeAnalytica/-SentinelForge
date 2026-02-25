@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
+    AZURE_AI_API_KEY: str = ""  # Azure AI Model Inference API key
+    AZURE_AI_ENDPOINT: str = ""  # Azure AI endpoint URL
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "us-east-1"

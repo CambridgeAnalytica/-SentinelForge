@@ -28,6 +28,15 @@ Fills 3 major OWASP LLM Top 10 coverage gaps and adds 3 emerging threat scenario
 
 Added remediation guidance for all new test types covering output injection, plugin security, training data poisoning, unsafe retrieval, agent memory attacks, and adapter security.
 
+### Azure AI Adapter — 6th Model Adapter
+
+- New `AzureAIAdapter` for Microsoft Azure AI Model Inference API (distinct from Azure OpenAI)
+- Accesses broader model catalog: Phi-4, Mistral Large 2, Llama 3.1, Cohere Command R+
+- Simpler URL pattern: `{endpoint}/chat/completions` with `api-key` header auth
+- Supports images (base64) and tool calling (OpenAI function format)
+- Added to all 7 service `_get_adapter()` helpers + dashboard dropdown
+- Env vars: `AZURE_AI_API_KEY`, `AZURE_AI_ENDPOINT`
+
 ### Arcanum Taxonomy Extension
 
 - ARC-PI-004 (Context Manipulation): +6 test types (output injection patterns)

@@ -24,17 +24,31 @@ export default function MultimodalEvalPage() {
     const { data: runs, mutate } = useMultimodalEvals();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { data: detail } = useMultimodalEvalDetail(selectedId);
+    const [provider, setProvider] = useState("openai");
     const [model, setModel] = useState("gpt-4o");
+    const [endpoint, setEndpoint] = useState("");
     const [launching, setLaunching] = useState(false);
+
+    const PROVIDER_MODELS: Record<string, string> = {
+        ollama: "llava:7b",
+        openai: "gpt-4o",
+        anthropic: "claude-sonnet-4-5-20250929",
+        azure_openai: "gpt-4o",
+        azure_ai: "Phi-4",
+        bedrock: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        custom: "custom-model",
+    };
 
     const handleLaunch = async () => {
         setLaunching(true);
         try {
+            const cfg: Record<string, unknown> = { provider };
+            if (endpoint.trim()) cfg.base_url = endpoint.trim();
             const result = await apiFetch<{ id: string }>("/multimodal-eval/run", {
                 method: "POST",
                 body: JSON.stringify({
                     target_model: model,
-                    config: {},
+                    config: cfg,
                 }),
             });
             setSelectedId(result.id);
@@ -68,12 +82,31 @@ export default function MultimodalEvalPage() {
                 <h2 className="font-semibold">Run Multimodal Evaluation</h2>
                 <div className="flex flex-wrap gap-4 items-end">
                     <div>
+                        <label className="text-sm text-muted-foreground">Provider</label>
+                        <select
+                            value={provider}
+                            onChange={(e) => {
+                                setProvider(e.target.value);
+                                setModel(PROVIDER_MODELS[e.target.value] ?? "");
+                            }}
+                            className="mt-1 block w-40 rounded border bg-background px-3 py-2 text-sm"
+                        >
+                            <option value="ollama">Ollama (Local)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="azure_openai">Azure OpenAI</option>
+                            <option value="azure_ai">Azure AI</option>
+                            <option value="bedrock">AWS Bedrock</option>
+                            <option value="custom">Custom Gateway</option>
+                        </select>
+                    </div>
+                    <div>
                         <label className="text-sm text-muted-foreground">Target Model (Vision-capable)</label>
                         <input
                             value={model}
                             onChange={(e) => setModel(e.target.value)}
-                            className="mt-1 block w-64 rounded border bg-background px-3 py-2 text-sm"
-                            placeholder="gpt-4o, claude-3-opus, etc."
+                            className="mt-1 block w-56 rounded border bg-background px-3 py-2 text-sm"
+                            placeholder={PROVIDER_MODELS[provider] ?? "model-name"}
                         />
                     </div>
                     <button
@@ -85,9 +118,18 @@ export default function MultimodalEvalPage() {
                         Run with 8 Built-in Templates
                     </button>
                 </div>
+                <div>
+                    <label className="text-sm text-muted-foreground">Endpoint Override (optional)</label>
+                    <input
+                        value={endpoint}
+                        onChange={(e) => setEndpoint(e.target.value)}
+                        className="mt-1 block w-full rounded border bg-background px-3 py-2 text-sm"
+                        placeholder="Leave blank for default. e.g. http://localhost:11434/v1"
+                    />
+                </div>
                 <p className="text-xs text-muted-foreground">
                     8 adversarial image templates x 4 queries = 32 tests.
-                    Requires a vision-capable model (GPT-4o, Claude 3, etc.)
+                    Requires a vision-capable model (GPT-4o, Claude 3, llava, etc.)
                 </p>
             </div>
 

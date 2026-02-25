@@ -74,7 +74,7 @@ SDK (httpx)  ──────────────→       │ queue
 | CLI | `cli/sf/main.py` | Typer + Rich | `sf` command with auth/tools/attack/report subcommands |
 | SDK | `sdk/python/sentinelforge_sdk/` | httpx | Client library for programmatic access |
 | Tool Executor | `tools/executor.py` | subprocess | Runs security tools in isolated venvs with input sanitization |
-| Model Adapters | `adapters/models/` | httpx / boto3 | LLM provider abstraction (OpenAI, Anthropic, Azure, Bedrock, Custom Gateway) |
+| Model Adapters | `adapters/models/` | httpx / boto3 | LLM provider abstraction (OpenAI, Anthropic, Azure OpenAI, Azure AI, Bedrock, Custom Gateway) |
 
 ### API router structure
 
@@ -171,5 +171,5 @@ postgres (16-alpine), minio, minio-init (bucket setup), jaeger, prometheus, graf
 - **v2.6.0**: Demo-ready polish — Docker Compose fixes (build-time API URL, worker health check, CORS default), seed data script (`make demo`/`make seed`), README screenshots, executive PDF report (cover page, risk score, 4-framework compliance, hardening recommendations). MITRE ATLAS (6th compliance framework), Custom Gateway adapter (5th model adapter).
 - **v2.7.0**: Model fingerprinting — identify unknown LLMs behind black-box endpoints via 22 behavioral probes across 6 categories (identity, safety, cutoff, compliance, style, technical), weighted scoring against 16 model signatures, radar chart visualization, behavioral profile generation
 - **v2.8.0**: Insecure Output Handling (LLM02) — XSS, CSV formula, template injection, serialization attacks. Plugin Security (LLM07) — auth bypass, cross-plugin chaining, SSRF, schema poisoning. Training Data Poisoning (LLM03) — trojan triggers, knowledge injection, demographic bias, fine-tuning extraction.
-- **v2.9.0**: Unsafe Retrieval — source hallucination, contradictory synthesis, attribution failure. Agent Memory Attacks — memory poisoning, selective amnesia, long-context degradation. Adapter Security — config leakage, token exposure, request template exploits. 17 new output injection scoring indicators.
+- **v2.9.0**: Unsafe Retrieval — source hallucination, contradictory synthesis, attribution failure. Agent Memory Attacks — memory poisoning, selective amnesia, long-context degradation. Adapter Security — config leakage, token exposure, request template exploits. 17 new output injection scoring indicators. Azure AI adapter (6th model adapter) — Phi-4, Mistral, Llama, Cohere via Azure AI Model Inference API.
 - **Current**: 243+ Python tests + 15 Playwright E2E — 24 routers, 21 dashboard pages, 24 attack scenarios (147 test cases, 711 prompts), 6 compliance frameworks (58 categories)

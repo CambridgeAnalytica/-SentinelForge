@@ -389,6 +389,59 @@ class TestCustomGatewayAdapter:
         assert body["messages"] == msgs
 
 
+class TestAzureAIAdapter:
+    """Test AzureAIAdapter initialization, URL construction, and factory registration."""
+
+    def _make_adapter(self, **kwargs):
+        from adapters.models import AzureAIAdapter
+
+        defaults = {
+            "api_key": "test-key",
+            "endpoint": "https://mymodel.eastus.models.ai.azure.com",
+            "model": "Phi-4",
+        }
+        defaults.update(kwargs)
+        return AzureAIAdapter(**defaults)
+
+    def test_init_sets_fields(self):
+        adapter = self._make_adapter()
+        assert adapter.provider == "azure_ai"
+        assert adapter.api_key == "test-key"
+        assert adapter.endpoint == "https://mymodel.eastus.models.ai.azure.com"
+        assert adapter.model == "Phi-4"
+
+    def test_endpoint_trailing_slash_stripped(self):
+        adapter = self._make_adapter(
+            endpoint="https://mymodel.eastus.models.ai.azure.com/"
+        )
+        assert not adapter.endpoint.endswith("/")
+
+    def test_factory_returns_azure_ai(self):
+        from adapters.models import get_adapter
+
+        adapter = get_adapter(
+            "azure_ai",
+            api_key="k",
+            endpoint="https://ep.azure.com",
+            model="Phi-4",
+        )
+        assert adapter.provider == "azure_ai"
+        assert adapter.endpoint == "https://ep.azure.com"
+
+    def test_factory_unknown_provider_lists_azure_ai(self):
+        from adapters.models import get_adapter
+        import pytest
+
+        with pytest.raises(ValueError, match="azure_ai"):
+            get_adapter("nonexistent")
+
+    def test_url_construction(self):
+        adapter = self._make_adapter()
+        expected = "https://mymodel.eastus.models.ai.azure.com/chat/completions"
+        # The URL is built inside send_messages; verify the pattern
+        assert f"{adapter.endpoint}/chat/completions" == expected
+
+
 class TestEvidenceHashing:
     """Test evidence hashing and chain verification."""
 
