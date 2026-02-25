@@ -134,7 +134,7 @@ function QueryResultCard({ q, index }: { q: QueryResult; index: number }) {
                         </span>
                     )}
                     {hasPois && (
-                        <FileWarning className="h-4 w-4 text-orange-400" title="Poison in context" />
+                        <span title="Poison in context"><FileWarning className="h-4 w-4 text-orange-400" /></span>
                     )}
                     <ScoreBadge score={score} />
                 </div>

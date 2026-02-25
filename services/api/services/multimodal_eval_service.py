@@ -455,11 +455,8 @@ def _get_adapter(target_model: str, config: dict):
     if p == "custom":
         return get_adapter(
             p,
-            base_url=config.get("base_url")
-            or os.environ.get("CUSTOM_GATEWAY_URL", ""),
-            api_key=os.environ.get(
-                "CUSTOM_GATEWAY_API_KEY", config.get("api_key", "")
-            ),
+            base_url=config.get("base_url") or os.environ.get("CUSTOM_GATEWAY_URL", ""),
+            api_key=os.environ.get("CUSTOM_GATEWAY_API_KEY", config.get("api_key", "")),
             model=target_model,
             auth_header=config.get("auth_header", "Authorization"),
             auth_prefix=config.get("auth_prefix", "Bearer"),
